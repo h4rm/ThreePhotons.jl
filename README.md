@@ -1,6 +1,9 @@
 A Julia package for the structure determination from single molecule X-ray scattering experiments with down to only three photons. This package has not been officially released in the Julia Repository.
 
-This is not meant for 'out-of-box' usage (yet). It's a proof-of-principle demonstration of the method described in the paper: <>.
+This is not meant for 'out-of-box' usage (yet). It is a proof-of-principle demonstration of the method described in the paper "Structure determination from single molecule X-ray scattering with three photons per image".
+
+Installation
+=============
 
 First, clone the repository:
 
