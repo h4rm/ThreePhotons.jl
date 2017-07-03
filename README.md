@@ -44,18 +44,19 @@ This package covers the generation of synthetic scattering images (with and with
   include("jobs/runs.jl")
 
   generate_histograms(;
-  num_images = Integer(1e6), #Number of images to generate,
-  max_triplets=Integer(0), #Alternatively, the maximum number of triplets can be limited
-  Ncores=8, #Number of CPU cores used for the data generation
-  N=32, #Alpha/beta discretization
-  photons_per_image=10, #Photons per image
-  batchsize=round(Int64,1e6/8),
-  successive_jobs=1,
-  use_cube=false, #Use cubic or spherical harmonics description for data generation
-  qcut_ratio=1.0, #Fraction of maximum wave number
-  kcut=38, #total number of shells
-  rmax=float(38), #maximum radius in real space
-  histogram_method="histogramCorrelationsInPicture_alltoall")
+    num_images        = Integer(1e6), #Number of images to generate,
+    max_triplets      = Integer(0), #Alternatively, the maximum number of triplets can be limited
+    Ncores            = 8, #Number of CPU cores used for the data generation
+    N                 = 32, #Alpha/beta discretization
+    photons_per_image = 10, #Photons per image
+    batchsize         = round(Int64,1e6/8),
+    successive_jobs   = 1,
+    use_cube          = false, #Use cubic or spherical harmonics description for data generation
+    qcut_ratio        = 1.0, #Fraction of maximum wave number
+    kcut              = 38, #total number of shells
+    rmax              = float(38), #maximum radius in real space
+    histogram_method  = "histogramCorrelationsInPicture_alltoall"
+  )
 ```
 
 Structure Determination
@@ -64,40 +65,41 @@ Given a histogrammed two- and three-photon correlation, the structure can be ret
 
 ```julia
   include("jobs/runs.jl")
+
   num_images::Int64 = Integer(1e6) #number of images
-  KMAX::Int64=38 #Maximum shell number used for two-photon inversion
-  N::Int64=32 #Alpha/beta discretization
-  L::Int64=18 #Maximum expansion order
-  K::Int64=26 #Number of shells used for structure determination
-  ppi::Int64=10 #Photons per image used for the histogram
-  RMAX = float(KMAX)#Maximum radius of the reference structures
-  name = histogram_name("", ppi, N, KMAX, float(KMAX), img, "") for img in image_list) #histogram file name
+  KMAX::Int64       = 38 #Maximum shell number used for two-photon inversion
+  N::Int64          = 32 #Alpha/beta discretization
+  L::Int64          = 18 #Maximum expansion order
+  K::Int64          = 26 #Number of shells used for structure determination
+  ppi::Int64        = 10 #Photons per image used for the histogram
+  RMAX              = float(KMAX)#Maximum radius of the reference structures
+  name              = histogram_name("", ppi, N, KMAX, float(KMAX), img, "") for img in image_list) #histogram file name
 
   run_determination(
-  "runname", #Name of the run
-  histograms=name, #Path to the histogram file
+    "runname", #Name of the run
+    histograms              = name, #Path to the histogram file
 
-  #Expansion parameters (see above)
-  kcut=K,
-  lcut=L,
-  kmax=KMAX,
-  rmax=RMAX,
-  N=N,
+    #Expansion parameters (see above)
+    kcut                    = K,
+    lcut                    = L,
+    kmax                    = KMAX,
+    rmax                    = RMAX,
+    N                       = N,
 
-  #Monte Carlo simulated annealing parameters
-  initial_stepsize=pi/4.0,
-  optimizer="rotate_all_at_once",
-  initial_temperature_factor=0.1,
-  temperature_decay=0.99998,
-  stepsizefactor=1.01
-  measure="Bayes",
+    #Monte Carlo simulated annealing parameters
+    initial_stepsize        = pi/4.0,
+    optimizer               = "rotate_all_at_once",
+    initial_temperature_factor=0.1,
+    temperature_decay       = 0.99998,
+    stepsizefactor          = 1.01
+    measure                 = "Bayes",
 
-  #Misc parameters
-  range=1000:1019,
-  postprocess=true,
-  gpu=true,
-  Ncores=20,
-)
+    #Misc parameters
+    range                   = 1000:1019,
+    postprocess             = true,
+    gpu                     = true,
+    Ncores                  = 20,
+  )
 ```
 
 Dependencies
