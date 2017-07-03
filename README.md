@@ -1,10 +1,32 @@
-A Julia package for the structure determination from single molecule X-ray scattering experiments with down to only three photons.
+A Julia package for the structure determination from single molecule X-ray scattering experiments with down to only three photons. This package has not been officially released in the Julia Repository.
 
-Detailed information about the context of this package can be found at <link to paper>.
+This is not meant for 'out-of-box' usage. It's a proof-of-principle demonstration of the method described in the paper: <>.
 
-General usage is described in <>.
+First, clone the repository:
 
-To start from a fresh Julia installation, you may run:
+```
+  git clone https://github.com/h4rm/ThreePhotons.jl.git
+```
+
+Then make sure the environment variables are set correctly:
+
+```bash
+  #Make sure julia finds the module
+  export JULIA_LOAD_PATH=/path/to/ThreePhotons.jl/src
+  #Make sure the s2kit is found
+  export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/path/to/ThreePhotons.jl/src/sh
+  #Tell julia where the structure determination runs
+  export DETERMINATION_PATH=/path/to/ThreePhotons.jl/
+```
+
+Next, compile s2kit and the s2kit interface (part of this framework):
+
+```bash
+  cd src/sh
+  make
+```
+
+Starting from a fresh Julia installation, you may run:
 
 ```julia
   Pkg.init()
@@ -19,6 +41,8 @@ To start from a fresh Julia installation, you may run:
   Pkg.add("Distributions")
 ```
 
+to initialize Julia with all required packages.
+
 Package Functionality
 ======================
 
@@ -27,6 +51,8 @@ Description of 3D Structures with Spherical Harmonics Basis
 This package provides functions to describe 3D structures on a cubic grid or on a spherical grid, each shell expanded in spherical harmonics. PDB structures can be loaded directly.
 
 ```julia
+  using ThreePhotons
+
   LMAX = 25 #Maximum expansion order of spherical harmonics expansion
   KMAX = 30 #Maximum number of shells used in the expansion
 
@@ -41,6 +67,7 @@ Synthetic Scattering Images And Histogramming
 This package covers the generation of synthetic scattering images (with and without noise) and subsequent two-photon and three-photon histogramming. For computational reasons, the scattering images are not cached.
 
 ```julia
+  using ThreePhotons
   include("jobs/runs.jl")
 
   generate_histograms(;
@@ -59,11 +86,14 @@ This package covers the generation of synthetic scattering images (with and with
   )
 ```
 
+`jobs/runs.jl` includes helper functions to spawn data generation and structure determination runs in various environments (including cluster systems).
+
 Structure Determination
 -----------------------
 Given a histogrammed two- and three-photon correlation, the structure can be retrieved without additional knowledge.
 
 ```julia
+  using ThreePhotons
   include("jobs/runs.jl")
 
   num_images::Int64 = Integer(1e6) #number of images
