@@ -30,15 +30,11 @@ Starting from a fresh Julia installation, you may run:
 
 ```julia
   Pkg.init()
-  ENV["JUPYTER"] = ""
-  ENV["PYTHON"] = ""
-  Pkg.add("IJulia")
-  Pkg.add("PyPlot")
-  Pkg.add("ProgressMeter")
-  Pkg.add("Optim")
   Pkg.add("CUDArt")
   Pkg.add("CUBLAS")
   Pkg.add("Distributions")
+  Pkg.add("ProgressMeter")
+  Pkg.add("Optim")
 ```
 
 to initialize Julia with all required packages.
@@ -148,9 +144,8 @@ Julia Packages
 * CUDArt.jl (CUDA 8.0)
 * CUBLAS.jl
 * Distributions.jl
-* PyPlot.jl
-* LaTeXStrings.jl
 * ProgressMeter.jl
+* Optim.jl
 
 ##### Author: Benjamin von Ardenne
 ##### Copyright 2017

@@ -3,9 +3,9 @@ module ThreePhotons
 using ProgressMeter
 using CUDArt
 using CUBLAS
-using LaTeXStrings
 using Distributions
 using Optim
+using ProgressMeter
 
 export
 	#structures
@@ -119,6 +119,8 @@ export
 	countDoublets,
 
 	#correlations
+	C2, C3,
+	C2Shared, C3Shared,
 	AbstractBasisType,
 	BasisType,
 	twoPhotons,
@@ -223,7 +225,6 @@ include("cuda.jl")
 include("datagen.jl")
 include("phases.jl")
 include("data_processing.jl")
-include("plotting.jl")
 include("determination.jl")
 
 """
