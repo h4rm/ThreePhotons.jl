@@ -152,5 +152,5 @@ Julia Packages
 * LaTeXStrings.jl
 * ProgressMeter.jl
 
-#### Author: Benjamin von Ardenne
-#### Copyright 2017
+##### Author: Benjamin von Ardenne
+##### Copyright 2017

@@ -8,12 +8,11 @@ elseif contains(readstring(`hostname`), "hydra")
   include("environment_hydra.jl")
 elseif contains(readstring(`hostname`), "gwdu103")
   include("environment_gwdg.jl")
-elseif contains(readstring(`whoami`), "ben")
+else
   include("environment_local.jl")
 end
 
 include("../src/utilities.jl")
-
 
 function jobname(directory, number::Int64=0)
   main = directory[length(ENV_root)+2:end]
