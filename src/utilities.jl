@@ -193,14 +193,14 @@ function SON_parametrized_derivative(dim, angles, k)
 end
 
 """Creates random doublet"""
-function random_doublet(kcut::Int64=8, half::Bool=true)
-  k1 = rand(1:kcut)
-  k2 = rand(1:kcut)
+function random_doublet(K::Int64=8, half::Bool=true)
+  k1 = rand(1:K)
+  k2 = rand(1:K)
   if half
     if k1 >= k2
       return (k1, k2)
     else
-      return random_doublet(kcut, half)
+      return random_doublet(K, half)
     end
   else
     return (k1,k2)
@@ -208,14 +208,14 @@ function random_doublet(kcut::Int64=8, half::Bool=true)
 end
 
 """Creates random triplet"""
-function random_triplet(kcut=8, half::Bool=true)
-  k1 = rand(1:kcut)
-  k2 = rand(1:kcut)
-  k3 = rand(1:kcut)
+function random_triplet(K=8, half::Bool=true)
+  k1 = rand(1:K)
+  k2 = rand(1:K)
+  k3 = rand(1:K)
   if half
     if k1 >= k2 && k2 >= k3
       return (k1,k2,k3)
-    else return random_triplet(kcut, half)
+    else return random_triplet(K, half)
     end
   else
     return (k1,k2,k3)

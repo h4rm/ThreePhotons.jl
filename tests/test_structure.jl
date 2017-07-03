@@ -1,10 +1,3 @@
-#General test parameters
-K = 10
-L = 10
-N = 10
-KMAX = 12
-LMAX = 11
-
 #Structures
 
 density,fourier,intensity = createSphericalHarmonicsStructure("../data/structures/crambin.pdb", LMAX, KMAX, float(KMAX))

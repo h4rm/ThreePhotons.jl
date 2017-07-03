@@ -1,10 +1,10 @@
 "Fits structure `volume` to structure `reference` by exploring all possible SO(3) rotations"
-function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, kcut::Int64, lcut::Int64, ta::Float64 = 0.0, tb::Float64 = pi/2, pa::Float64 =0.0, pb::Float64 = pi, ga::Float64 = 0.0, gb::Float64 = pi)
+function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, K::Int64, L::Int64, ta::Float64 = 0.0, tb::Float64 = pi/2, pa::Float64 =0.0, pb::Float64 = pi, ga::Float64 = 0.0, gb::Float64 = pi)
     println("Start with fitting")
     #check a single angle combination
     check_angles = function(theta::Float64,phi::Float64, gamma::Float64)
-      rvolume = rotateStructure(volume, theta, phi, gamma, kcut, 2:2:lcut)
-      sc = similarity(reference,rvolume, kcut)
+      rvolume = rotateStructure(volume, theta, phi, gamma, K, 2:2:L)
+      sc = similarity(reference,rvolume, K)
       return (sc, theta, phi, gamma)
     end
 
@@ -18,11 +18,11 @@ function fitStructures_full(volume::SphericalHarmonicsVolume, reference::Spheric
     sort!(results, lt=(a,b)->a[1]>b[1])
     bestsc, bestt, bestp, bestg = results[1]
     println("Best intensity correlation: ", bestsc)
-    return (rotateStructure(volume, bestt, bestp, bestg, kcut, 2:2:lcut), bestsc, bestt, bestp, bestg)
+    return (rotateStructure(volume, bestt, bestp, bestg, K, 2:2:L), bestsc, bestt, bestp, bestg)
 end
 
 "Fits structure `volume` to structure `reference` by exploring all possible SO(3) rotations"
-function fitStructures_random(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, kcut::Int64, lcut::Int64, stepsizefactor::Float64, repititions::Int64=4)
+function fitStructures_random(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K::Int64, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
     stepsize = pi
     # results = []
     results = @parallel vcat for i = 1:repititions
@@ -33,8 +33,8 @@ function fitStructures_random(volume::SphericalHarmonicsVolume, reference::Spher
         new_theta = theta + randn()*stepsize/2
         new_phi = phi + randn()*stepsize
         new_gamma = gamma + randn()*stepsize
-        rvolume = rotateStructure(volume, new_theta, new_phi, new_gamma, kcut, 2:2:lcut)
-        sc = similarity(reference,rvolume, kcut)
+        rvolume = rotateStructure(volume, new_theta, new_phi, new_gamma, K, 2:2:L)
+        sc = similarity(reference,rvolume, K)
         if sc > bestsc
           bestsc,theta,phi,gamma = sc, new_theta, new_phi, new_gamma
         end
@@ -45,14 +45,14 @@ function fitStructures_random(volume::SphericalHarmonicsVolume, reference::Spher
     sort!(results, lt=(a,b)->a[1]>b[1])
     bestsc,theta,phi,gamma = results[1]
     println("Best intensity correlation: ", bestsc)
-    return (rotateStructure(volume, theta, phi, gamma, kcut, 2:2:lcut), bestsc, theta, phi, gamma)
+    return (rotateStructure(volume, theta, phi, gamma, K, 2:2:L), bestsc, theta, phi, gamma)
 end
 
 # "Calculates the power spectrum of a set of coefficients"
 # function powerSpectrum(coeff)
 #   sum = 0
-#   for k = 1:kmax
-#     for l = 0:lmax-1
+#   for k = 1:KMAX
+#     for l = 0:LMAX-1
 #       # sum =  * sum
 #       for m = -l:l
 #         sum = sum + 1/(2*l+1)*abs(getc(coeff[k], l, m))^2
@@ -122,27 +122,27 @@ function calculateSC(volume::SphericalHarmonicsVolume, density::CubeVolume, four
 end
 
 """Performs a postprocessing on a run, including rotational fit in Fourier space and shell correlation calculations"""
-function postprocess_run(params, state, saving=false, num_points_sphere::Int64=35, sigma::Float64=0.0)
+function postprocess_run(params, state, reference_pdb_path::String, saving=false, num_points_sphere::Int64=35, sigma::Float64=0.0)
 
   #Load reference structures as spherical harmonics
-  density,fourier,intensity = createSphericalHarmonicsStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", params["lmax"], params["kmax"], params["rmax"])
+  density,fourier,intensity = createSphericalHarmonicsStructure(reference_pdb_path, params["LMAX"], params["KMAX"], params["rmax"])
   #Load reference structures as cube
-  densCube,fourierCube,intensityCube = createCubicStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 2*params["kmax"]+1, params["rmax"])
+  densCube,fourierCube,intensityCube = createCubicStructure(reference_pdb_path, 2*params["KMAX"]+1, params["rmax"])
 
   #intensity from runs
-  input_intensity = deleteTerms(state["intensity"],params["kcut"],params["lcut"])
+  input_intensity = deleteTerms(state["intensity"],params["K"],params["L"])
 
   #First check if we denoise?
   if sigma > 0.0
-    input_intensity = denoise_structure(input_intensity, intensity, params["kcut"], sigma)[1]
+    input_intensity = denoise_structure(input_intensity, intensity, params["K"], sigma)[1]
   end
 
   if saving saveCube(input_intensity, "unfitted_intensity.mrc") end
 
   #Rotational fit in Fourier space
-  # state["fittedIntensity"], bestsc, bestt, bestp, bestg = fitStructures(input_intensity, intensity, num_points_sphere, params["kcut"],params["lcut"], 0.0, float(pi), 0.0, 2.0*pi, 0.0, 2.0*pi)
+  # state["fittedIntensity"], bestsc, bestt, bestp, bestg = fitStructures(input_intensity, intensity, num_points_sphere, params["K"],params["L"], 0.0, float(pi), 0.0, 2.0*pi, 0.0, 2.0*pi)
 
-  state["fittedIntensity"], bestsc, bestt, bestp, bestg = fitStructures_random(input_intensity, intensity, params["kcut"],params["lcut"] , 0.99)
+  state["fittedIntensity"], bestsc, bestt, bestp, bestg = fitStructures_random(input_intensity, intensity, params["K"],params["L"] , 0.99)
 
   @everywhere gc()
 
@@ -389,9 +389,9 @@ function radial_difference_with_intensity(volume::SphericalHarmonicsVolume, inte
 end
 
 """Denoises a single structure by making radial part of l=0,m=0 components fit the known radial distribution"""
-function denoise_structure(volume::SphericalHarmonicsVolume, intensity::SphericalHarmonicsVolume, kcut::Int64, sigma::Float64)
-    mydiff(x) = radial_difference_with_intensity(substract_gamma(volume, intensity, x, sigma, kcut), intensity, kcut)
+function denoise_structure(volume::SphericalHarmonicsVolume, intensity::SphericalHarmonicsVolume, K::Int64, sigma::Float64)
+    mydiff(x) = radial_difference_with_intensity(substract_gamma(volume, intensity, x, sigma, K), intensity, K)
     result = optimize(mydiff, 0.0, 1.0)
     gammamin = Optim.minimizer(result)
-    return substract_gamma(volume, intensity, gammamin, sigma, kcut), gammamin
+    return substract_gamma(volume, intensity, gammamin, sigma, K), gammamin
 end

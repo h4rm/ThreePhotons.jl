@@ -1,15 +1,15 @@
 const minstepsize = 1.5*(pi/180.0) #1 degree minimum stepsize for largest L
 
 """Generates a random start structure for the rotational search"""
-function randomStartStructure(volume::SphericalHarmonicsVolume, kcut::Int64, lcut::Int64)
+function randomStartStructure(volume::SphericalHarmonicsVolume, K::Int64, L::Int64)
     new = deepcopy(volume)
     #Initialize with random unitary matrices
-    for l = 2:2:lcut
+    for l = 2:2:L
         rot = complex(random_rotation(2*l+1))
         ctr = Umat(l) #complex to real transformation
         rtc = ctranspose(ctr) #real to complex transformation
         rot = rtc*rot*ctr
-        for k = 1:kcut
+        for k = 1:K
           cvec_set(new,k,l, rot*cvec_get(volume,k,l))
         end
     end
@@ -17,15 +17,15 @@ function randomStartStructure(volume::SphericalHarmonicsVolume, kcut::Int64, lcu
 end
 
 """"Randomly pertubates a given structure by applying a single random rotations to different l's."""
-function randomPertubation(volume::SphericalHarmonicsVolume, kcut::Int64, lcut::Int64, stepsize=0.1)
+function randomPertubation(volume::SphericalHarmonicsVolume, K::Int64, L::Int64, stepsize=0.1)
     new = deepcopy(volume)
     #Initialize with random unitary matrices
-    for l = 2:2:lcut
+    for l = 2:2:L
         rot = complex(random_rotation_step(2*l+1, stepsize))
         ctr = Umat(l) #complex to real transformation
         rtc = ctranspose(ctr) #real to complex transformation
         rot = rtc*rot*ctr
-        for k = 1:kcut
+        for k = 1:K
           cvec_set(new, k,l, rot*cvec_get(volume, k,l))
         end
     end
@@ -37,57 +37,57 @@ end
 #--------------------------------------------------------------------------------
 # function project_C(coeff)
 #     newCoeff = deepcopy(coeff)
-#     lcut = Int64(floor((kmax-1)/2))
-#     for l = 2:2:lcut
-#         u,s,v = svd((c[l]*transpose(b[l])) * diagm([1:kmax;])^2 * coefficients_to_matix(coeff,l)')
+#     L = Int64(floor((KMAX-1)/2))
+#     for l = 2:2:L
+#         u,s,v = svd((c[l]*transpose(b[l])) * diagm([1:KMAX;])^2 * coefficients_to_matix(coeff,l)')
 #         newCoeffMatrix = b[l]*c[l]*u*v'
 #
-#         for k = 1:kmax
-#           start = kmax - (2*l)
-#             cvec_set(newCoeff[k], l, newCoeffMatrix[k,start:kmax])
+#         for k = 1:KMAX
+#           start = KMAX - (2*l)
+#             cvec_set(newCoeff[k], l, newCoeffMatrix[k,start:KMAX])
 #         end
 #
 #     end
 #     return real_to_comp(newCoeff)
 # end
 
-# function three_photon_walk(coeff, klow = 2, kcut=10, stepsize=pi/180.0*33.0)
+# function three_photon_walk(coeff, klow = 2, K=10, stepsize=pi/180.0*33.0)
 #     coeff = project_C(coeff)
-#     bestprob = energy(coeff,ablists, basisindices,basis,kcut,lcut)
+#     bestprob = energy(coeff,ablists, basisindices,basis,K,L)
 #     step = deepcopy(coeff)
 #     for i = 1:4
 # #         surf = map(backtransform, coeff)
 # #         surf = map(abs, surf)
 # #         coeff = map(transform, surf)
-#         for l = 2:2:lcut
+#         for l = 2:2:L
 #             rot = complex(random_rotation_step(2*l+1, gaussian(l*stepsize, l*stepsize/2)))
 #             rot =  rtc[l]*rot*ctr[l]#rtc*rot*ctr
-#             for k = 1:kmax cvec_set(step[k],l, rot*cvec_get(coeff[k],l)) end
+#             for k = 1:KMAX cvec_set(step[k],l, rot*cvec_get(coeff[k],l)) end
 #         end
-#         prob = energy(step, kcut, lcut)
+#         prob = energy(step, K, L)
 #         if prob > bestprob
 #             bestprob = prob
 #             coeff = deepcopy(step)
 #         end
 #     end
-#     # return deleteTerms(coeff,kcut,lcut)
+#     # return deleteTerms(coeff,K,L)
 #     return coeff
 # end
 
 #Projects real electron density shells onto the contraints given by the 2 and 3 photon correlation
-# function B2(density,klow=2, kcut=10)
+# function B2(density,klow=2, K=10)
 #     Alm = sphBesselTransform(map(transform,density), true)
 #     Almsurf = map(backtransform, Alm)
 #
 #     #Get amplitudes from projection
 #     Ilm = getIntensityCoefficientsIndirect(Alm)
-#     pIlm = three_photon_walk(Ilm, klow, kcut)
+#     pIlm = three_photon_walk(Ilm, klow, K)
 #     # pIlm = project_C(Ilm)
-#     # pIlm = deleteTerms(pIlm, kmax, lcut)
+#     # pIlm = deleteTerms(pIlm, KMAX, L)
 #     amplitudes = map((x) -> sqrt(max(real(backtransform(x)),0)),pIlm)
 #
 #     #Apply amplitudes
-#     for k = 1:kmax
+#     for k = 1:KMAX
 #         for i = 1:length(Almsurf[k])
 #             Almsurf[k][i] = Almsurf[k][i] / abs(Almsurf[k][i]) * amplitudes[k][i]
 #         end
@@ -98,14 +98,14 @@ end
 #     return map(backtransform, newrlm)
 # end
 
-# function projection_refinement(;ablistsfilename="expdata/ablists32.dat", lcut = 8,klow=2, kcut = 10, number = 166)
+# function projection_refinement(;ablistsfilename="expdata/ablists32.dat", L = 8,klow=2, K = 10, number = 166)
 #
 #     #loading triplet data
-#     loadHistograms(; klow=klow, kcut=kcut )
+#     loadHistograms(; klow=klow, K=K )
 #
 #     #precalc rotations
-#     global ctr = Dict([l => Umat(l) for l=2:2:lcut])
-#     global rtc = Dict([l => ctranspose(ctr[l]) for l=2:2:lcut])
+#     global ctr = Dict([l => Umat(l) for l=2:2:L])
+#     global rtc = Dict([l => ctranspose(ctr[l]) for l=2:2:L])
 #
 #     #start with random spherical harmonics coefficients representing a function
 #     rlm = getDensityCoefficients( (x) -> x <= rmax/2.0 ? ((p,t) -> 1 + rand()) : ((p,t) -> 0.0) )
@@ -115,9 +115,9 @@ end
 #     beta0 = 0.75
 #     beta_max = 0.75
 #     tau= 350
-#     global kcutoff = kmax / 2
+#     global Koff = KMAX / 2
 #
-#   	tmp1 = 2* B2(d, klow, kcut) - d #--reflection
+#   	tmp1 = 2* B2(d, klow, K) - d #--reflection
 #     tmp2 = 0.0
 #     # diffa = deepcopy(tmp1)
 #
@@ -126,7 +126,7 @@ end
 #       	beta = exp((-n/tau)^3.0)*beta0 + (1-exp((-n/tau)^3.0))*beta_max
 #     		tmp3 = A(tmp1)
 #     		tmp_u = 0.5*(beta*(2.0*tmp3 -tmp1) + (1-beta)*tmp1 + d)
-#     		tmp2 = B2(tmp_u, klow, kcut)
+#     		tmp2 = B2(tmp_u, klow, K)
 #
 #       	# for k = 1:length(d)
 #       	# 	diffa[k] = d[k] - tmp_u[k]
@@ -151,7 +151,7 @@ end
 """Main rotation search method
 `params` - rotation search parameters
 `state` - starting state"""
-function rotation_search(params = Dict("stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "lcut"=>8, "kcut" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "lmax"=>25, "kmax"=>35, "rmax"=>35.0), state = Dict{Any,Any}("newRun"=>true) )
+function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "rmax"=>35.0), state = Dict{Any,Any}("newRun"=>true) )
 
     #Don't start a finished run
     if haskey(state, "state") && state["state"] == "finished_structure"
@@ -159,7 +159,7 @@ function rotation_search(params = Dict("stepsizefactor"=>1.02, "initial_stepsize
     end
 
     #load the histogrammed dataset into the global scope
-    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(params["kcut"], params["histograms"])
+    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(params["K"], params["histograms"])
 
     #Open output file for logging
     out = open("det.out", state["newRun"] ? "w+" : "a")
@@ -170,12 +170,12 @@ function rotation_search(params = Dict("stepsizefactor"=>1.02, "initial_stepsize
       state["newRun"] = false
 
       #Lets start with the whole range by default (not applied for hierarchical approach)
-      state["K"] = params["kcut"]
+      state["K"] = params["K"]
 
       #Retrieve initial structure from 2p-correlation if not provided
       if !haskey(state,"intensity")
-        state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["lcut"], params["lmax"], params["kmax"], qmax(params["kmax"], params["rmax"]))
-        # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].kmax, state["intensity"].lmax)
+        state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["rmax"]))
+        # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
       end
 
       state["stepsizes"] = Dict()
@@ -184,7 +184,7 @@ function rotation_search(params = Dict("stepsizefactor"=>1.02, "initial_stepsize
       state["state"] = "running"
 
       #Save reference intensity for later use
-      density,fourier,intensity = createSphericalHarmonicsStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 25, params["kmax"], params["rmax"])
+      density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], params["KMAX"], params["rmax"])
       state["reference_intensity"] = intensity
 
       #Make some logging things
@@ -219,9 +219,9 @@ end
 """Creates a Monte Carlo step with given stepsize"""
 function get_MC_step(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, stepsizes::Dict)
   step = deepcopy(intensity)
-  for l = 2:2:basis.lcut
+  for l = 2:2:basis.L
       rot =  basis.rtc[l]*complex(random_rotation_step(2*l+1, gaussian(0.0, stepsizes[l])))*basis.ctr[l]
-      for k = 1:intensity.kmax
+      for k = 1:intensity.KMAX
         cvec_set(step,k,l, rot*cvec_get(intensity,k,l))
       end
   end
@@ -268,14 +268,14 @@ end
 # """Optimizes structure by changing all rotation matrices at once and comparing the structure's three photon correlation with the experimental one"""
 # function rotate_all_choose_best(out, params::Dict, state::Dict, c3ref::C3)
 #
-#   state["L"] = params["lcut"]
-#   d_basis = complexBasis_choice(state["L"], params["N"], params["lmax"])
+#   state["L"] = params["L"]
+#   d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
 #
 #   #Check if this is a continuation or a new run by checking stepsizes
 #   if !haskey(state["stepsizes"], state["L"])
 #
 #     #gradually increase K
-#     state["K"] = params["kcut"]
+#     state["K"] = params["K"]
 #
 #     #set stepsize for this resolution
 #     state["stepsizes"] = Dict(l=>params["initial_stepsize"] for l=2:2:state["L"])
@@ -327,14 +327,14 @@ end
 """Optimizes structure by changing all rotation matrices at once and comparing the structure's three photon correlation with the experimental one"""
 function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
 
-  state["L"] = params["lcut"]
-  d_basis = complexBasis_choice(state["L"], params["N"], params["lmax"])
+  state["L"] = params["L"]
+  d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
 
   #Check if this is a continuation or a new run by checking stepsizes
   if !haskey(state["stepsizes"], state["L"])
 
     #gradually increase K
-    state["K"] = params["kcut"]
+    state["K"] = params["K"]
 
     #set stepsize for this resolution
     #This makes sure that the initial stepsize for L=2 stays as intended and the other L stepsizes are hierarchical higher
@@ -378,15 +378,15 @@ end
 "Iterativly optimizing a structure by increasing the angular resolution and adding more shells that are taken into consideration"
 function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
 
-  for state["L"] = state["L"]:2:params["lcut"]
+  for state["L"] = state["L"]:2:params["L"]
 
-    d_basis = complexBasis_choice(state["L"], params["N"], params["lmax"])
+    d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
 
     #Check if this is a continuation or a new run by checking stepsizes
     if !haskey(state["stepsizes"], state["L"])
 
       #gradually increase K
-      state["K"] = params["kcut"] - params["lcut"] + state["L"]
+      state["K"] = params["K"] - params["L"] + state["L"]
 
       #set stepsize for this resolution
       state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
@@ -425,7 +425,7 @@ function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
 end
 
 # "MC sampling based on integration of the Hamilton equations stemming from negative log-probability"
-# function rotate_HMC(new, step, out, initial_stepsize, iterations, stepsizecheck, Tstart, lcut, klow, kcut, N, E, number)
+# function rotate_HMC(new, step, out, initial_stepsize, iterations, stepsizecheck, Tstart, L, klow, K, N, E, number)
 #
 #   #variables for MC annealing
 #   # num_accepted_steps = 0
@@ -441,8 +441,8 @@ end
 #   end
 #
 #   # global coeff = deepcopy(new)
-#   # global lcut_optim = lcut
-#   # numangles = sum([(2*l+1)*l for l=2:2:lcut])
+#   # global L_optim = L
+#   # numangles = sum([(2*l+1)*l for l=2:2:L])
 #   # q = rand(numangles)
 #   # p = rand(numangles)
 #   # eps = initial_stepsize
@@ -553,16 +553,16 @@ end
 
 #----------------------------------------------------------------------------------------
 
-function checkRotationSearch(reference::SphericalHarmonicsVolume, kcut::Int64, lcut::Int64, basis::AbstractBasisType; histogram="../expdata/correlations_N32_K25_P2048000.dat", save_structures::Bool=false)
-  c2full,c2,c3full,c3 = loadHistograms(kcut, histogram)
-  start = retrieveSolution(c2full, lcut, reference.lmax, reference.kmax, reference.rmax)
-  start = randomStartStructure(deleteTerms(start, kcut, lcut), kcut, lcut)
-  checkRotationSearch(start, deleteTerms(reference, kcut, lcut), kcut, lcut, basis, save_structures=save_structures)
+function checkRotationSearch(reference::SphericalHarmonicsVolume, K::Int64, L::Int64, basis::AbstractBasisType; histogram="../expdata/correlations_N32_K25_P2048000.dat", save_structures::Bool=false)
+  c2full,c2,c3full,c3 = loadHistograms(K, histogram)
+  start = retrieveSolution(c2full, L, reference.LMAX, reference.KMAX, reference.rmax)
+  start = randomStartStructure(deleteTerms(start, K, L), K, L)
+  checkRotationSearch(start, deleteTerms(reference, K, L), K, L, basis, save_structures=save_structures)
 end
 
 """Tries out the rotational search scheme by comparing given structures with the known original structure
 This yields convergence within the bounds of the scheme"""
-function checkRotationSearch(start::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, kcut::Int64, lcut::Int64, basis::AbstractBasisType; iterations=1.0e4, reduce_stepsize=1000, plotting=false, include_negativity=false, energy=(x)->0.0, save_structures::Bool=false)
+function checkRotationSearch(start::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K::Int64, L::Int64, basis::AbstractBasisType; iterations=1.0e4, reduce_stepsize=1000, plotting=false, include_negativity=false, energy=(x)->0.0, save_structures::Bool=false)
 
     new = deepcopy(start)
     step = deepcopy(new)
@@ -570,8 +570,8 @@ function checkRotationSearch(start::SphericalHarmonicsVolume, reference::Spheric
     FSC_list = Float64[]
     E_list = Float64[]
 
-    FSC = similarity(reference, start, kcut)
-    stepsizes = Dict(l=>pi*(l-1) for l=2:2:lcut)
+    FSC = similarity(reference, start, K)
+    stepsizes = Dict(l=>pi*(l-1) for l=2:2:L)
 
     E = energy(new)
 
@@ -595,7 +595,7 @@ function checkRotationSearch(start::SphericalHarmonicsVolume, reference::Spheric
         step = get_MC_step(new, basis, stepsizes)
 
         #Calculate FSC of this new structure
-        FSC_new = similarity(reference, step, kcut)
+        FSC_new = similarity(reference, step, K)
 
         #Check if we accept this step
         if FSC_new > FSC
@@ -608,18 +608,18 @@ function checkRotationSearch(start::SphericalHarmonicsVolume, reference::Spheric
 end
 
 # """Takes a set of coefficients and applies rotations to it"""
-# function rotate_coefficients(coeff::SphericalHarmonicsVolume, lcut::Int64, angles::Array{Float64})
+# function rotate_coefficients(coeff::SphericalHarmonicsVolume, L::Int64, angles::Array{Float64})
 #   rotated_coeff = deepcopy(coeff)
 #
 #   #Rotate the coefficients by the given angles
-#   for l = 2:2:lcut
+#   for l = 2:2:L
 #
 #       num_l_angles = (2*l+1)*l
 #       #Unpacking the angles from the vector and calculating the rotation matri
 #       R = SON_parametrized(2*l+1,angles[ai:ai+num_l_angles-1])
 #
 #       #Rotating the individual coefficients for all shells
-#       for k = 1:kmax cvec_set(rotated_coeff,k,l, R*cvec_get(coeff, k,l)) end
+#       for k = 1:KMAX cvec_set(rotated_coeff,k,l, R*cvec_get(coeff, k,l)) end
 #   end
 #
 #   return rotated_coeff

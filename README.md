@@ -80,7 +80,7 @@ This package covers the generation of synthetic scattering images (with and with
     successive_jobs   = 1,
     use_cube          = false, #Use cubic or spherical harmonics description for data generation
     qcut_ratio        = 1.0, #Fraction of maximum wave number
-    kcut              = 38, #total number of shells
+    K                 = 38, #total number of shells
     rmax              = float(38), #maximum radius in real space
     histogram_method  = "histogramCorrelationsInPicture_alltoall"
   )
@@ -90,7 +90,7 @@ This package covers the generation of synthetic scattering images (with and with
 
 Structure Determination
 -----------------------
-Given a histogrammed two- and three-photon correlation, the structure can be retrieved without additional knowledge.
+Given a histogrammed two- and three-photon correlation, the structure can be retrieved *de novo*:
 
 ```julia
   using ThreePhotons
@@ -110,9 +110,9 @@ Given a histogrammed two- and three-photon correlation, the structure can be ret
     histograms              = name, #Path to the histogram file
 
     #Expansion parameters (see above)
-    kcut                    = K,
-    lcut                    = L,
-    kmax                    = KMAX,
+    K                    = K,
+    L                    = L,
+    KMAX                    = KMAX,
     rmax                    = RMAX,
     N                       = N,
 

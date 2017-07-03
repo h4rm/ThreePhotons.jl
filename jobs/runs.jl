@@ -28,7 +28,7 @@ function check_git_status()
   return readstring(`git rev-parse HEAD`)
 end
 
-function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), kcut::Integer=8, lcut::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, kmax::Int64=35, rmax::Float64=35.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0)
+function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K::Integer=8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, KMAX::Int64=35, rmax::Float64=35.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="")
 
   julia_script = """
   using ThreePhotons
@@ -41,21 +41,21 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 
     if state["state"] == "running"
       params,state = rotation_search(params, state)
-      postprocess_run(params, state, true, 35, $sigma)
+      postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
     elseif state["state"] == "finished_structure" && $postprocess
-      postprocess_run(params, state, true, 35, $sigma)
+      postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
     elseif $force_repostprocess
       #TODO: Temporary fix for wrong results in noise runs
       params["rmax"] = $rmax
-      state["intensity"].rmax = qmax(params["kmax"], params["rmax"])
-      postprocess_run(params, state, true, 35, $sigma)
+      state["intensity"].rmax = qmax(params["KMAX"], params["rmax"])
+      postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
     end
 
   #Or start a completely new run
   else
-    params,state = rotation_search(Dict("stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "lcut"=>$lcut, "kcut" =>$kcut, "N"=>$N, "histograms"=>"$(ENV["DETERMINATION_PATH"])/$(histograms)/histo.dat", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "lmax"=>25, "kmax"=>$kmax, "rmax"=>$rmax))
+    params,state = rotation_search(Dict( "reference_pdb_path"=>$(reference_pdb_path), "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(ENV["DETERMINATION_PATH"])/$(histograms)/histo.dat", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax))
     if $postprocess
-      postprocess_run(params, state, true, 35, $sigma)
+      postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
     end
   end
   """
@@ -71,13 +71,13 @@ function histogram_name(prefix::String, ppi::Int64, N::Int64, KMAX::Int64, rmax:
 end
 
 """Starts a cluster job for synthetic correlation generation"""
-function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, kcut::Integer=35, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall")
+function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K::Integer=35, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall")
   name = ""
   if max_triplets > 0
-    name = "$(prefix)_N$(N)_K$(kcut)_R$(rmax)_T$(max_triplets)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
+    name = "$(prefix)_N$(N)_K$(K)_R$(rmax)_T$(max_triplets)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
   elseif max_pictures > 0
-    # name = "$(prefix)_N$(N)_K$(kcut)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
-    name = histogram_name(prefix, photons_per_image, N, kcut, rmax, max_pictures, suffix, gamma, sigma)
+    # name = "$(prefix)_N$(N)_K$(K)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
+    name = histogram_name(prefix, photons_per_image, N, K, rmax, max_pictures, suffix, gamma, sigma)
   end
   number_incident_photons = calculate_incident_photons(photons_per_image)
   julia_script = """
@@ -86,15 +86,15 @@ function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::I
   volume = 0.0
 
   if $(use_cube)
-    # _,_,volume = createCubicStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 4*$kcut+1, 2.0*$rmax)
+    # _,_,volume = createCubicStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 4*$K+1, 2.0*$rmax)
     volume = loadCube("$(ENV["DETERMINATION_PATH"])/expdata/intensityCube_high.mrc")
   else
-    _,_,intensity = createSphericalHarmonicsStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 35, $kcut, $rmax)
+    _,_,intensity = createSphericalHarmonicsStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 35, $K, $rmax)
     volume = getSurfaceVolume(intensity)
     volume.radial_interp = false
   end
 
-  generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, kcut=$kcut, N=$N, max_triplets=$max_triplets, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method)
+  generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K=$K, N=$N, max_triplets=$max_triplets, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method)
   """
 
   launch_job("$ENV_root/data_generation/$name", Ncores, false, julia_script, successive_jobs)
@@ -120,15 +120,15 @@ function run_optimal(K2::Int64, K3::Int64, L3::Int64)
 
   #Now check the same with retrieving the structure
   checkRotation_basis = complexBasis(L3,32,25)
-  c2hist_full = twoPhotons(intensity, checkRotation_basis, intensity.kmax, true, false)
-  start = retrieveSolution(c2hist_full, checkRotation_basis.lcut, intensity.lmax, intensity.kmax, intensity.rmax)
+  c2hist_full = twoPhotons(intensity, checkRotation_basis, intensity.KMAX, true, false)
+  start = retrieveSolution(c2hist_full, checkRotation_basis.L, intensity.LMAX, intensity.KMAX, intensity.rmax)
   energyfunc = (volume) -> 0.0
-  reference_intensity = deleteTerms(intensity, K3, checkRotation_basis.lcut)
-  rightCoeff,finalFSC = checkRotationSearch(start, reference_intensity, K3, checkRotation_basis.lcut, checkRotation_basis, save_structures=false, energy = energyfunc, iterations=4.0e4, reduce_stepsize=3000)
+  reference_intensity = deleteTerms(intensity, K3, checkRotation_basis.L)
+  rightCoeff,finalFSC = checkRotationSearch(start, reference_intensity, K3, checkRotation_basis.L, checkRotation_basis, save_structures=false, energy = energyfunc, iterations=4.0e4, reduce_stepsize=3000)
   saveCube(rightCoeff, "./retrievedIntensity.mrc")
 
   #Phase retrieved structure
-  res = calculateSC(deleteTerms(rightCoeff, K3,checkRotation_basis.lcut), densityCube, fourierCube, intensityCube, 16)
+  res = calculateSC(deleteTerms(rightCoeff, K3,checkRotation_basis.L), densityCube, fourierCube, intensityCube, 16)
   saveCube(res[1], "./retrievedDensity.mrc")
   serializeToFile("./retrieved.dat", res)
   """

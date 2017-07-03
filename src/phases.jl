@@ -3,12 +3,12 @@
 ##########################################################################
 
 "Contraint in real space for spherical harmonics RAAR"
-function A(density::SurfaceVolume, kcutoff::Integer)
+function A(density::SurfaceVolume, Koff::Integer)
 	newdensity = deepcopy(density)
 
 	#enforce support and positivity
-	for k = 1:density.kmax
-		newdensity.surf[k] = k > kcutoff ?  zeros(num_val(density.lmax)) : max(real(density.surf[k]), 0.0)
+	for k = 1:density.KMAX
+		newdensity.surf[k] = k > Koff ?  zeros(num_val(density.LMAX)) : max(real(density.surf[k]), 0.0)
 	end
 	return newdensity
 end
@@ -19,7 +19,7 @@ function B(density::SurfaceVolume, amplitudes::SurfaceVolume)
 	fourier = forward(density)
 
 	# Extract the phases from the Fourier transformation
-	for k = 1:fourier.kmax
+	for k = 1:fourier.KMAX
 		fourier.surf[k] = amplitudes.surf[k] .* exp(1im*angle(fourier.surf[k]))
 	end
 
@@ -30,23 +30,23 @@ end
 "Spherical Harmonics RAAR implementation"
 function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::Float64 = 0.75, beta_max::Float64 = 0.75, tau::Float64 = 100.0, plotting::Bool=false)
 
-	kcutoff = ceil(Int64, intensity.kmax / 2)
+	Koff = ceil(Int64, intensity.KMAX / 2)
 
  	amplitudes = getSurfaceVolume(intensity)
  	amplitudes.surf = map(sqrt,  map((x)-> max(x, 0.0),  real(amplitudes.surf)) )
 
 	# #Calculating the phases of a ball
 	# ball = deepcopy(intensity)
-	# for k = 1:ball.kmax
+	# for k = 1:ball.KMAX
 	#     ball.coeff[k] = zeros(Complex{Float64}, Base.size(ball.coeff[k]))
-	#     if k <= Integer(ball.kmax/2) setc(ball, k, 0, 0, 1.0) end
+	#     if k <= Integer(ball.KMAX/2) setc(ball, k, 0, 0, 1.0) end
 	# end
 	# ball_phases = getSurfaceVolume(forward(ball))
 
  	# Setting up the starting amplitudes with random initial phases
 	fourier = deepcopy(amplitudes)
- 	for k = 1:fourier.kmax
- 		phases = pi * 2 * rand(num_val(fourier.lmax))
+ 	for k = 1:fourier.KMAX
+ 		phases = pi * 2 * rand(num_val(fourier.LMAX))
 		# phases = angle(ball_phases.surf[k])
  		fourier.surf[k] = amplitudes.surf[k] .* exp(1im * phases)
  	end
@@ -63,7 +63,7 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
  	for n = 1:iterations
 		#Alternate reflections
 		beta = exp((-n/tau)^3.0)*beta0 + (1.0-exp((-n/tau)^3.0))*beta_max
- 		tmp3 = A(tmp1, kcutoff)
+ 		tmp3 = A(tmp1, Koff)
  		tmp_u = 0.5*(beta*(2.0*tmp3 -tmp1) + (1.0-beta)*tmp1 + density)
  		tmp2 = B(tmp_u, amplitudes)
 
@@ -74,7 +74,7 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 		diff_amp = 0.0
 		#Difference tracking in Fourier space
 		# d_fourier = forward(tmp_u)
-		# diff_amp = sumabs([sumabs(amplitudes.surf[k]) > 1e-16 ? sumabs( abs(d_fourier.surf[k]) - amplitudes.surf[k])/sumabs(amplitudes.surf[k]) : 0.0 for k = 1:density.kmax])
+		# diff_amp = sumabs([sumabs(amplitudes.surf[k]) > 1e-16 ? sumabs( abs(d_fourier.surf[k]) - amplitudes.surf[k])/sumabs(amplitudes.surf[k]) : 0.0 for k = 1:density.KMAX])
     # push!(diff_amp_list, diff_amp)
 
 		#Last step
@@ -90,7 +90,7 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
         plot(collect(1:iterations), diff_amp_list, label="diff amp")
     end
 
- 	density = A(tmp2, kcutoff)
+ 	density = A(tmp2, Koff)
 	return getSphericalHarmonicsVolume(density)
 end
 
@@ -138,11 +138,11 @@ end
 # end
 #
 # "Cubic RAAR phase retrieval"
-# function craar(coeff,iter=501, b1 = 0.85, b2 = 0.99, tau = 350, K=kmax, cubesize=cubesize, outputfile="density.mrc")
+# function craar(coeff,iter=501, b1 = 0.85, b2 = 0.99, tau = 350, K=KMAX, cubesize=cubesize, outputfile="density.mrc")
 # 	supportCube = createCenterCube(cubesize, 2)
 #
 # 	local newIntensCube
-# 	if length(coeff) == kmax
+# 	if length(coeff) == KMAX
 # 		newIntensCube = getCube(coeff, cubesize, K)
 # 	else
 # 		newIntensCube = coeff

@@ -123,13 +123,13 @@ end
 # end
 
 """This calculates the 3 photon correlation for a sparse image"""
-function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c2::C2, c3::C3, dq::Float64, N::Int64, kcut::Int64)
+function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c2::C2, c3::C3, dq::Float64, N::Int64, K::Int64)
   da = pi/N
 
   #Define picture filter function
   picturefilter = function(p::Vector{Float64})
     k = round(Int64,norm(p)/dq)
-    return k >= 1 && k <= kcut
+    return k >= 1 && k <= K
   end
 
   filter!(picturefilter,picture)
@@ -184,7 +184,7 @@ end
 function get_noise_volume(intensity::SurfaceVolume, sigma::Float64)
   intensity_sh = getSphericalHarmonicsVolume(intensity)
   intensity_sh = deleteTerms(intensity_sh, 0, 0)
-  for k = 1:intensity.kmax
+  for k = 1:intensity.KMAX
     q = k*dr(intensity)
     setc(intensity_sh,k,0,0, gaussian_distribution(q, 0.0, sigma))
   end
@@ -238,7 +238,7 @@ end
 Generates pictures and histograms the triplets in these pictures without reusing photons
 @params intensity:
 @params qcut:
-@params kcut:
+@params K:
 @params N:
 @params maxpictures:
 @params number_incident_photons:
@@ -248,14 +248,14 @@ Generates pictures and histograms the triplets in these pictures without reusing
 @params gamma:
 @params sigma:
 """
-function generateHistogram(intensity::Volume; qcut::Float64=1.0, kcut::Int64=25, N::Int64=32, max_triplets::Int64=Int64(1e10), max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall)
+function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N::Int64=32, max_triplets::Int64=Int64(1e10), max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall)
 
   #cutoff parameters
-  dq = qcut/kcut
+  dq = qcut/K
 
-  c2_full = zeros(Float64,(N, kcut,kcut))
-  c3_full = zeros(Float64,(N,N,kcut,kcut,kcut))
-  params = Dict("num_pictures"=>0, "num_incident_photons"=>number_incident_photons, "noise"=>noise, "qcut"=>qcut, "kcut"=>kcut, "N"=>N, "qcut"=>qcut, "dq"=>dq)
+  c2_full = zeros(Float64,(N, K,K))
+  c3_full = zeros(Float64,(N,N,K,K,K))
+  params = Dict("num_pictures"=>0, "num_incident_photons"=>number_incident_photons, "noise"=>noise, "qcut"=>qcut, "K"=>K, "N"=>N, "qcut"=>qcut, "dq"=>dq)
 
   #Load preexisting histogram file so we can continue from where we left off
   if isfile(file)
@@ -273,8 +273,8 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, kcut::Int64=25,
   while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
 
     c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2])) for i = 1:numprocesses
-      c2 = zeros(Float64,N,kcut,kcut)
-      c3 = zeros(Float64,N,N,kcut,kcut,kcut)
+      c2 = zeros(Float64,N,K,K)
+      c3 = zeros(Float64,N,N,K,K,K)
 
       for j=1:batchsize
         picture,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance)
@@ -283,7 +283,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, kcut::Int64=25,
           picture_noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot)
           picture = Vector{Float64}[picture; picture_noise]
         end
-        histogramMethod(picture, c2, c3, dq, N, kcut)
+        histogramMethod(picture, c2, c3, dq, N, K)
       end
       (c2, c3)
     end
@@ -302,16 +302,16 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, kcut::Int64=25,
 end
 
 "Loading a histogram from a file and store two/three photon histograms in global variables."
-function loadHistograms(kcut::Int64, file="expdata/correlations_N32_K25_P2048000.dat")
+function loadHistograms(K::Int64, file="expdata/correlations_N32_K25_P2048000.dat")
 
   #Try loading two different structure types
   params, c2_full, c3_full = deserializeFromFile(file)
   println("Loaded $(countDoublets(c2_full)) doublets and $(countTriplets(c3_full)) triplets from $file generated from $(params["num_pictures"]) pictures.")
 
-  #Cut down to designated kcut
-  c2 = c2_full[:,1:kcut,1:kcut]
+  #Cut down to designated K
+  c2 = c2_full[:,1:K,1:K]
   c2 = c2 / sumabs(c2)
-  c3 = c3_full[:,:,1:kcut,1:kcut,1:kcut]
+  c3 = c3_full[:,:,1:K,1:K,1:K]
   c3 = c3 / sumabs(c3)
 
   return c2_full, c2, c3_full, c3

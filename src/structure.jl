@@ -109,11 +109,11 @@ end
 ##################################################################
 
 """Loads a pdb file and creates a spherical harmonics description of the electron denisty, the Fourier transform and the Intensity (absolute square FT)"""
-function createSphericalHarmonicsStructure(moleculepdb, lmax::Integer,kmax::Integer,rmax::Float64)
-    println("Initializing SH structure from $moleculepdb with lmax=$lmax, kmax=$kmax, rmax=$rmax.")
+function createSphericalHarmonicsStructure(moleculepdb, LMAX::Integer,KMAX::Integer,rmax::Float64)
+    println("Initializing SH structure from $moleculepdb with LMAX=$LMAX, KMAX=$KMAX, rmax=$rmax.")
     atomlist = loadPDB(moleculepdb)
 
-    density = getDensity(atomlist, lmax, kmax, rmax)
+    density = getDensity(atomlist, LMAX, KMAX, rmax)
     fourierTransform = forward(density)
     intensity = absoluteSquare(fourierTransform)
 
@@ -134,15 +134,15 @@ function createCubicStructure(moleculepdb, cubesize::Integer, rmax::Float64)
 end
 
 """Expands a cubic volume in a spherical harmonics expansion"""
-function cubeToSphericalHarmonics(volume::CubeVolume, kmax::Int64, lmax::Int64)
+function cubeToSphericalHarmonics(volume::CubeVolume, KMAX::Int64, LMAX::Int64)
   rmax = volume.rmax
   surflist = Array{Complex{Float64},1}[]
-  dr = rmax/kmax
-  for k = 1:kmax
+  dr = rmax/KMAX
+  for k = 1:KMAX
       r = k*dr
-      push!(surflist, getSurface((phi,theta)->getVolumeInterpolated(volume, sphericalToCartesian(r,phi,theta)), lmax))
+      push!(surflist, getSurface((phi,theta)->getVolumeInterpolated(volume, sphericalToCartesian(r,phi,theta)), LMAX))
   end
-  surfVolume = SurfaceVolume(surflist, lmax, kmax, rmax)
+  surfVolume = SurfaceVolume(surflist, LMAX, KMAX, rmax)
 
   return getSphericalHarmonicsVolume(surfVolume)
 

@@ -11,19 +11,19 @@ type BasisType <: AbstractBasisType
   basisindices::SharedArray{Int64,2}
   basislen::Int64
   N::Int64
-  lcut::Int64
-  lmax::Int64
+  L::Int64
+  LMAX::Int64
   lrange::StepRange
   ctr::Dict
   rtc::Dict
 end
 
 """Calculates the two photon correlation from spherical harmonics coefficients"""
-function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, kcut::Int64, minimal::Bool=false, normalize::Bool=false)
-    c = zeros(Float64,basis.N,kcut,kcut)
+function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false)
+    c = zeros(Float64,basis.N,K,K)
 
-    for k1=1:kcut
-        for k2=1:(minimal ? k1 : kcut)
+    for k1=1:K
+        for k2=1:(minimal ? k1 : K)
             slice = zeros(Float64, basis.N)
             for l = basis.lrange
                 fac = 0
@@ -41,12 +41,12 @@ end
 """Calculates the difference between 2 two-photon correlations"""
 function diff_c2(c2_a::C2,c2_b::C2)
     sabs = 0
-    for k1=1:kcut
-        for k2=1:kcut
+    for k1=1:K
+        for k2=1:K
             sabs += sumabs(c2_a[:,k2,k1] - c2_b[:,k2,k1])/sumabs(c2_a[:,k2,k1])
         end
     end
-    return sabs/kcut^2
+    return sabs/K^2
 end
 
 """Alpharange of theory"""
@@ -62,22 +62,22 @@ function alpharange_alt(N)
 end
 
 """Retrieves a set of spherical harmonics coefficeints"""
-function retrieveSolution(c2::C2, lcut::Int64, lmax::Int64, kmax::Int64, qmax::Float64)
-    N,kcut,_ = size(c2)
-    println("Extracting solution with K=$kcut and L=$lcut.")
+function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Float64)
+    N,K,_ = size(c2)
+    println("Extracting solution with K=$K and L=$L.")
 
-    A = Float64[ Plm(l,0,alpha) for alpha = alpharange(N), l = 0:lcut]
+    A = Float64[ Plm(l,0,alpha) for alpha = alpharange(N), l = 0:L]
     AI = pinv(A)
 
     #Create empty Spherical Harmonics volume
-    intensity = SphericalHarmonicsVolume(lmax, kmax, qmax)
+    intensity = SphericalHarmonicsVolume(LMAX, KMAX, qmax)
     eigenvecs = Dict()
     eigenvals = Dict()
     Gmatrices = Dict()
 
-    for l = 0:2:lcut
-        G = zeros(kcut, kcut)
-        for k1 = 1:kcut
+    for l = 0:2:L
+        G = zeros(K, K)
+        for k1 = 1:K
             for k2 = 1:k1
                 slice = c2[:,k2,k1]
 
@@ -99,8 +99,8 @@ function retrieveSolution(c2::C2, lcut::Int64, lmax::Int64, kmax::Int64, qmax::F
         eigenvals[l] = eigenvalmatrix
         Gmatrices[l] = G
         m = eigenvalmatrix*eigenvectors'
-        for k = 1:kcut
-          vec = m[kcut-(2*l):kcut,k]
+        for k = 1:K
+          vec = m[K-(2*l):K,k]
           cvec_set(intensity,k,l, vec)
         end
     end
@@ -108,7 +108,7 @@ function retrieveSolution(c2::C2, lcut::Int64, lmax::Int64, kmax::Int64, qmax::F
     intensity = real_to_comp(intensity)
 
     sign = negativityCheck(intensity) > 0.33 ? -1.0 : 1.0
-    for k = 1:intensity.kmax intensity.coeff[k] *= sign end
+    for k = 1:intensity.KMAX intensity.coeff[k] *= sign end
 
     return intensity
 end
@@ -141,11 +141,11 @@ function flab(l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
 end
 
 "Precalcualtes the basis functions of the three photon correlations"
-function complexBasis(lcut::Int64, N::Int64, lmax::Int64, forIntensity=true)
+function complexBasis(L::Int64, N::Int64, LMAX::Int64, forIntensity=true)
     basisindiceslist = Int64[]
     basislist = Float64[]
 
-    lrange = forIntensity ? (0:2:lcut) : (0:lcut)
+    lrange = forIntensity ? (0:2:L) : (0:L)
     ctr = Dict(l => Umat(l) for l=lrange)
     rtc = Dict(l => ctranspose(ctr[l]) for l=lrange)
 
@@ -165,7 +165,7 @@ function complexBasis(lcut::Int64, N::Int64, lmax::Int64, forIntensity=true)
 
                                 if abs(w) > 100*eps()
 
-                                    append!(basisindiceslist, Int64[seanindex(l1,m1,lmax), seanindex(l2,m2,lmax),seanindex(l3,-m3,lmax), l1,m1, l2,m2, l3,-m3])
+                                    append!(basisindiceslist, Int64[seanindex(l1,m1,LMAX), seanindex(l2,m2,LMAX),seanindex(l3,-m3,LMAX), l1,m1, l2,m2, l3,-m3])
 
                                     append!(basislist, reshape(m*w, N*N))
                                     num += 1
@@ -185,18 +185,18 @@ function complexBasis(lcut::Int64, N::Int64, lmax::Int64, forIntensity=true)
     basisindices[:,:] = transpose(reshape(basisindiceslist,3+6, num))
 
     basislen = Base.size(basisindices,1)
-    println("Calculated complex basis with N=$N lcut=$lcut (lmax=$lmax): $basislen basislen")
+    println("Calculated complex basis with N=$N L=$L (LMAX=$LMAX): $basislen basislen")
 
-    return BasisType(basis, basisindices, basislen, N, lcut, lmax, lrange, ctr, rtc)
+    return BasisType(basis, basisindices, basislen, N, L, LMAX, lrange, ctr, rtc)
 end
 
 complexBasis_choice = complexBasis
 
-function calculate_coefficient_matrix(intensity::SphericalHarmonicsVolume, basis::BasisType, kcut::Int64)
+function calculate_coefficient_matrix(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64)
   coeff = intensity.coeff
-  faclist = zeros(Float64, basis.basislen,Integer(kcut*(kcut+1)*(kcut+2)/6))
+  faclist = zeros(Float64, basis.basislen,Integer(K*(K+1)*(K+2)/6))
   i = 1
-  for k1 = 1:kcut
+  for k1 = 1:K
     ck1 = coeff[k1]
     for k2 = 1:k1
       ck2 = coeff[k2]
@@ -211,17 +211,17 @@ function calculate_coefficient_matrix(intensity::SphericalHarmonicsVolume, basis
 end
 
 "Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
-function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisType, kcut::Int64=8, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
-    c = SharedArray(Float64,(basis.N,basis.N,kcut,kcut,kcut))
+function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64=8, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
+    c = SharedArray(Float64,(basis.N,basis.N,K,K,K))
 
-    fac_matrix = calculate_coefficient_matrix(intensity, basis, kcut)
+    fac_matrix = calculate_coefficient_matrix(intensity, basis, K)
     res = basis.basis * fac_matrix
 
     if return_raw return res end
 
-    t = zeros(Float64, basis.N, basis.N, kcut, kcut, kcut)
+    t = zeros(Float64, basis.N, basis.N, K, K, K)
     i = 1
-    for k1=1:kcut for k2=1:k1 for k3=1:k2
+    for k1=1:K for k2=1:k1 for k3=1:k2
       t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
       i += 1
     end end end
@@ -239,10 +239,10 @@ function calculateCorrelationSlices!(c::C3Shared, coeff::Array{Array{Complex{Flo
 end
 
 "Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
-function FullCorrelation_parallized_piecewise(intensity::SphericalHarmonicsVolume, basis::BasisType, kcut::Int64=8, minimal::Bool=true, normalize::Bool=false)
-  kcombinations = Tuple{Int64,Int64,Int64}[(k1,k2,k3) for k1 = 1:kcut for k2 = 1:(minimal ? k1 : kcut) for k3 = 1:(minimal ? k2 : kcut)]
+function FullCorrelation_parallized_piecewise(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64=8, minimal::Bool=true, normalize::Bool=false)
+  kcombinations = Tuple{Int64,Int64,Int64}[(k1,k2,k3) for k1 = 1:K for k2 = 1:(minimal ? k1 : K) for k3 = 1:(minimal ? k2 : K)]
 
-  c = SharedArray(Float64,(basis.N,basis.N,kcut,kcut,kcut))
+  c = SharedArray(Float64,(basis.N,basis.N,K,K,K))
 
   # Here I had a GC problem:
   # https://github.com/JuliaLang/julia/issues/15155
@@ -255,14 +255,14 @@ end
 #--------------------------------------------------
 
 """Central energy calculation function"""
-function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, kcut::Int64, measure::String="Bayes")
-  c3 = FullCorrelation_parallized(intensity, basis, kcut, true, true, true)
+function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, K::Int64, measure::String="Bayes")
+  c3 = FullCorrelation_parallized(intensity, basis, K, true, true, true)
   c3 = max(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
 
   res = 0.0
   if measure == "Bayes"
     i = 1
-    for k1 = 1:kcut
+    for k1 = 1:K
       for k2 = 1:k1
         for k3 = 1:k2
           p = reshape(c3[:, i], basis.N, basis.N)
@@ -282,12 +282,12 @@ end
 
 """Calculate complete three-photon correlation
 This is just for testing because it's a slow calculation."""
-function FullC3(volume::SphericalHarmonicsVolume, lcut::Int64, kcut::Int64, N::Int64, lmax::Int64)
+function FullC3(volume::SphericalHarmonicsVolume, L::Int64, K::Int64, N::Int64, LMAX::Int64)
 
   coeff = volume.coeff
-  c3 = zeros(Float64, N, N, kcut, kcut, kcut)
+  c3 = zeros(Float64, N, N, K, K, K)
 
-  for k1 = 1:kcut
+  for k1 = 1:K
     ck1 = coeff[k1]
     for k2 = 1:k1
       ck2 = coeff[k2]
@@ -296,9 +296,9 @@ function FullC3(volume::SphericalHarmonicsVolume, lcut::Int64, kcut::Int64, N::I
         ck3 = coeff[k3]
 
         slice = zeros(Complex{Float64}, N, N)
-        for l1 = 0:2:lcut
-          for l2 = 0:2:lcut
-            for l3 = 0:2:lcut
+        for l1 = 0:2:L
+          for l2 = 0:2:L
+            for l3 = 0:2:L
               m = Float64[ flab(l1,l2,l3, a,b) for a=alpharange(N), b=alpharange(N)]
               if norm(m) > 3*eps()
                 for m1 = -l1:l1
@@ -306,7 +306,7 @@ function FullC3(volume::SphericalHarmonicsVolume, lcut::Int64, kcut::Int64, N::I
                     for m3 = -l3:l3
                         w = wigner(l1,m1, l2,m2, l3,-m3)
                         if abs(w) > 3*eps()
-                          slice += m*w * ck1[seanindex(l1,m1,lmax)] * ck2[seanindex(l2,m2,lmax)] * ck3[seanindex(l3,-m3,lmax)]
+                          slice += m*w * ck1[seanindex(l1,m1,LMAX)] * ck2[seanindex(l2,m2,LMAX)] * ck3[seanindex(l3,-m3,LMAX)]
                         end
                     end
                   end
@@ -385,7 +385,7 @@ end
 #     return c
 # end
 
-# function derivative(coeff, coeff0, l, m, mp, ksize = kmax)
+# function derivative(coeff, coeff0, l, m, mp, ksize = KMAX)
 # #     c = Complex{Float64}[]
 #     for k1 = 1:ksize
 #         for k2 = 1:ksize
@@ -397,9 +397,9 @@ end
 #     return c
 # end
 
-# function delta_U(l,coeff, coeff0, kcut)
+# function delta_U(l,coeff, coeff0, K)
 
-#     global tnew = FullCorrelation(coeff, kcut)
+#     global tnew = FullCorrelation(coeff, K)
 #     diff = tref - tnew
 #     n = norm(diff)/norm(tref)
 
@@ -407,7 +407,7 @@ end
 
 #     for m = -l:l
 #         for mp = -l:l
-#             dtdU = derivative(coeff, coeff0, l,m,mp, kcut)
+#             dtdU = derivative(coeff, coeff0, l,m,mp, K)
 #             # dtdU = dtdU / dtdU:norm()
 
 #             delta = - 2.0 * transpose(diff) * dtdU
@@ -419,48 +419,48 @@ end
 # end
 
 # function dtest()
-#     kcut = 7
-#     lcut = 4
+#     K = 7
+#     L = 4
 #     list = Float64[]
-#     complexBasis(lcut, 16)
-#     global new = deleteTerms(deepcopy(rCoeff), kcut, lcut)
+#     complexBasis(L, 16)
+#     global new = deleteTerms(deepcopy(rCoeff), K, L)
 #     # global new = deepcopy(intensCoeff)
-#     global tref = FullCorrelation(intensCoeff, kcut)
-#     for k = 1:kcut
+#     global tref = FullCorrelation(intensCoeff, K)
+#     for k = 1:K
 #         setc(new[k], 0, 0, 0.0)
 #     end
 
 #     global orig = deepcopy(new)
 
 #     #Initialize with random unitary matrices
-#     for l = 4:2:lcut
+#     for l = 4:2:L
 #         # global rot = convert(Array{Complex{Float64}},eye(2*l+1)*random_rotation_step(2*l+1, pi/180.0 * 1.0))
 #         # println(rot)
 #         global rot = complex(random_rotation(2*l+1))
 #         # rot = complex(eye(2*l+1))
-#         for k = 1:kcut cvec_set(new[k],l, rot*cvec_get(orig[k],l)) end
+#         for k = 1:K cvec_set(new[k],l, rot*cvec_get(orig[k],l)) end
 #     end
-#     modCube = getCube(new, cubesize, kcut, lcut)
-#     origCube = getCube(orig, cubesize, kcut, lcut)
+#     modCube = getCube(new, cubesize, K, L)
+#     origCube = getCube(orig, cubesize, K, L)
 #     saveCube(modCube, cubesize, "mirror.mrc")
 #     saveCube(origCube, cubesize, "orig.mrc")
 #     a = reshape(modCube,cubesize^3)
 #     b = reshape(origCube,cubesize^3)
 #     println(dot(a,b) / (norm(a)*norm(b)))
-#     # rot = convert_real_to_complex_matrix(rot, lcut)
+#     # rot = convert_real_to_complex_matrix(rot, L)
 #     # new = real_to_comp(new)
 #     # global nrot = deepcopy(rot)
 #     # global bla
-#     # du, = delta_U(4, new, intensCoeff, kcut) #/norm(tref)
+#     # du, = delta_U(4, new, intensCoeff, K) #/norm(tref)
 #     # du = du / norm(du)
 #     # for i = 1:1e5
-#     #     du,n = delta_U(4,new,intensCoeff, kcut)
+#     #     du,n = delta_U(4,new,intensCoeff, K)
 #     #     du = du/ norm(du)
 #     #     # push!(list,n)
 
 #     #     nrot = ( real(nrot-10.0*n*du))
 #     #     println("n=$n det=",det(nrot)," eyediff = ", norm(eye(2*4+1)-nrot))
-#     #     for k = 1:kcut cvec_set(new[k],lcut, complex(nrot)*cvec_get(intensCoeff[k],lcut)) end
+#     #     for k = 1:K cvec_set(new[k],L, complex(nrot)*cvec_get(intensCoeff[k],L)) end
 #     #     # plot([1:length(list)], list)
 #     # end
 #     # plotCorrelationSlice(FullCorrelation(new,3),1,2,3,3)
@@ -468,9 +468,9 @@ end
 
 #----------------------------------------------------------------
 
-function integrateShell_2pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, kcut::Int64, iterations::Int64=1e7)
+function integrateShell_2pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, K::Int64, iterations::Int64=1e7)
     da = pi/N
-    c2 = zeros(N, kcut, kcut)
+    c2 = zeros(N, K, K)
     c2counts = copy(c2)
 
     rotations = Matrix{Float64}[random_rotation(3) for k = 1: 10000]
@@ -478,8 +478,8 @@ function integrateShell_2pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, k
     surf = getSurfaceVolume(intensity)
 
     for i = 1:iterations
-        k1 = Int64(rand(1:kcut))
-        k2 = Int64(rand(1:kcut))
+        k1 = Int64(rand(1:K))
+        k2 = Int64(rand(1:K))
 
         p1 = k1*dq*rotations[rand(1:length(rotations))]*[0,1,0]
         p2 = k2*dq*rotations[rand(1:length(rotations))]*[0,1,0]
@@ -494,9 +494,9 @@ function integrateShell_2pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, k
     return c2./c2counts
 end
 
-function integrateShell_3pc(intensity::SphericalHarmonicsVolume, N::Int64, kcut::Int64, iterations::Int64=1e7)
+function integrateShell_3pc(intensity::SphericalHarmonicsVolume, N::Int64, K::Int64, iterations::Int64=1e7)
     da = pi/N
-    c3 = zeros(N,N, kcut, kcut,kcut)
+    c3 = zeros(N,N, K, K,K)
     c3counts = copy(c3)
 
     rotations = Matrix{Float64}[random_rotation(3) for k = 1: 10000]
@@ -504,9 +504,9 @@ function integrateShell_3pc(intensity::SphericalHarmonicsVolume, N::Int64, kcut:
     surf = getSurfaceVolume(intensity)
 
     for i = 1:iterations
-        k1 = Int64(rand(1:kcut))
-        k2 = Int64(rand(1:kcut))
-        k3 = Int64(rand(1:kcut))
+        k1 = Int64(rand(1:K))
+        k2 = Int64(rand(1:K))
+        k3 = Int64(rand(1:K))
 
         a = rand()*2.0*pi
         b = rand()*2.0*pi
@@ -523,12 +523,12 @@ function integrateShell_3pc(intensity::SphericalHarmonicsVolume, N::Int64, kcut:
         @inbounds c3counts[ai,bi,k3,k2,k1] += 1.0
     end
     #Removing the cout normalization doesn't change anything
-    return Float64[c3counts[a,b,k3,k2,k1] > 0 ? c3[a,b,k3,k2,k1] /c3counts[a,b,k3,k2,k1] : 0.0  for a=1:N,b=1:N,k3=1:kcut,k2=1:kcut,k1=1:kcut]
+    return Float64[c3counts[a,b,k3,k2,k1] > 0 ? c3[a,b,k3,k2,k1] /c3counts[a,b,k3,k2,k1] : 0.0  for a=1:N,b=1:N,k3=1:K,k2=1:K,k1=1:K]
 end
 
-function integrateShell_2pc(intensity::SphericalHarmonicsVolume, N::Int64, kcut::Int64, iterations::Int64=1e7)
+function integrateShell_2pc(intensity::SphericalHarmonicsVolume, N::Int64, K::Int64, iterations::Int64=1e7)
     da = pi/N
-    c2 = zeros(N, kcut, kcut)
+    c2 = zeros(N, K, K)
     c2counts = copy(c2)
 
     rotations = Matrix{Float64}[random_rotation(3) for k = 1: 10000]
@@ -536,8 +536,8 @@ function integrateShell_2pc(intensity::SphericalHarmonicsVolume, N::Int64, kcut:
     surf = getSurfaceVolume(intensity)
 
     for i = 1:iterations
-        k1 = Int64(rand(1:kcut))
-        k2 = Int64(rand(1:kcut))
+        k1 = Int64(rand(1:K))
+        k2 = Int64(rand(1:K))
 
         a = rand()*2.0*pi
         rot = rotations[rand(1:length(rotations))]
@@ -552,20 +552,20 @@ function integrateShell_2pc(intensity::SphericalHarmonicsVolume, N::Int64, kcut:
     return c2./c2counts
 end
 
-function integrateShell_3pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, kcut::Int64, iterations::Int64=1e7)
+function integrateShell_3pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, K::Int64, iterations::Int64=1e7)
     rotations = Matrix{Float64}[random_rotation(3) for k = 1: 300]
     dq = dr(intensity)
     surf = getSurfaceVolume(intensity)
     da = pi/N
-    c3 = zeros(N,N, kcut, kcut, kcut)
+    c3 = zeros(N,N, K, K, K)
 #     c3counts = copy(c3)
 
     up = Float64[0.0, 1.0, 0.0]
 
-    for k1::Int64=1:1kcut
+    for k1::Int64=1:1K
         p1 = k1*dq*up
-        for k2::Int64=1:kcut
-            for k3::Int64=1:kcut
+        for k2::Int64=1:K
+            for k3::Int64=1:K
 
                 for ai::Int64 = 1:N
 #                     ai = Int64(mod(floor(Int64, a/da),N)+1)

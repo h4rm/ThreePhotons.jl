@@ -8,7 +8,7 @@ if ENV_name == "owl" || ENV_name == "gwdg"
     histogram_list = merge(histograms_finite, histograms_infinite)
 
     for img in keys(histogram_list)
-      run_determination("paper_res_vs_pictures_$(ppi)p_KMAX$(KMAX)_N$(N)_K$(K)_L$(L)_$(temperature_decay)/$img", histograms=histogram_list[img], initial_stepsize=pi/4.0, kcut=K, lcut=L, kmax=KMAX, rmax=float(KMAX), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01)
+      run_determination("paper_res_vs_pictures_$(ppi)p_KMAX$(KMAX)_N$(N)_K$(K)_L$(L)_$(temperature_decay)/$img", histograms=histogram_list[img], initial_stepsize=pi/4.0, K=K, L=L, KMAX=KMAX, rmax=float(KMAX), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01)
     end
   end
 
@@ -22,7 +22,7 @@ if ENV_name == "owl" || ENV_name == "gwdg"
     "P$(img)" => histogram_name("parallel/data_generation/SH_", ppi, N, KMAX, float(KMAX), img, "") for img in images)
     for img in keys(histogram_list)
       for L=2:2:LMAX
-        run_determination("paper_res_vs_L_$(ppi)p_KMAX$(KMAX)_N$(N)_K$(K)_$(temperature_decay)/$(img)_L$(L)", histograms=histogram_list[img], initial_stepsize=pi/4.0, kcut=K, lcut=L, kmax=KMAX, rmax=float(KMAX), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01)
+        run_determination("paper_res_vs_L_$(ppi)p_KMAX$(KMAX)_N$(N)_K$(K)_$(temperature_decay)/$(img)_L$(L)", histograms=histogram_list[img], initial_stepsize=pi/4.0, K=K, L=L, KMAX=KMAX, rmax=float(KMAX), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_PATH"])/data/structures/crambin.pdb")
       end
     end
   end
@@ -33,7 +33,7 @@ if ENV_name == "owl" || ENV_name == "gwdg"
     for sigma in sigmas
       for gamma in gammas
         histo_name = histogram_name("parallel/data_generation/SH_", ppi, N, KMAX, float(KMAX), 3276800000, "", gamma, sigma)
-        run_determination("paper_noise_$(ppi)p_KMAX$(KMAX)_N$(N)_K$(K)_L$(L)_$(temperature_decay)/G$(gamma)_S$(sigma)", histograms=histo_name, initial_stepsize=pi/4.0, kcut=K, lcut=L, kmax=KMAX, rmax=float(KMAX), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=1, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=8, stepsizefactor=1.01, run_denoise=true, sigma=sigma, force_repostprocess=true)
+        run_determination("paper_noise_$(ppi)p_KMAX$(KMAX)_N$(N)_K$(K)_L$(L)_$(temperature_decay)/G$(gamma)_S$(sigma)", histograms=histo_name, initial_stepsize=pi/4.0, K=K, L=L, KMAX=KMAX, rmax=float(KMAX), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=1, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=8, stepsizefactor=1.01, run_denoise=true, sigma=sigma, force_repostprocess=true, reference_pdb_path="$(ENV["DETERMINATION_PATH"])/data/structures/crambin.pdb")
       end
     end
   end

@@ -3,6 +3,6 @@ using ThreePhotons
 
 #Postprocess runs
 
-params = Dict("lcut"=>L, "kcut" =>K, "N"=>N, "lmax"=>LMAX, "kmax"=>KMAX, "rmax"=>float(KMAX))
+params = Dict("L"=>L, "K" =>K, "N"=>N, "LMAX"=>LMAX, "KMAX"=>KMAX, "rmax"=>float(KMAX))
 state = Dict{Any,Any}("intensity"=>deleteTerms(intensity, K, L))
-postprocess_run(params, state, false)
+postprocess_run(params, state, "../data/structures/crambin.pdb", false)

@@ -109,33 +109,33 @@ function plot_scattering_image(intensity::CubeVolume; number_incident_photons::I
 end
 
 function compare_c2_grid(a::C2, b::C2)
-    _,_,kcut = Base.size(a)
+    _,_,K = Base.size(a)
     ac = complete_two_photon_correlation(a)
     bc = complete_two_photon_correlation(b)
 
-    ratios = Float64[100.0*mean(ac[:,k2,k1]-bc[:,k2,k1]).^2/sumabs(ac[:,k2,k1]) for k1 = 1:kcut, k2=1:kcut]
-    imshow(ratios, interpolation="none", extent=[1,kcut,kcut,1])
+    ratios = Float64[100.0*mean(ac[:,k2,k1]-bc[:,k2,k1]).^2/sumabs(ac[:,k2,k1]) for k1 = 1:K, k2=1:K]
+    imshow(ratios, interpolation="none", extent=[1,K,K,1])
     title("Average Deviation [%]")
     colorbar()
     println("Difference: $(100.0*sumabs((ac-bc).^2)/sumabs(ac))")
 end
 
 """Compares a list of histograms visually"""
-function compare_histogram_with_theory(histograms::Dict=Dict(), N::Int64=32, kcut::Int64=16, normalization::Bool=false, ctype::String="c3", volumes::Dict=Dict(), lcut::Int64=10)
+function compare_histogram_with_theory(histograms::Dict=Dict(), N::Int64=32, K::Int64=16, normalization::Bool=false, ctype::String="c3", volumes::Dict=Dict(), L::Int64=10)
     histolist_c3 = Dict()
     histolist_c2 = Dict()
     for (name,file) in histograms
-        _,c2,_,c3 = loadHistograms(kcut,file)
+        _,c2,_,c3 = loadHistograms(K,file)
         histolist_c3[name] = c3
         histolist_c2[name] = c2
     end
-    basis = complexBasis(lcut,N,25)
+    basis = complexBasis(L,N,25)
 
     if ctype=="c3"
-        c3list = Dict( name=>FullCorrelation_parallized(volume, basis, kcut, true, true) for (name,volume) in volumes)
-        plot_random_3photon_slices(merge(histolist_c3,c3list); list=[random_triplet(kcut) for i = 1:20], normalization=normalization)
+        c3list = Dict( name=>FullCorrelation_parallized(volume, basis, K, true, true) for (name,volume) in volumes)
+        plot_random_3photon_slices(merge(histolist_c3,c3list); list=[random_triplet(K) for i = 1:20], normalization=normalization)
     else
-        c2list = Dict( name=>twoPhotons(volume, basis, kcut, true, true) for (name,volume) in volumes)
-        plot_random_2photon_slices(merge(histolist_c2,c2list), normalization=normalization, list=[random_doublet(kcut) for i = 1:20])
+        c2list = Dict( name=>twoPhotons(volume, basis, K, true, true) for (name,volume) in volumes)
+        plot_random_2photon_slices(merge(histolist_c2,c2list), normalization=normalization, list=[random_doublet(K) for i = 1:20])
     end
 end
