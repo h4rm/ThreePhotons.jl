@@ -1,6 +1,6 @@
 A Julia package for the structure determination from single molecule X-ray scattering experiments with down to only three photons. This package has not been officially released in the Julia Repository.
 
-This is not meant for 'out-of-box' usage (yet). It is a proof-of-principle demonstration of the method described in the paper "Structure determination from single molecule X-ray scattering with three photons per image".
+This is not meant for 'out-of-box' usage (yet). It is a proof-of-principle demonstration of the method described in the paper "*Structure determination from single molecule X-ray scattering with three photons per image*".
 
 Installation
 =============
@@ -36,7 +36,6 @@ Starting from a fresh Julia installation, you may run:
   Pkg.add("CUDArt")
   Pkg.add("CUBLAS")
   Pkg.add("Distributions")
-  Pkg.add("ProgressMeter")
   Pkg.add("Optim")
 ```
 
@@ -134,20 +133,19 @@ Given a histogrammed two- and three-photon correlation, the structure can be ret
 Dependencies
 ==============
 
-Julia (5.1)
+[Julia (5.1)](https://julialang.org/downloads/oldreleases.html)
 
 Libraries
 ---------
 
-* FFTW 3.3 (for SH calculations in s2kit)
-* Gnu Science Library (GSL) (for spherical harmonics basis functions (Ylm) and Wigner-3j symbols)
+* [FFTW 3.3](http://www.fftw.org/) (for SH calculations in s2kit)
+* [Gnu Science Library (GSL)](https://www.gnu.org/software/gsl/) (for spherical harmonics basis functions (Ylm) and Wigner-3j symbols)
 
 Julia Packages
 ------
-* CUDArt.jl (CUDA 8.0)
-* CUBLAS.jl
-* Distributions.jl
-* ProgressMeter.jl
-* Optim.jl
+* [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) (CUDA 8.0)
+* [CUBLAS.jl](https://github.com/JuliaGPU/CUBLAS.jl)
+* [Distributions.jl](https://github.com/JuliaStats/Distributions.jl)
+* [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)
 
 [Copyright (c) 2017 Benjamin von Ardenne](https://github.com/h4rm/ThreePhotons.jl/blob/master/LICENSE.md)

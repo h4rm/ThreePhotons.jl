@@ -1,11 +1,9 @@
 module ThreePhotons
 
-using ProgressMeter
 using CUDArt
 using CUBLAS
 using Distributions
 using Optim
-using ProgressMeter
 
 export
 	#structures
