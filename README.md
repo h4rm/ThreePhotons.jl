@@ -44,6 +44,12 @@ to initialize Julia with all required packages.
 Package Functionality
 ======================
 
+The package implements three major aspects of the structure determination method:
+
+* 3D description of electron densities, Fourier densities and intensities
+* synthetic image data generation and subsequent histograming of the two- and three-photon correlation
+* structure determination runs starting from correlation histograms
+
 Description of 3D Structures with Spherical Harmonics Basis
 -----------------------------------------------------------
 This package provides functions to describe 3D structures on a cubic grid or on a spherical grid, each shell expanded in spherical harmonics. PDB structures can be loaded directly.
