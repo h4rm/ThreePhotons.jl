@@ -1,6 +1,6 @@
 A Julia package for the structure determination from single molecule X-ray scattering experiments with down to only three photons. This package has not been officially released in the Julia Repository.
 
-This is not meant for 'out-of-box' usage. It's a proof-of-principle demonstration of the method described in the paper: <>.
+This is not meant for 'out-of-box' usage (yet). It's a proof-of-principle demonstration of the method described in the paper: <>.
 
 First, clone the repository:
 
@@ -16,7 +16,7 @@ Then make sure the environment variables are set correctly:
   #Make sure the s2kit is found
   export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/path/to/ThreePhotons.jl/src/sh
   #Tell julia where the structure determination runs
-  export DETERMINATION_PATH=/path/to/ThreePhotons.jl/
+  export THREEPHOTONS_PATH=/path/to/ThreePhotons.jl/
 ```
 
 Next, compile s2kit and the s2kit interface (part of this framework):
@@ -102,7 +102,7 @@ Given a histogrammed two- and three-photon correlation, the structure can be ret
   L::Int64          = 18 #Maximum expansion order
   K::Int64          = 26 #Number of shells used for structure determination
   ppi::Int64        = 10 #Photons per image used for the histogram
-  RMAX              = float(KMAX)#Maximum radius of the reference structures
+  rmax              = float(KMAX)#Maximum radius of the reference structures
   name              = histogram_name("", ppi, N, KMAX, float(KMAX), img, "") for img in image_list) #histogram file name
 
   run_determination(
@@ -110,10 +110,10 @@ Given a histogrammed two- and three-photon correlation, the structure can be ret
     histograms              = name, #Path to the histogram file
 
     #Expansion parameters (see above)
-    K                    = K,
-    L                    = L,
+    K                       = K,
+    L                       = L,
     KMAX                    = KMAX,
-    rmax                    = RMAX,
+    rmax                    = rmax,
     N                       = N,
 
     #Monte Carlo simulated annealing parameters

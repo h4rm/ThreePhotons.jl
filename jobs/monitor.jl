@@ -111,7 +111,7 @@ function resubmit_unfinished_jobs(root_dir::String = "$ENV_root")
 end
 
 function recalculate_sc(root_dir::String, K::Int64)
-	densityCube,fourierCube,intensityCube = createCubicStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 2*K+1, float(K))
+	densityCube,fourierCube,intensityCube = createCubicStructure("$(ENV["THREEPHOTONS_PATH"])/data/structures/crambin.pdb", 2*K+1, float(K))
 
 	for (root, dirs, files) in Compat.walkdir(root_dir)
 

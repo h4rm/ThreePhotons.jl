@@ -5,7 +5,7 @@ global CUDA_enabled = false
 function CUDA_init()
   CUDArt.init(0)
   CUDArt.device(0)
-  global md = CuModule("$(ENV["DETERMINATION_PATH"])/src/cuda_kernel.ptx", false)
+  global md = CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
   global calculate_coefficient_matrix_cuda = CuFunction(md, "calculate_coefficient_matrix")
   global calculate_coefficient_matrix_optimized_cuda = CuFunction(md, "calculate_coefficient_matrix_optimized")
   global CUDA_enabled = true

@@ -53,7 +53,7 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 
   #Or start a completely new run
   else
-    params,state = rotation_search(Dict( "reference_pdb_path"=>$(reference_pdb_path), "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(ENV["DETERMINATION_PATH"])/$(histograms)/histo.dat", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax))
+    params,state = rotation_search(Dict( "reference_pdb_path"=>$(reference_pdb_path), "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(ENV["THREEPHOTONS_PATH"])/$(histograms)/histo.dat", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax))
     if $postprocess
       postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
     end
@@ -86,10 +86,10 @@ function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::I
   volume = 0.0
 
   if $(use_cube)
-    # _,_,volume = createCubicStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 4*$K+1, 2.0*$rmax)
-    volume = loadCube("$(ENV["DETERMINATION_PATH"])/expdata/intensityCube_high.mrc")
+    # _,_,volume = createCubicStructure("$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", 4*$K+1, 2.0*$rmax)
+    volume = loadCube("$(ENV["THREEPHOTONS_PATH"])/expdata/intensityCube_high.mrc")
   else
-    _,_,intensity = createSphericalHarmonicsStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 35, $K, $rmax)
+    _,_,intensity = createSphericalHarmonicsStructure("$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", 35, $K, $rmax)
     volume = getSurfaceVolume(intensity)
     volume.radial_interp = false
   end
@@ -114,8 +114,8 @@ function run_optimal(K2::Int64, K3::Int64, L3::Int64)
 
   K3 = $K3
   L3 = $L3
-  _,_,intensity = createSphericalHarmonicsStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 25, K2, rmax)
-  densityCube,fourierCube,intensityCube = createCubicStructure("$(ENV["DETERMINATION_PATH"])/structures/crambin.pdb", 2*K2+1, rmax)
+  _,_,intensity = createSphericalHarmonicsStructure("$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", 25, K2, rmax)
+  densityCube,fourierCube,intensityCube = createCubicStructure("$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", 2*K2+1, rmax)
   calculate_optimal(intensity,densityCube,fourierCube,intensityCube, K3, L3, ".", 16)
 
   #Now check the same with retrieving the structure
