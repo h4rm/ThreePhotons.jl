@@ -150,5 +150,4 @@ Julia Packages
 * ProgressMeter.jl
 * Optim.jl
 
-##### Author: Benjamin von Ardenne
-##### Copyright 2017
+[Copyright (c) 2017 Benjamin von Ardenne](https://github.com/h4rm/ThreePhotons.jl/blob/master/LICENSE.md)
