@@ -86,7 +86,8 @@ This package covers the generation of synthetic scattering images (with and with
     qcut_ratio        = 1.0, #Fraction of maximum wave number
     K                 = 38, #total number of shells
     rmax              = float(38), #maximum radius in real space
-    histogram_method  = "histogramCorrelationsInPicture_alltoall"
+    histogram_method  = "histogramCorrelationsInPicture_alltoall",
+    structure_pdb_path= "data/structures/crambin.pdb"
   )
 ```
 

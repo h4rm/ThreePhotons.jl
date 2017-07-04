@@ -71,7 +71,7 @@ function histogram_name(prefix::String, ppi::Int64, N::Int64, KMAX::Int64, rmax:
 end
 
 """Starts a cluster job for synthetic correlation generation"""
-function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K::Integer=35, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall")
+function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K::Integer=35, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="")
   name = ""
   if max_triplets > 0
     name = "$(prefix)_N$(N)_K$(K)_R$(rmax)_T$(max_triplets)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
@@ -86,10 +86,10 @@ function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::I
   volume = 0.0
 
   if $(use_cube)
-    # _,_,volume = createCubicStructure("$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", 4*$K+1, 2.0*$rmax)
+    # _,_,volume = createCubicStructure("$(structure_pdb_path)", 4*$K+1, 2.0*$rmax)
     volume = loadCube("$(ENV["THREEPHOTONS_PATH"])/expdata/intensityCube_high.mrc")
   else
-    _,_,intensity = createSphericalHarmonicsStructure("$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", 35, $K, $rmax)
+    _,_,intensity = createSphericalHarmonicsStructure("$(structure_pdb_path)", 35, $K, $rmax)
     volume = getSurfaceVolume(intensity)
     volume.radial_interp = false
   end
