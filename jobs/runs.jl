@@ -134,3 +134,24 @@ function run_optimal(K2::Int64, K3::Int64, L3::Int64)
   """
   launch_job(name, 8, false, julia_script, 1)
 end
+
+"""Distributes the calculation of correlations among many jobs"""
+#"../../../data/exp_data/Coliphage_PR772/amo86615_194_PR772_single.h5"
+function run_calculate_correlation_from_images(particle_name::string, images_path::String, number_images::Int64, K::Int64, N::Int64, number_runs::Int64; Ncores::Int64=8)
+  name = "$ENV_root/exp_data/$(particle_name)/"
+  for n in 1:number_runs
+    julia_script = """
+    using ThreePhotons
+    using HDF5
+
+    K = $K
+    N = $N
+
+    file = h5open("$(images_path)", "r")
+    photonConverter = read(file["photonConverter"])
+    resized_image_list = [ Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K, 2*K)).data for i=$((n-1)*number_images+1):$(n*number_images)]
+    calculate_correlations_in_image(resized_image_list, K, N)
+    """
+    launch_job("$name/$n", Ncores, false, julia_script, 1)
+  end
+end

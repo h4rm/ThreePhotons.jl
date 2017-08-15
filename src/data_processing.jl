@@ -296,7 +296,9 @@ function average_intensities(root::String, output_path::String, densityCube::Cub
 
     average_intensity = getSphericalHarmonicsVolume(reduce(+, map(getSurfaceVolume, intensity_list)))
     average_density = reduce(+, density_list)
-    println("Averaged density has resoution of: ", calculate_maximum_resolution(FSC(average_density, fourierCube), dr(fourierCube)))
+    average_density_res = calculate_maximum_resolution(FSC(average_density, fourierCube), dr(fourierCube))
+
+    println("Averaged density has resoution of: $(average_density_res)")
     saveCube(average_intensity, "$(output_path)/intensity.mrc")
     saveCube(average_density, "$(output_path)/averaged_density.mrc")
 
@@ -361,7 +363,7 @@ function load_sc_vs_triplets(dict::Dict, densityCube::CubeVolume, fourierCube::C
 
     opt = get_optimal(parameter_list, K, L)
     dict[K][L]["optimal"] = merge(
-    Dict("shortlabel"=>L"\mathrm{optimal}", "label"=>L"\mathrm{optimal}", "linestyle"=>"--", "color"=>"grey"),
+    Dict("shortlabel"=>"optimal", "label"=>"optimal", "linestyle"=>"--", "color"=>"grey"),
     analyse_ensemble([opt["density"]], [opt["intensity"]], densityCube, fourierCube, intensityCube)
     )
 end

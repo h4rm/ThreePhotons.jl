@@ -210,7 +210,10 @@ export
 	random_doublet,
 	random_triplet,
 	serializeToFile,
-	deserializeFromFile
+	deserializeFromFile,
+
+	#experimental datagen
+	calculate_correlations_in_image
 
 import Base.real, Base.abs, Base.sumabs, Base.+, Base.-, Base.*, Base./, Base.length
 
@@ -224,7 +227,7 @@ include("datagen.jl")
 include("phases.jl")
 include("data_processing.jl")
 include("determination.jl")
-
+include("exp_data.jl")
 """
 A Julia package for the structure determination from single molecule X-ray scattering experiments at very low photon counts.
 """
