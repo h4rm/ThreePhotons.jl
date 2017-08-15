@@ -136,10 +136,9 @@ function run_optimal(K2::Int64, K3::Int64, L3::Int64)
 end
 
 """Distributes the calculation of correlations among many jobs"""
-#"$(ENV["THREEPHOTONS_PATH"])/../data/exp_data/Coliphage_PR772/amo86615_194_PR772_single.h5"
-#run_calculate_correlation_from_images("coliphage", "$(ENV["THREEPHOTONS_PATH"])/../data/exp_data/Coliphage_PR772/amo86615_194_PR772_single.h5", 1, 38, 32, 1)
+#run_calculate_correlation_from_images("coliphage", "$(ENV["DETERMINATION_DATA"])/exp_data/Coliphage_PR772/amo86615_194_PR772_single.h5", 1, 38, 32, 1)
 function run_calculate_correlation_from_images(particle_name::string, images_path::String, number_images::Int64, K::Int64, N::Int64, number_runs::Int64; Ncores::Int64=8)
-  name = "$ENV_root/exp_data/$(particle_name)/"
+  name = "exp_data/$(particle_name)/"
   for n in 1:number_runs
     julia_script = """
     using ThreePhotons
