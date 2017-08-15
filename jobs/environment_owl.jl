@@ -11,13 +11,13 @@ function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; h
   #\$ -e $dir/terminal-err
   #\$ -o $dir/terminal-out
   #\$ -l cm=$(architecture)
-  #\$ -N $(jobname(dir))
+  #\$ -N $(jobname(name))
   #\$ -M bardenn@gwdg.de
   #\$ -m n
   #\$ -l h_rt=$(hours):00:00
   #\$ -wd $dir
   #\$ -V
-  #\$ -hold_jid $(jobname(dir))
+  #\$ -hold_jid $(jobname(name))
   $(gpu ? "#\$ -l gpu=1" : "")
   """
 end
