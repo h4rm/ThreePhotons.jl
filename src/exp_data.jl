@@ -27,7 +27,8 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
     c2_full = zeros(Float64, N, ksize, ksize)
     c3_full = zeros(Float64, N, N, ksize, ksize, ksize)
     #@showprogress
-    @time for image in image_list
+    @time for (i,image) in enumerate(image_list)
+        println("Processing $(i)th image.")
         (sx,sy) = Base.size(image)
         (cx,cy) = (round(Int64, sx/2),round(Int64, sx/2))
         range = 1:sx
@@ -76,6 +77,5 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
         c2_full += c2_part
         c3_full += c3_part
     end
-    # sdata(c2_full),sdata(c3_full)
-    serializeToFile(filename, ( Dict("num_pictures"=>0, "num_incident_photons"=>0, "qcut"=>1.0, "K"=>ksize, "N"=>N, "dq"=>0.1), c2_full, c3_full))
+    serializeToFile(filename, ( Dict("num_pictures"=>0, "num_incident_photons"=>0, "qcut"=>1.0, "K"=>ksize, "N"=>N, "dq"=>0.1), sdata(c2_full),sdata(c3_full)))
 end
