@@ -140,8 +140,8 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
   name = "exp_data/$(particle_name)"
   for n in 1:number_runs
     julia_script = """
-    using ThreePhotons
     using HDF5
+    using ThreePhotons
     using Images
 
     K = $K
