@@ -8,14 +8,14 @@ function jobengine_head(dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48
   #\$ -S /bin/bash
   $(Ncores > 1 ? "#\$ -pe openmp_fast $Ncores" : "")
   #\$ -q *
-  #\$ -e $(DETERMINATION_DATA)/$(ENV_root)/$dir/terminal-err
-  #\$ -o $(DETERMINATION_DATA)/$(ENV_root)/$dir/terminal-out
+  #\$ -e $dir/terminal-err
+  #\$ -o $dir/terminal-out
   #\$ -l cm=$(architecture)
   #\$ -N $(jobname(dir))
   #\$ -M bardenn@gwdg.de
   #\$ -m n
   #\$ -l h_rt=$(hours):00:00
-  #\$ -wd $(DETERMINATION_DATA)/$(ENV_root)/$dir
+  #\$ -wd $dir
   #\$ -V
   #\$ -hold_jid $(jobname(dir))
   $(gpu ? "#\$ -l gpu=1" : "")
@@ -25,8 +25,8 @@ end
 """Launches the script via qsub, in case dir doesnt exist, create it"""
 function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::String, successive_jobs::Integer=1; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake")
   githead = check_git_status()
-  head = jobengine_head(dir, Ncores, gpu; hours=hours, architecture=architecture)
-  full_dir = "$(DETERMINATION_DATA)/$(ENV_root)/$dir"
+  full_dir = "$(ENV["DETERMINATION_DATA"])/$(ENV_root)/$dir"
+  head = jobengine_head(full_dir, Ncores, gpu; hours=hours, architecture=architecture)
 
   run(`mkdir -p $(full_dir)`)
   open("$(full_dir)/job.sh", "w+") do file
