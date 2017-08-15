@@ -15,7 +15,7 @@ end
 include("../src/utilities.jl")
 
 function jobname(directory, number::Int64=0)
-  main = replace(main, "/", "_")
+  main = replace(directory, "/", "_")
   suffix = number > 0 ? "_$(number)" : ""
   return "$main$suffix"
 end
