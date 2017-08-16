@@ -50,9 +50,6 @@ end
 
 """Calculates the two- and three-photon correlation from dense pixelized images"""
 function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64=32, filename::String="correlations.dat")
-    c2_full = zeros(Float64, N, K2, K2)
-    c3_full = zeros(Float64, N, N, K3, K3, K3)
-    if length(image_list) == 0 return (c2_full, c3_full) end
 
     (sx,sy) = Base.size(image_list[1])
     (cx,cy) = (round(Int64, sx/2),round(Int64, sx/2))
@@ -62,15 +59,12 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
     distances,angles = precompute_distances_and_angles(sx, N)
 
-    @time for (i,image) in enumerate(image_list)
-        println("Processing $(i)th image.")
-
-        c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2])) for x1 = range
-
-            c2_local = zeros(Float64, N, K2, K2)
-            c3_local = zeros(Float64, N, N, K3, K3, K3)
-
-            println("X1: $x1")
+    c2_full,c3_full = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2])) for i=1:length(image_list)
+        image = image_list[i]
+        println("Processing image #$(i)")
+        c2_local = zeros(Float64, N, K2, K2)
+        c3_local = zeros(Float64, N, N, K3, K3, K3)
+        for x1 = range
             for y1 = range
                 @inbounds k1 = distances[x1,y1]
 
@@ -96,12 +90,9 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                     end
                 end
             end
-            flush(STDOUT)
-            (c2_local, c3_local)
         end
-
-        c2_full += c2_part
-        c3_full += c3_part
+        flush(STDOUT)
+        (c2_local, c3_local)
     end
     serializeToFile(filename, ( Dict("num_pictures"=>0, "num_incident_photons"=>0, "qcut"=>1.0, "K2"=>K2, "K3"=>K3, "N"=>N, "dq"=>0.1), sdata(c2_full),sdata(c3_full)))
 end
