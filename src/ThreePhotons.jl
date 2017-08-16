@@ -210,10 +210,7 @@ export
 	random_doublet,
 	random_triplet,
 	serializeToFile,
-	deserializeFromFile,
-
-	#experimental datagen
-	calculate_correlations_in_image
+	deserializeFromFile
 
 import Base.real, Base.abs, Base.sumabs, Base.+, Base.-, Base.*, Base./, Base.length
 

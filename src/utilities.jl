@@ -27,11 +27,16 @@ end
 
 "Angle between two vectors ranging from 0 to 2.0*pi"
 function angle_between(p1::Vector{Float64}, p2::Vector{Float64})
-  angle = acos( clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0))
-  if cross(p1, p2)[3] > 0
-    angle =  2.0*pi - angle
+  val = clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0)
+  if abs(val) > 0.0
+      angle = acos(val)
+      if cross(p1, p2)[3] > 0
+        angle =  2.0*pi - angle
+      end
+      return angle
+  else
+      return 0.0
   end
-  return angle
 end
 
 "Angle between two vectors ranging from 0 to pi"
