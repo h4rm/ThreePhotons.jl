@@ -38,7 +38,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
             c2_local = zeros(Float64, N, ksize, ksize)
             c3_local = zeros(Float64, N, N, ksize, ksize, ksize)
-            myid() == 2 ? println("X1: $x1") : true
+            println("X1: $x1")
             for y1 = range
                 for x2 = range
                     for y2 = range
@@ -52,7 +52,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
                             alpha = mod(angle_between(p1,p2),pi)
                             ai = clamp(floor(Int64, alpha/da) + 1, 1, N)
-                            @fastmath c2_local[ai,k1,k2] += real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
+                            @inbounds c2_local[ai,k1,k2] += real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
 
                             for x3 = range
                                 for y3 = range
@@ -62,7 +62,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
                                         beta = mod(angle_between(p1,p3),pi)
                                         bi = clamp(floor(Int64, beta/da) + 1, 1, N)
-                                        @fastmath c3_local[ai,bi,k1,k2,k3] += real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
+                                        @inbounds c3_local[ai,bi,k1,k2,k3] += real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
 
                                     end
                                 end
@@ -71,6 +71,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                     end
                 end
             end
+            flush(STDOUT)
             (c2_local, c3_local)
         end
 
