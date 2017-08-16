@@ -85,7 +85,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                             for x3 = range
                                 for y3 = range
                                     @inbounds k3 = distances[x3,y3]
-                                    
+
                                     if k2 >= k3 && k3 != 0 && k3 <= cx
                                         bi = angles[x1,y1,x3,y3]
                                         @inbounds c3_local[ai,bi,k1,k2,k3] += real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
