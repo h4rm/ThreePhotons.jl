@@ -2,6 +2,9 @@ using CUDArt
 using CUBLAS
 global CUDA_enabled = false
 
+#cuda
+export BasisTypeCuda, complexBasis_CUDA, CUDA_init
+
 function CUDA_init()
   CUDArt.init(0)
   CUDArt.device(0)

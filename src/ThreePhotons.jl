@@ -1,7 +1,12 @@
 module ThreePhotons
 
-using CUDArt
-using CUBLAS
+try
+	using CUDArt
+	using CUBLAS
+catch
+ 	println("ThreePhotons.jl loaded without CUDA support (failed loading)!")
+end
+
 using Distributions
 using Optim
 
@@ -127,11 +132,6 @@ export
 	complexBasis,
 	FullCorrelation_parallized,
 	energy,
-
-	#cuda
-	BasisTypeCuda,
-	complexBasis_CUDA,
-	CUDA_init,
 
 	#structure determination
 	randomStartStructure,
