@@ -314,6 +314,9 @@ function loadHistograms(K::Int64, file="expdata/correlations_N32_K25_P2048000.da
     params, c2_full, c3_full = deserializeFromFile(file)
     println("Loaded $(countDoublets(c2_full)) doublets and $(countTriplets(c3_full)) triplets from $file generated from $(params["num_pictures"]) pictures.")
 
+    c2_full = max(c2_full, 1e-30)
+    c3_full = max(c3_full, 1e-30)
+
     #Cut down to designated K
     c2 = c2_full[:,1:K,1:K]
     c2 = c2 / sumabs(c2)
