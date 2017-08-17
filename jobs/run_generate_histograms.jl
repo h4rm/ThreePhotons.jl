@@ -42,7 +42,7 @@ if ENV_name == "gwdg" || ENV_name == "owl"
     function generate_single_multiparticle_histogram(number_images::Int64, setsize::Int64, number_particles::Int64=2, ppi::Int64=10; K::Int64=38, N::Int64=32)
         numbersets = ceil(Int64, number_images / setsize)
         for i = 1:numbersets
-            generate_histograms(; max_pictures = setsize, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(setsize/8), successive_jobs=1, prefix="parts/multi_$(number_particles)_SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/data/structures/crambin.pdb", number_particles=number_particles)
+            generate_histograms(; max_pictures = setsize, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(setsize/8), successive_jobs=1, prefix="parts/multi_$(number_particles)_SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", number_particles=number_particles)
         end
     end
 
