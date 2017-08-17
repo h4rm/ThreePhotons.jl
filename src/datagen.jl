@@ -248,7 +248,7 @@ Generates pictures and histograms the triplets in these pictures without reusing
 @params gamma:
 @params sigma:
 """
-function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N::Int64=32, max_triplets::Int64=Int64(1e10), max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall)
+function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N::Int64=32, max_triplets::Int64=Int64(1e10), max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1)
 
     #cutoff parameters
     dq = qcut/K
@@ -277,13 +277,19 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
         c3 = zeros(Float64,N,N,K,K,K)
 
         for j=1:batchsize
-            picture,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance)
+            photon_list = Vector{Float64}[]
 
-            if noise.gamma > 0.0
-                picture_noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot)
-                picture = Vector{Float64}[picture; picture_noise]
+            for n=1:number_particles
+                single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance)
+
+                if noise.gamma > 0.0
+                    noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot)
+                    append!(single_molecule, noise)
+                end
+                append!(photon_list, single_molecule)
             end
-            histogramMethod(picture, c2, c3, dq, N, K)
+
+            histogramMethod(photon_list, c2, c3, dq, N, K)
         end
         (c2, c3)
     end
