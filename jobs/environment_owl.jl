@@ -2,6 +2,10 @@ ENV_name = "owl"
 ENV_root = "output_owl"
 println("Environment: OWL")
 
+function environment_path(local_path::String)
+    return "$(ENV["DETERMINATION_DATA"])/$(ENV_root)/$(local_path)"
+end
+
 function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="")
   return """
   #!/bin/bash
@@ -24,10 +28,12 @@ function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; h
 end
 
 """Launches the script via qsub, in case dir doesnt exist, create it"""
-function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::String, successive_jobs::Integer=1; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="")
+function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::String, successive_jobs::Integer=1; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="", fresh::Bool=false)
   githead = check_git_status()
-  full_dir = "$(ENV["DETERMINATION_DATA"])/$(ENV_root)/$dir"
+  full_dir = environment_path(dir)
   head = jobengine_head(dir, full_dir, Ncores, gpu; hours=hours, architecture=architecture, memory=memory)
+
+  if fresh run(`rm -rf $(full_dir)`) end
 
   run(`mkdir -p $(full_dir)`)
   open("$(full_dir)/job.sh", "w+") do file

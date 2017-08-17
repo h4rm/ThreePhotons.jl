@@ -59,9 +59,8 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
   end
   """
 
-  if fresh run(`rm -rf $ENV_root/$dir`) end
   for n in range
-    launch_job("$ENV_root/$dir/$n", Ncores, gpu, julia_script, successive_jobs; architecture=architecture, hours=hours)
+    launch_job("$dir/$n", Ncores, gpu, julia_script, successive_jobs; architecture=architecture, hours=hours, fresh=fresh)
   end
 end
 
@@ -96,12 +95,12 @@ function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::I
   generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K=$K, N=$N, max_triplets=$max_triplets, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method)
   """
 
-  launch_job("$ENV_root/data_generation/$name", Ncores, false, julia_script, successive_jobs)
+  launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs)
 end
 
 """Calculates the resolution of corresponding (dq,K,L) combination"""
 function run_optimal(K2::Int64, K3::Int64, L3::Int64)
-  name = "$ENV_root/optimal/optimal_K2_$(K2)_K3_$(K3)_L3_$(L3)"
+  name = "optimal/optimal_K2_$(K2)_K3_$(K3)_L3_$(L3)"
 
   julia_script = """
   using ThreePhotons

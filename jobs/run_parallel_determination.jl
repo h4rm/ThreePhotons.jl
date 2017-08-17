@@ -41,3 +41,6 @@ if ENV_name == "owl" || ENV_name == "gwdg"
   run_noise_set([0.5, 0.75, 1.125, 2.5], collect(0.1:0.1:0.5), 38, 32, 18, 26, 0.99998, 10)
 
 end
+
+#For coliphage
+# run_determination("exp_data/coliphage_determination", histograms=environment_path("exp_data/coliphage/correlations.dat"), initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1000, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01)
