@@ -205,7 +205,8 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
         println("!!! Init of CUDA failed")
         println("!!! Fallback to CPU-backend.")
     end
-
+    flush(STDOUT)
+    
     #begin optimization with given optimizer
     params["optimizer"](out, params, state, c3ref)
 
@@ -421,6 +422,7 @@ function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
             #evaluate step
             @time evaluate_step(out, params, state, d_basis, c3ref)
 
+            #perform regular action such as logging
             regular_action(out, state, params)
         end
     end

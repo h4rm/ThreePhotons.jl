@@ -3,7 +3,7 @@ ENV_root = "output"
 println("Environment: Local")
 
 """Launches the script via qsub, in case dir doesnt exist, create it"""
-function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::String, successive_jobs::Integer=1,  hours::Int64=48)
+function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::String, successive_jobs::Integer=1; architecture::String="", hours::Int64=48, fresh::Bool=false, memory::String="")
   full_dir = "$(ENV["DETERMINATION_DATA"])/$(ENV_root)/$dir"
   run(`mkdir -p $(full_dir)`)
   open("$(full_dir)/job.jl", "w+") do file
