@@ -124,7 +124,7 @@ function transform(surface::Vector{Complex{Float64}}, LMAX::Int64)
     rcoeff = zeros(Float64, num_coeff(LMAX))
     icoeff = zeros(Float64, num_coeff(LMAX))
 
-    ccall( (:transform_sample, "sh/libsh.so"), Ptr{Void},
+    ccall( (:transform_sample, "libsh.so"), Ptr{Void},
     (Ptr{Float64},Ptr{Float64},Ptr{Float64},Ptr{Float64}, Int32, Int32),
     real(surface), imag(surface), rcoeff, icoeff, LMAX, 1)
 
@@ -136,7 +136,7 @@ function backtransform(coeff::Vector{Complex{Float64}}, LMAX::Int64)
     rdata = zeros(Float64, num_val(LMAX))
     idata = zeros(Float64, num_val(LMAX))
 
-    ccall((:transform_sample, "sh/libsh.so"), Ptr{Void},
+    ccall((:transform_sample, "libsh.so"), Ptr{Void},
     (Ptr{Float64},Ptr{Float64},Ptr{Float64},Ptr{Float64,}, Int32, Int32),
     real(coeff), imag(coeff), rdata, idata, LMAX, 0)
 
