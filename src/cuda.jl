@@ -6,53 +6,53 @@ global CUDA_enabled = false
 export BasisTypeCuda, complexBasis_CUDA, CUDA_init
 
 function CUDA_init()
-  CUDArt.init(0)
-  CUDArt.device(0)
-  global md = CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
-  global calculate_coefficient_matrix_cuda = CuFunction(md, "calculate_coefficient_matrix")
-  global calculate_coefficient_matrix_optimized_cuda = CuFunction(md, "calculate_coefficient_matrix_optimized")
-  global CUDA_enabled = true
-  println("Initialization of CUDA complete.")
+    CUDArt.init(0)
+    CUDArt.device(0)
+    global md = CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
+    global calculate_coefficient_matrix_cuda = CuFunction(md, "calculate_coefficient_matrix")
+    global calculate_coefficient_matrix_optimized_cuda = CuFunction(md, "calculate_coefficient_matrix_optimized")
+    global CUDA_enabled = true
+    println("Initialization of CUDA complete.")
 end
 
 """Datatype for precalculated three photon correlation basis function"""
 type BasisTypeCuda <: AbstractBasisType
-  basis::CudaArray
-  basisindices::CudaArray
-  basislen::Int64
-  N::Int64
-  L::Int64
-  LMAX::Int64
-  lrange::StepRange
-  ctr::Dict
-  rtc::Dict
+    basis::CudaArray
+    basisindices::CudaArray
+    basislen::Int64
+    N::Int64
+    L::Int64
+    LMAX::Int64
+    lrange::StepRange
+    ctr::Dict
+    rtc::Dict
 end
 
 """Overrides the original complexBasis function"""
 function complexBasis_CUDA(basis::BasisType, L::Int64, N::Int64, LMAX::Int64, forIntensity=true)
-  if CUDA_enabled
-    d_basis = CudaArray(convert(Array{Float32}, sdata(basis.basis)))
-    d_basisindices = CudaArray(convert(Array{Int32}, sdata(basis.basisindices)))
-    cuda_basis =  BasisTypeCuda(d_basis, d_basisindices, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc)
-    println("Initialized CUDA basis.")
-    return cuda_basis
-  else
-    return basis
-  end
+    if CUDA_enabled
+        d_basis = CudaArray(convert(Array{Float32}, sdata(basis.basis)))
+        d_basisindices = CudaArray(convert(Array{Int32}, sdata(basis.basisindices)))
+        cuda_basis =  BasisTypeCuda(d_basis, d_basisindices, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc)
+        println("Initialized CUDA basis.")
+        return cuda_basis
+    else
+        return basis
+    end
 end
 
 """Overrides the original complexBasis function"""
 function complexBasis_CUDA(L::Int64, N::Int64, LMAX::Int64, forIntensity=true)
-  basis = complexBasis(L, N, LMAX, forIntensity)
-  if CUDA_enabled
-    d_basis = CudaArray(convert(Array{Float32}, sdata(basis.basis)))
-    d_basisindices = CudaArray(convert(Array{Int32}, sdata(basis.basisindices)))
-    cuda_basis =  BasisTypeCuda(d_basis, d_basisindices, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc)
-    println("Initialized CUDA basis.")
-    return cuda_basis
-  else
-    return basis
-  end
+    basis = complexBasis(L, N, LMAX, forIntensity)
+    if CUDA_enabled
+        d_basis = CudaArray(convert(Array{Float32}, sdata(basis.basis)))
+        d_basisindices = CudaArray(convert(Array{Int32}, sdata(basis.basisindices)))
+        cuda_basis =  BasisTypeCuda(d_basis, d_basisindices, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc)
+        println("Initialized CUDA basis.")
+        return cuda_basis
+    else
+        return basis
+    end
 end
 
 complexBasis_choice = complexBasis_CUDA
@@ -95,8 +95,8 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     t = zeros(Float64, basis.N, basis.N, K, K, K)
     i = 1
     for k1=1:K for k2=1:k1 for k3=1:k2
-      t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
-      i += 1
+        t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
+        i += 1
     end end end
     return normalize ? t / sumabs(t) : t
 end

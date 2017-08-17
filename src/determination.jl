@@ -10,7 +10,7 @@ function randomStartStructure(volume::SphericalHarmonicsVolume, K::Int64, L::Int
         rtc = ctranspose(ctr) #real to complex transformation
         rot = rtc*rot*ctr
         for k = 1:K
-          cvec_set(new,k,l, rot*cvec_get(volume,k,l))
+            cvec_set(new,k,l, rot*cvec_get(volume,k,l))
         end
     end
     return new
@@ -26,7 +26,7 @@ function randomPertubation(volume::SphericalHarmonicsVolume, K::Int64, L::Int64,
         rtc = ctranspose(ctr) #real to complex transformation
         rot = rtc*rot*ctr
         for k = 1:K
-          cvec_set(new, k,l, rot*cvec_get(volume, k,l))
+            cvec_set(new, k,l, rot*cvec_get(volume, k,l))
         end
     end
     return new
@@ -155,7 +155,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
     #Don't start a finished run
     if haskey(state, "state") && state["state"] == "finished_structure"
-      return
+        return
     end
 
     #load the histogrammed dataset into the global scope
@@ -166,42 +166,44 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
     if state["newRun"]
 
-      #Mark it as "non"-new run for future continuations
-      state["newRun"] = false
+        #Mark it as "non"-new run for future continuations
+        state["newRun"] = false
 
-      #Lets start with the whole range by default (not applied for hierarchical approach)
-      state["K"] = params["K"]
+        #Lets start with the whole range by default (not applied for hierarchical approach)
+        state["K"] = params["K"]
 
-      #Retrieve initial structure from 2p-correlation if not provided
-      if !haskey(state,"intensity")
-        state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["rmax"]))
-        # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
-      end
+        #Retrieve initial structure from 2p-correlation if not provided
+        if !haskey(state,"intensity")
+            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["rmax"]))
+            # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
+        end
 
-      state["stepsizes"] = Dict()
-      state["L"] = 2
-      state["i"] = 0
-      state["state"] = "running"
+        state["stepsizes"] = Dict()
+        state["L"] = 2
+        state["i"] = 0
+        state["state"] = "running"
 
-      #Save reference intensity for later use
-      density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], params["KMAX"], params["rmax"])
-      state["reference_intensity"] = intensity
+        #Save reference intensity for later use
+        if haskey(params, "reference_pdb_path") && params["reference_pdb_path"] != ""
+            density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], params["KMAX"], params["rmax"])
+            state["reference_intensity"] = intensity
+        end
 
-      #Make some logging things
-      write(out,"""
-      #Starting structure determination with the following parameters:
-      #$params
-      """)
+        #Make some logging things
+        write(out,"""
+        #Starting structure determination with the following parameters:
+        #$params
+        """)
 
-      saveState(params, state)
+        saveState(params, state)
     end
 
     #Let's try and calculate on the GPU
     try
-      CUDA_init()
+        CUDA_init()
     catch
-      println("!!! Init of CUDA failed")
-      println("!!! Fallback to CPU-backend.")
+        println("!!! Init of CUDA failed")
+        println("!!! Fallback to CPU-backend.")
     end
 
     #begin optimization with given optimizer
@@ -218,51 +220,51 @@ end
 
 """Creates a Monte Carlo step with given stepsize"""
 function get_MC_step(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, stepsizes::Dict)
-  step = deepcopy(intensity)
-  for l = 2:2:basis.L
-      rot =  basis.rtc[l]*complex(random_rotation_step(2*l+1, gaussian(0.0, stepsizes[l])))*basis.ctr[l]
-      for k = 1:intensity.KMAX
-        cvec_set(step,k,l, rot*cvec_get(intensity,k,l))
-      end
-  end
-  return step
+    step = deepcopy(intensity)
+    for l = 2:2:basis.L
+        rot =  basis.rtc[l]*complex(random_rotation_step(2*l+1, gaussian(0.0, stepsizes[l])))*basis.ctr[l]
+        for k = 1:intensity.KMAX
+            cvec_set(step,k,l, rot*cvec_get(intensity,k,l))
+        end
+    end
+    return step
 end
 
 """Given a particular configuration, calculates the average energy of changes to the structure"""
 function calculate_temperature(state::Dict, params::Dict, basis::AbstractBasisType, c3ref::C3, iterations::Int64=50)
-  if params["initial_temperature_factor"] > 0.0
-    println("Explore energy landscape for temperature... ")
-    #Measure average energy variation for 100 steps with the initial_stepsize
-    energy_sample = Float64[]
+    if params["initial_temperature_factor"] > 0.0
+        println("Explore energy landscape for temperature... ")
+        #Measure average energy variation for 100 steps with the initial_stepsize
+        energy_sample = Float64[]
 
-    for i = 1:iterations
-      step = get_MC_step(state["intensity"], basis, state["stepsizes"])
-      e = energy(step, basis, c3ref, state["K"], params["measure"])
-      println("Energy calculation step $i: $e")
-      push!(energy_sample,e)
+        for i = 1:iterations
+            step = get_MC_step(state["intensity"], basis, state["stepsizes"])
+            e = energy(step, basis, c3ref, state["K"], params["measure"])
+            println("Energy calculation step $i: $e")
+            push!(energy_sample,e)
+        end
+        return std(energy_sample)*params["initial_temperature_factor"]
+    else
+        return 0.0
     end
-    return std(energy_sample)*params["initial_temperature_factor"]
-  else
-    return 0.0
-  end
 
 end
 
 """Saves current state and paramters to a file."""
 function saveState(params, state)
-  serializeToFile("params.dat", params)
-  serializeToFile("state.dat", state)
+    serializeToFile("params.dat", params)
+    serializeToFile("state.dat", state)
 end
 
 """Regularly do something"""
 function regular_action(out, state, params)
-  #save out information every 100 iterations
-  if mod(state["i"], 500) == 0
-    @everywhere gc()
-    saveState(params, state)
-    flush(out)
-    flush(STDOUT)
-  end
+    #save out information every 100 iterations
+    if mod(state["i"], 500) == 0
+        @everywhere gc()
+        saveState(params, state)
+        flush(out)
+        flush(STDOUT)
+    end
 end
 
 # """Optimizes structure by changing all rotation matrices at once and comparing the structure's three photon correlation with the experimental one"""
@@ -327,81 +329,33 @@ end
 """Optimizes structure by changing all rotation matrices at once and comparing the structure's three photon correlation with the experimental one"""
 function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
 
-  state["L"] = params["L"]
-  d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
-
-  #Check if this is a continuation or a new run by checking stepsizes
-  if !haskey(state["stepsizes"], state["L"])
-
-    #gradually increase K
-    state["K"] = params["K"]
-
-    #set stepsize for this resolution
-    #This makes sure that the initial stepsize for L=2 stays as intended and the other L stepsizes are hierarchical higher
-    # state["stepsizes"] = Dict(l=>params["initial_stepsize"]*2^(l/2.0-1.0) for l=2:2:state["L"])
-    state["stepsizes"] = Dict(l=>params["initial_stepsize"]*(l-1) for l=2:2:state["L"])
-
-    #calculate the initial energy with that resolution
-    state["E"] = energy(state["intensity"], d_basis, c3ref, state["K"], params["measure"])
-
-    #Calculate reference energy
-    state["reference_energy"] = energy(state["reference_intensity"], d_basis, c3ref, state["K"], params["measure"])
-
-    println("Reference energy: ", state["reference_energy"])
-
-    #reset the temperature for that resolution
-    state["T"] = calculate_temperature(state, params, d_basis, c3ref)
-
-    #Let's acknowledge that higher expansion limits L require slower temperature decay
-    state["temperature_decay"] = params["temperature_decay"]
-  end
-
-  #run until we have converged with the stepsize (stepsize for largest L must below threshold)
-  while state["stepsizes"][state["L"]] > minstepsize
-
-      #increase overall step counter
-      state["i"] += 1
-
-      #adjust temperature each step with T_new = decay * T_old
-      state["T"] *= state["temperature_decay"]
-
-      #Monte Carlo step
-      state["step"] = get_MC_step(state["intensity"], d_basis, state["stepsizes"])
-
-      #evaluate step
-      @time evaluate_step(out, params, state, d_basis, c3ref)
-
-      regular_action(out, state, params)
-  end
-end
-
-"Iterativly optimizing a structure by increasing the angular resolution and adding more shells that are taken into consideration"
-function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
-
-  for state["L"] = state["L"]:2:params["L"]
-
+    state["L"] = params["L"]
     d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
 
     #Check if this is a continuation or a new run by checking stepsizes
     if !haskey(state["stepsizes"], state["L"])
 
-      #gradually increase K
-      state["K"] = params["K"] - params["L"] + state["L"]
+        #gradually increase K
+        state["K"] = params["K"]
 
-      #set stepsize for this resolution
-      state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
+        #set stepsize for this resolution
+        #This makes sure that the initial stepsize for L=2 stays as intended and the other L stepsizes are hierarchical higher
+        # state["stepsizes"] = Dict(l=>params["initial_stepsize"]*2^(l/2.0-1.0) for l=2:2:state["L"])
+        state["stepsizes"] = Dict(l=>params["initial_stepsize"]*(l-1) for l=2:2:state["L"])
 
-      #calculate the initial energy with that resolution
-      state["E"] = energy(state["intensity"], d_basis, c3ref, state["K"], params["measure"])
+        #calculate the initial energy with that resolution
+        state["E"] = energy(state["intensity"], d_basis, c3ref, state["K"], params["measure"])
 
-      #Calculate reference energy
-      state["reference_energy"] = energy(state["reference_intensity"], d_basis, c3ref, state["K"], params["measure"])
+        #Calculate reference energy
+        state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, state["K"], params["measure"]) : 0.0
 
-      #reset the temperature for that resolution
-      state["T"] = calculate_temperature(state, params, d_basis, c3ref)
+        println("Reference energy: ", state["reference_energy"])
 
-      #Let's acknowledge that higher expansion limits L require slower temperature decay
-      state["temperature_decay"] = params["temperature_decay"]
+        #reset the temperature for that resolution
+        state["T"] = calculate_temperature(state, params, d_basis, c3ref)
+
+        #Let's acknowledge that higher expansion limits L require slower temperature decay
+        state["temperature_decay"] = params["temperature_decay"]
     end
 
     #run until we have converged with the stepsize (stepsize for largest L must below threshold)
@@ -421,7 +375,55 @@ function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
 
         regular_action(out, state, params)
     end
-  end
+end
+
+"Iterativly optimizing a structure by increasing the angular resolution and adding more shells that are taken into consideration"
+function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
+
+    for state["L"] = state["L"]:2:params["L"]
+
+        d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
+
+        #Check if this is a continuation or a new run by checking stepsizes
+        if !haskey(state["stepsizes"], state["L"])
+
+            #gradually increase K
+            state["K"] = params["K"] - params["L"] + state["L"]
+
+            #set stepsize for this resolution
+            state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
+
+            #calculate the initial energy with that resolution
+            state["E"] = energy(state["intensity"], d_basis, c3ref, state["K"], params["measure"])
+
+            #Calculate reference energy
+            state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, state["K"], params["measure"]) : 0.0
+
+            #reset the temperature for that resolution
+            state["T"] = calculate_temperature(state, params, d_basis, c3ref)
+
+            #Let's acknowledge that higher expansion limits L require slower temperature decay
+            state["temperature_decay"] = params["temperature_decay"]
+        end
+
+        #run until we have converged with the stepsize (stepsize for largest L must below threshold)
+        while state["stepsizes"][state["L"]] > minstepsize
+
+            #increase overall step counter
+            state["i"] += 1
+
+            #adjust temperature each step with T_new = decay * T_old
+            state["T"] *= state["temperature_decay"]
+
+            #Monte Carlo step
+            state["step"] = get_MC_step(state["intensity"], d_basis, state["stepsizes"])
+
+            #evaluate step
+            @time evaluate_step(out, params, state, d_basis, c3ref)
+
+            regular_action(out, state, params)
+        end
+    end
 end
 
 # "MC sampling based on integration of the Hamilton equations stemming from negative log-probability"
@@ -513,51 +515,51 @@ end
 
 """Increases the stepsize for all L"""
 function increase_stepsize(state::Dict, params::Dict)
-  for l in keys(state["stepsizes"])
-    state["stepsizes"][l] *= params["stepsizefactor"]
-  end
+    for l in keys(state["stepsizes"])
+        state["stepsizes"][l] *= params["stepsizefactor"]
+    end
 end
 
 """Decreases the stepsize for all L"""
 function decrease_stepsize(state::Dict, params::Dict)
-  for l in keys(state["stepsizes"])
-    state["stepsizes"][l] /= params["stepsizefactor"]
-  end
+    for l in keys(state["stepsizes"])
+        state["stepsizes"][l] /= params["stepsizefactor"]
+    end
 end
 
 function evaluate_step(out, params::Dict, state::Dict, basis::AbstractBasisType, c3ref::C3)
-  accepted = false
-  sign = 0.0
+    accepted = false
+    sign = 0.0
 
-  #Calculate the triple correlation and return difference to reference triple correlation
-  E_new = energy(state["step"], basis, c3ref, state["K"], params["measure"])
-  delta_E = E_new - state["E"]
-  ap  = exp(-(delta_E)/state["T"]) #acceptance energy
+    #Calculate the triple correlation and return difference to reference triple correlation
+    E_new = energy(state["step"], basis, c3ref, state["K"], params["measure"])
+    delta_E = E_new - state["E"]
+    ap  = exp(-(delta_E)/state["T"]) #acceptance energy
 
-  #Check if the step improved the triple correlation energy
-  if delta_E < 0.0 || ( delta_E > 0.0 && rand() <  ap)
-      sign = delta_E < 0.0 ? 1.0 : -1.0
-      increase_stepsize(state, params)
-      #save the rotational information
-      state["E"] = E_new
-      state["intensity"] = deepcopy(state["step"])
-  else
-    decrease_stepsize(state, params)
-  end
+    #Check if the step improved the triple correlation energy
+    if delta_E < 0.0 || ( delta_E > 0.0 && rand() <  ap)
+        sign = delta_E < 0.0 ? 1.0 : -1.0
+        increase_stepsize(state, params)
+        #save the rotational information
+        state["E"] = E_new
+        state["intensity"] = deepcopy(state["step"])
+    else
+        decrease_stepsize(state, params)
+    end
 
-  #Logging current step
-  line = "$(state["i"])\t$sign\t$E_new\t$(state["E"])\t$delta_E\t$(state["reference_energy"])\t$(state["E"]-state["reference_energy"])\t$(state["T"])\t$ap\t$(state["stepsizes"])\t$(state["L"])\t$(state["K"])\n"
-  write(out, line)
-  println(line)
+    #Logging current step
+    line = "$(state["i"])\t$sign\t$E_new\t$(state["E"])\t$delta_E\t$(state["reference_energy"])\t$(state["E"]-state["reference_energy"])\t$(state["T"])\t$ap\t$(state["stepsizes"])\t$(state["L"])\t$(state["K"])\n"
+    write(out, line)
+    println(line)
 end
 
 #----------------------------------------------------------------------------------------
 
 function checkRotationSearch(reference::SphericalHarmonicsVolume, K::Int64, L::Int64, basis::AbstractBasisType; histogram="../expdata/correlations_N32_K25_P2048000.dat", save_structures::Bool=false)
-  c2full,c2,c3full,c3 = loadHistograms(K, histogram)
-  start = retrieveSolution(c2full, L, reference.LMAX, reference.KMAX, reference.rmax)
-  start = randomStartStructure(deleteTerms(start, K, L), K, L)
-  checkRotationSearch(start, deleteTerms(reference, K, L), K, L, basis, save_structures=save_structures)
+    c2full,c2,c3full,c3 = loadHistograms(K, histogram)
+    start = retrieveSolution(c2full, L, reference.LMAX, reference.KMAX, reference.rmax)
+    start = randomStartStructure(deleteTerms(start, K, L), K, L)
+    checkRotationSearch(start, deleteTerms(reference, K, L), K, L, basis, save_structures=save_structures)
 end
 
 """Tries out the rotational search scheme by comparing given structures with the known original structure
@@ -583,11 +585,11 @@ function checkRotationSearch(start::SphericalHarmonicsVolume, reference::Spheric
             push!(FSC_list, FSC)
 
             for l in keys(stepsizes)
-              stepsizes[l] /= 2.0
+                stepsizes[l] /= 2.0
             end
             println("$i\tFSC=$FSC\tE=$E")
             if save_structures
-              saveCube(new, "output/rotation_check_$i.mrc")
+                saveCube(new, "output/rotation_check_$i.mrc")
             end
         end
 

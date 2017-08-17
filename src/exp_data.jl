@@ -8,7 +8,7 @@ function image_to_photons(img::Matrix{UInt32}, qmax::Float64=1.0)
     xhalf = floor(xsize/2.0)
     yhalf = floor(ysize/2.0)
     dq = qmax / xhalf
-#     println("Sorting $(sumabs(img)) photons.")
+    #     println("Sorting $(sumabs(img)) photons.")
     for x=1:xsize
         for y=1:ysize
             if img[x,y] > 0 && (x-xhalf,y-yhalf) != (0,0)

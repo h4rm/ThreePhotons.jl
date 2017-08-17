@@ -11,38 +11,38 @@ minutues_to_measure = (images, pulses_per_second::Int64=27000, hitrate::Float64=
 
 """Pearson correlation between two vectors"""
 function cor_ISC(a::Vector{Complex{Float64}}, b::Vector{Complex{Float64}})
-  return cor(real(a), real(b))
+    return cor(real(a), real(b))
 end
 
 """Fourier shell correlation between two complex vectors"""
 function cor_FSC(a::Vector{Complex{Float64}}, b::Vector{Complex{Float64}})
-  na = norm(a)
-  nb = norm(b)
-  if na > eps() && nb > eps()
-    return abs(sum(a.*conj(b))/(na*nb))
-  else
-    return 0.0
-  end
+    na = norm(a)
+    nb = norm(b)
+    if na > eps() && nb > eps()
+        return abs(sum(a.*conj(b))/(na*nb))
+    else
+        return 0.0
+    end
 end
 
 "Angle between two vectors ranging from 0 to 2.0*pi"
 function angle_between(p1::Vector{Float64}, p2::Vector{Float64})
-  val = clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0)
-  if abs(val) > 0.0
-      angle = acos(val)
-      if cross(p1, p2)[3] > 0
-        angle =  2.0*pi - angle
-      end
-      return angle
-  else
-      return 0.0
-  end
+    val = clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0)
+    if abs(val) > 0.0
+        angle = acos(val)
+        if cross(p1, p2)[3] > 0
+            angle =  2.0*pi - angle
+        end
+        return angle
+    else
+        return 0.0
+    end
 end
 
 "Angle between two vectors ranging from 0 to pi"
 function angle_between_simple(p1::Vector{Float64}, p2::Vector{Float64})
-  angle = acos( clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0))
-  return angle
+    angle = acos( clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0))
+    return angle
 end
 
 """
@@ -54,19 +54,19 @@ Calculate a three dimensional rotation matrix from the euler angles.
 """
 function euler(a::Float64, b::Float64, c::Float64)
 
-   ca, cb, cc = cos(a), cos(b), cos(c)
-   sa, sb, sc = sin(a), sin(b), sin(c)
+    ca, cb, cc = cos(a), cos(b), cos(c)
+    sa, sb, sc = sin(a), sin(b), sin(c)
 
-   @fastmath return Float64[[ cc * cb * ca - sc * sa, cc * cb * sa + sc * ca, -cc * sb] [-sc * cb * ca - cc * sa, -sc * cb * sa + cc * ca, sc * sb] [ sb * ca, sb * sa, cb ]]
+    @fastmath return Float64[[ cc * cb * ca - sc * sa, cc * cb * sa + sc * ca, -cc * sb] [-sc * cb * ca - cc * sa, -sc * cb * sa + cc * ca, sc * sb] [ sb * ca, sb * sa, cb ]]
 end
 
 "Calculates the Euler angles of a 3D rotation matrix"
 function get_euler_angles(m)
-   a = mod(atan2(m[3, 2], m[3, 1]), 2.0*pi)
-   b = mod(atan2((m[3, 1] + m[3, 2]) / (cos(a) + sin(a)), m[3, 3]), 2.0*pi)
-   c = mod(atan2(m[2, 3], -m[1, 3]), 2.0*pi)
+    a = mod(atan2(m[3, 2], m[3, 1]), 2.0*pi)
+    b = mod(atan2((m[3, 1] + m[3, 2]) / (cos(a) + sin(a)), m[3, 3]), 2.0*pi)
+    c = mod(atan2(m[2, 3], -m[1, 3]), 2.0*pi)
 
-  return a, b, c
+    return a, b, c
 end
 
 """Converts spherical coordinates to cartesian coordinates"""
@@ -90,32 +90,32 @@ end
 
 "Creates a gaussian distributed number with sigma and mu"
 function gaussian(mu::Float64, sigma::Float64)
-  return randn()*sigma + mu
+    return randn()*sigma + mu
 end
 
 """Calcualtes the gaussian distribution wiht sigma and mu"""
 function gaussian_distribution(x::Float64, mu::Float64, sigma::Float64)
-  @assert sigma != 0.0
-  s2 = 2.0 * sigma^2
-  1/sqrt(pi*s2)*exp(-norm(x-mu)^2/s2)
+    @assert sigma != 0.0
+    s2 = 2.0 * sigma^2
+    1/sqrt(pi*s2)*exp(-norm(x-mu)^2/s2)
 end
 
 """Calcualtes the gaussian distribution wiht sigma and mu"""
 function gaussian_distribution(x::Vector{Float64}, mu::Vector{Float64}, sigma::Vector{Float64})
-  @assert sigma != 0.0
-  return pdf(Distributions.MvNormal(mu, sigma), x)
+    @assert sigma != 0.0
+    return pdf(Distributions.MvNormal(mu, sigma), x)
 end
 
 """Calcualtes the normal distribution wiht sigma=1.0 and mu=0.0"""
 function normal_distribution(x::Vector)
-  gaussian_distribution(x, 0.0, 1.0)
+    gaussian_distribution(x, 0.0, 1.0)
 end
 
 """In a numerical Vector, replaces NaN with zero"""
 function replace_NaN!(vec::Vector)
-  for i = 1:length(vec)
-    vec[i] = isnan(vec[i]) ? 0.0 : vec[i]
-  end
+    for i = 1:length(vec)
+        vec[i] = isnan(vec[i]) ? 0.0 : vec[i]
+    end
 end
 
 """Calculates a random rotation in `dim`
@@ -127,9 +127,9 @@ function random_rotation(dim::Int64)
     L = diagm(r)
     res = Q*L
     if(det(res) > 0)
-      return res
+        return res
     else
-      random_rotation(dim)
+        random_rotation(dim)
     end
 end
 
@@ -137,14 +137,14 @@ end
 Taken from "Random rotations: characters and random walk on SO(N)"""
 function random_rotation_step(b, beta=pi/8)
     R = eye(b)
-	R[1,1] = cos(beta)
-	R[1,2] = -sin(beta)
-	R[2,1] = sin(beta)
-	R[2,2] = cos(beta)
+    R[1,1] = cos(beta)
+    R[1,2] = -sin(beta)
+    R[2,1] = sin(beta)
+    R[2,2] = cos(beta)
 
-	C = random_rotation(b)
-	B = inv(C)*R*C
-	return B
+    C = random_rotation(b)
+    B = inv(C)*R*C
+    return B
 end
 
 "Calculates a rotation matrix in `dim` dimensions with dim*(dim-1)/2 rotation angles"
@@ -199,32 +199,32 @@ end
 
 """Creates random doublet"""
 function random_doublet(K::Int64=8, half::Bool=true)
-  k1 = rand(1:K)
-  k2 = rand(1:K)
-  if half
-    if k1 >= k2
-      return (k1, k2)
+    k1 = rand(1:K)
+    k2 = rand(1:K)
+    if half
+        if k1 >= k2
+            return (k1, k2)
+        else
+            return random_doublet(K, half)
+        end
     else
-      return random_doublet(K, half)
+        return (k1,k2)
     end
-  else
-    return (k1,k2)
-  end
 end
 
 """Creates random triplet"""
 function random_triplet(K=8, half::Bool=true)
-  k1 = rand(1:K)
-  k2 = rand(1:K)
-  k3 = rand(1:K)
-  if half
-    if k1 >= k2 && k2 >= k3
-      return (k1,k2,k3)
-    else return random_triplet(K, half)
+    k1 = rand(1:K)
+    k2 = rand(1:K)
+    k3 = rand(1:K)
+    if half
+        if k1 >= k2 && k2 >= k3
+            return (k1,k2,k3)
+        else return random_triplet(K, half)
+        end
+    else
+        return (k1,k2,k3)
     end
-  else
-    return (k1,k2,k3)
-  end
 end
 
 ###############################################################
@@ -233,17 +233,17 @@ end
 
 """Serializes the data to a file"""
 function serializeToFile(filename::String, data)
-  out = open(filename, "w+")
-  serialize(out, data)
-  close(out)
+    out = open(filename, "w+")
+    serialize(out, data)
+    close(out)
 end
 
 """Deserializes a julia data object from a file"""
 function deserializeFromFile(filename::String)
-  out = open(filename, "r")
-  data = deserialize(out)
-  close(out)
-  return data
+    out = open(filename, "r")
+    data = deserialize(out)
+    close(out)
+    return data
 end
 
 ###############################################################
@@ -317,14 +317,14 @@ function say(str::String)
     "Zosia",
     "Zuzana"]
     try
-      voice = voices[rand(1:length(voices))]
-      # println(voice)
-      run(`say $str --voice $voice`)
+        voice = voices[rand(1:length(voices))]
+        # println(voice)
+        run(`say $str --voice $voice`)
     end
 end
 
 function whisper(str)
     try
-      run(`say $str --voice 'whisper'`)
+        run(`say $str --voice 'whisper'`)
     end
 end

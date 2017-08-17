@@ -5,52 +5,52 @@ abstract SphericalVolume <: Volume
 
 """A volume described by shell-wise spherical harmonics expansions"""
 type SphericalHarmonicsVolume <: SphericalVolume
-  #spherical harmonics coefficients
-  coeff::Array{Array{Complex{Float64}}}
+    #spherical harmonics coefficients
+    coeff::Array{Array{Complex{Float64}}}
 
-  #bandlimit
-  LMAX::Int64
+    #bandlimit
+    LMAX::Int64
 
-  #radial parameters
-  KMAX::Int64
-  rmax::Float64
+    #radial parameters
+    KMAX::Int64
+    rmax::Float64
 
-  #radial interpolation
-  radial_interp::Bool
+    #radial interpolation
+    radial_interp::Bool
 
-  function SphericalHarmonicsVolume(coeff, LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
-    new(coeff, LMAX, KMAX, rmax, radial_interp)
-  end
+    function SphericalHarmonicsVolume(coeff, LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
+        new(coeff, LMAX, KMAX, rmax, radial_interp)
+    end
 
-  function SphericalHarmonicsVolume(LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
-    coeff = [zeros(Complex{Float64}, num_coeff(LMAX)) for k=1:KMAX]
-    new(coeff, LMAX, KMAX, rmax, radial_interp)
-  end
+    function SphericalHarmonicsVolume(LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
+        coeff = [zeros(Complex{Float64}, num_coeff(LMAX)) for k=1:KMAX]
+        new(coeff, LMAX, KMAX, rmax, radial_interp)
+    end
 end
 
 """A volume described by uniform samples of spherical shells"""
 type SurfaceVolume <: SphericalVolume
-  #spherical harmonics coefficients
-  surf::Array{Array{Complex{Float64}}}
+    #spherical harmonics coefficients
+    surf::Array{Array{Complex{Float64}}}
 
-  #bandlimit
-  LMAX::Int64
+    #bandlimit
+    LMAX::Int64
 
-  #radial parameters
-  KMAX::Int64
-  rmax::Float64
+    #radial parameters
+    KMAX::Int64
+    rmax::Float64
 
-  #radial interpolation
-  radial_interp::Bool
+    #radial interpolation
+    radial_interp::Bool
 
-  function SurfaceVolume(surf, LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
-    new(surf, LMAX, KMAX, rmax, radial_interp)
-  end
+    function SurfaceVolume(surf, LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
+        new(surf, LMAX, KMAX, rmax, radial_interp)
+    end
 
-  function SurfaceVolume(LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
-    surf = [zeros(Complex{Float64}, num_val(LMAX)) for k=1:KMAX]
-    new(surf, LMAX, KMAX, rmax, radial_interp)
-  end
+    function SurfaceVolume(LMAX::Int64, KMAX::Int64, rmax::Float64, radial_interp::Bool=true)
+        surf = [zeros(Complex{Float64}, num_val(LMAX)) for k=1:KMAX]
+        new(surf, LMAX, KMAX, rmax, radial_interp)
+    end
 end
 
 #############################################################################
@@ -116,7 +116,7 @@ end
 
 """Disables the radial interpolation of the spherical harmonics volume"""
 function disable_radial_interpolation(volume::SphericalHarmonicsVolume)
-  volume.radial_interp = false
+    volume.radial_interp = false
 end
 
 """calculate the coefficients from surface"""
@@ -145,14 +145,14 @@ end
 
 """SphericalHarmonicsVolume to SurfaceVolume"""
 function getSurfaceVolume(volume::SphericalHarmonicsVolume)
-  surf = map((x) -> backtransform(x, volume.LMAX), volume.coeff)
-  return SurfaceVolume(surf, volume.LMAX, volume.KMAX, volume.rmax, volume.radial_interp)
+    surf = map((x) -> backtransform(x, volume.LMAX), volume.coeff)
+    return SurfaceVolume(surf, volume.LMAX, volume.KMAX, volume.rmax, volume.radial_interp)
 end
 
 """SurfaceVolume to SphericalHarmonicsVolume"""
 function getSphericalHarmonicsVolume(volume::SurfaceVolume)
-  coeff = map((x) -> transform(x, volume.LMAX), volume.surf)
-  return SphericalHarmonicsVolume(coeff, volume.LMAX, volume.KMAX, volume.rmax, volume.radial_interp)
+    coeff = map((x) -> transform(x, volume.LMAX), volume.surf)
+    return SphericalHarmonicsVolume(coeff, volume.LMAX, volume.KMAX, volume.rmax, volume.radial_interp)
 end
 
 """Helper function to get index in linear-array for (l,m)-doublet"""
@@ -241,7 +241,7 @@ end
 
 """wraps the density as a function only of the angle with fixed radius"""
 function densityShell(atomlist, r)
-   return function(phi,theta) return getDensity_cartesian(atomlist, sphericalToCartesian(r,phi,theta)) end
+    return function(phi,theta) return getDensity_cartesian(atomlist, sphericalToCartesian(r,phi,theta)) end
 end
 
 """Calculates the Fourier shell"""
@@ -295,7 +295,7 @@ function frdr(f::Vector{Float64}, r::Vector{Float64})
 
     @inbounds res[1] = sqrt(0.5) * (r[1] + r[2])^2
     for j = 2:l-1
-         @inbounds res[j] = (r[j+1] - r[j-1]) * (r[j-1] + 2*r[j] + r[j+1])
+        @inbounds res[j] = (r[j+1] - r[j-1]) * (r[j-1] + 2*r[j] + r[j+1])
     end
     @inbounds res[l] = 4*r[l]^2 - (r[l-1] + r[l])^2
 
@@ -309,30 +309,30 @@ Source:
 function hat!(res::Vector{Float64}, h::Vector{Float64}, I::Matrix{Float64}, forward::Bool=true)
     l = length(h)
     if forward
-      r = collect(1.0:l)
-      res[:] = I*frdr(h, r)
+        r = collect(1.0:l)
+        res[:] = I*frdr(h, r)
     else
-      k = pi/l * collect(1.0:l)
-      res[:] = transpose(I)*frdr(h, k)/(2.0*pi)^2
+        k = pi/l * collect(1.0:l)
+        res[:] = transpose(I)*frdr(h, k)/(2.0*pi)^2
     end
 end
 
 """Precalcualtes Imatrix for numerical integration of Hankel transform"""
 function precalcImatrices(LMAX::Int64, KMAX::Int64)
 
-  Imatrix = function(len, n)
-      r = Float64[1:len;]
-      k = pi/len * Float64[1:len;]
-      return besselj(n, k*transpose(r))
-  end
-
-  #Calculate the matrices, if not already available
-  if !isdefined(:Ilist) || length(Ilist) != LMAX || size(Ilist[1])[1] != KMAX
-    global Ilist = []
-    for l = 0:LMAX-1
-        push!(Ilist, Imatrix(KMAX, l+0.5))
+    Imatrix = function(len, n)
+        r = Float64[1:len;]
+        k = pi/len * Float64[1:len;]
+        return besselj(n, k*transpose(r))
     end
-  end
+
+    #Calculate the matrices, if not already available
+    if !isdefined(:Ilist) || length(Ilist) != LMAX || size(Ilist[1])[1] != KMAX
+        global Ilist = []
+        for l = 0:LMAX-1
+            push!(Ilist, Imatrix(KMAX, l+0.5))
+        end
+    end
 
 end
 
@@ -363,26 +363,26 @@ end
 
 """Takes density SH and performs hankel transform to get amplitude SH"""
 function forward(volume::SphericalHarmonicsVolume)
-   return sphBesselTransform(volume, true)
+    return sphBesselTransform(volume, true)
 end
 
 """Takes density SH and performs hankel transform to get amplitude SH"""
 function backward(volume::SphericalHarmonicsVolume)
-   return sphBesselTransform(volume, false)
+    return sphBesselTransform(volume, false)
 end
 
 "Converts a density surface array into its Fourier counterpart"
 function forward(volume::SurfaceVolume)
-	volume = getSphericalHarmonicsVolume(volume)
-	volume = forward(volume)
-	return getSurfaceVolume(volume)
+    volume = getSphericalHarmonicsVolume(volume)
+    volume = forward(volume)
+    return getSurfaceVolume(volume)
 end
 
 "Converts a fourier surface array into its real space counterpart"
 function backward(volume::SurfaceVolume)
-  volume = getSphericalHarmonicsVolume(volume)
-	volume = backward(volume)
-	return getSurfaceVolume(volume)
+    volume = getSphericalHarmonicsVolume(volume)
+    volume = backward(volume)
+    return getSurfaceVolume(volume)
 end
 
 """Indirectly calculate intensity coefficients by squaring on surface"""
@@ -394,38 +394,38 @@ end
 
 "Calculates the Intensity Shell Correlation for a set of coefficients"
 function shell_correlation(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64=0, cor_method=cor_FSC)
-  surf1 = getSurfaceVolume(volume1)
-  surf2 = getSurfaceVolume(volume2)
-  @assert length(surf1) == length(surf2)
-  K = (K == 0 ? length(surf1) : K)
+    surf1 = getSurfaceVolume(volume1)
+    surf2 = getSurfaceVolume(volume2)
+    @assert length(surf1) == length(surf2)
+    K = (K == 0 ? length(surf1) : K)
 
-  return Float64[cor_method(surf1.surf[k], surf2.surf[k]) for k=1:K]
+    return Float64[cor_method(surf1.surf[k], surf2.surf[k]) for k=1:K]
 end
 
 function shell_correlation_ISC(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64=0)
-  shell_correlation(volume1, volume2, K, cor_ISC)
+    shell_correlation(volume1, volume2, K, cor_ISC)
 end
 
 function shell_correlation_FSC(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64=0)
-  shell_correlation(volume1, volume2, K, cor_FSC)
+    shell_correlation(volume1, volume2, K, cor_FSC)
 end
 
 function ISC(density::SphericalHarmonicsVolume, intensity::SphericalHarmonicsVolume, K::Int64=0)
-  return shell_correlation_ISC(intensity, absoluteSquare(forward(density)), K)
+    return shell_correlation_ISC(intensity, absoluteSquare(forward(density)), K)
 end
 
 function FSC(density::SphericalHarmonicsVolume, fourier::SphericalHarmonicsVolume, K::Int64=0)
-  return shell_correlation_FSC(fourier, forward(density), K)
+    return shell_correlation_FSC(fourier, forward(density), K)
 end
 
 "Calculates the similarity between two sets of coefficients via Fourier Shell Correlation"
 function similarity(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64)
-  return sum(shell_correlation_ISC(volume1, volume2, K))/K
+    return sum(shell_correlation_ISC(volume1, volume2, K))/K
 end
 
 "Calculates the similarity between two sets of coefficients via Fourier Shell Correlation"
 function similarity(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume)
-  return similarity(volume1, volume2, volume1.KMAX)
+    return similarity(volume1, volume2, volume1.KMAX)
 end
 
 #Complex to real and real to complex
@@ -439,7 +439,7 @@ function Umat(l)
 
     U = function(u,m)
         return ( Delta(m,0)*Delta(u,0) + 1/sqrt(2)*( Gamma(u)*Delta(m,u) + Gamma(-u)*1im*(-1)^m*Delta(m,u)+
-                Gamma(-u)*(-1im)*Delta(m,-u)+Gamma(u)*(-1)^m*Delta(m,-u)))
+        Gamma(-u)*(-1im)*Delta(m,-u)+Gamma(u)*(-1)^m*Delta(m,-u)))
     end
 
     return Complex{Float64}[ U(x,y) for x = -l:l, y= -l:l]
@@ -482,8 +482,8 @@ function getVolumeInterpolated(volume::SurfaceVolume, vec::Vector{Float64})
     k1 = k0
 
     if volume.radial_interp
-      k0 = Int64(clamp(round(Int64, floor(k)), 1, volume.KMAX))
-      k1 = Int64(clamp(round(Int64, ceil(k)), 1, volume.KMAX))
+        k0 = Int64(clamp(round(Int64, floor(k)), 1, volume.KMAX))
+        k1 = Int64(clamp(round(Int64, ceil(k)), 1, volume.KMAX))
     end
 
     #phi_k = 2*pi*k/2B,
@@ -510,40 +510,40 @@ function getVolumeInterpolated(volume::SurfaceVolume, vec::Vector{Float64})
     V111 = a* b* c
 
     return      V000 * surf[k0][ang_to_i(p0,t0,volume.LMAX)] +
-                V100 * surf[k1][ang_to_i(p0,t0,volume.LMAX)] +
-                V010 * surf[k0][ang_to_i(p1,t0,volume.LMAX)] +
-                V001 * surf[k0][ang_to_i(p0,t1,volume.LMAX)] +
-                V101 * surf[k1][ang_to_i(p0,t1,volume.LMAX)] +
-                V011 * surf[k0][ang_to_i(p1,t1,volume.LMAX)] +
-                V110 * surf[k1][ang_to_i(p1,t0,volume.LMAX)] +
-                V111 * surf[k1][ang_to_i(p1,t1,volume.LMAX)]
+    V100 * surf[k1][ang_to_i(p0,t0,volume.LMAX)] +
+    V010 * surf[k0][ang_to_i(p1,t0,volume.LMAX)] +
+    V001 * surf[k0][ang_to_i(p0,t1,volume.LMAX)] +
+    V101 * surf[k1][ang_to_i(p0,t1,volume.LMAX)] +
+    V011 * surf[k0][ang_to_i(p1,t1,volume.LMAX)] +
+    V110 * surf[k1][ang_to_i(p1,t0,volume.LMAX)] +
+    V111 * surf[k1][ang_to_i(p1,t1,volume.LMAX)]
 end
 
 """Calculates a cube from spherical shells"""
 function getCube(volume::SurfaceVolume)
-  cubesize = 2*volume.KMAX+1
-  getCube(volume, cubesize)
+    cubesize = 2*volume.KMAX+1
+    getCube(volume, cubesize)
 end
 
 """Calculates a cube from spherical harmonics coefficients"""
 function getCube(volume::SphericalHarmonicsVolume)
-  return getCube(getSurfaceVolume(volume))
+    return getCube(getSurfaceVolume(volume))
 end
 
 """Calculates a cube from spherical shells"""
 function getCube(volume::SurfaceVolume, cubesize::Int64)
-  r = linspace(-volume.rmax, volume.rmax, cubesize)
-  return CubeVolume(Complex{Float64}[getVolumeInterpolated(volume,[x,y,z]) for x=r, y=r, z=r], cubesize, volume.rmax)
+    r = linspace(-volume.rmax, volume.rmax, cubesize)
+    return CubeVolume(Complex{Float64}[getVolumeInterpolated(volume,[x,y,z]) for x=r, y=r, z=r], cubesize, volume.rmax)
 end
 
 """Calculates a cube from spherical harmonics coefficients"""
 function getCube(volume::SphericalHarmonicsVolume, cubesize::Int64)
-  return getCube(getSurfaceVolume(volume), cubesize)
+    return getCube(getSurfaceVolume(volume), cubesize)
 end
 
 """Saving the cube calculated from a spherical harmonics volume"""
 function saveCube(volume::SphericalHarmonicsVolume, filename)
-  saveCube(getCube(volume), filename)
+    saveCube(getCube(volume), filename)
 end
 
 ##########################################################
@@ -553,7 +553,7 @@ end
 
 """Big number factorial function"""
 function myfactorial(x)
-  return factorial(BigInt(x))
+    return factorial(BigInt(x))
 end
 
 """working calculation of the matrix d elements taken from:
@@ -585,19 +585,19 @@ end
 
 """Rotates a volume via rotating the coefficients"""
 function rotateStructure(volume::SphericalHarmonicsVolume, theta::Float64, phi::Float64, gamma::Float64, K::Int64, lrange::Range)
-	newvol = deepcopy(volume)
+    newvol = deepcopy(volume)
 
-	for l in lrange
-		rot = rotationMatrix(theta, phi, gamma, l)
-		for k = 1:K
-			cvec_set(newvol,k,l, rot*cvec_get(volume, k,l) )
-		end
-	end
-	return newvol
+    for l in lrange
+        rot = rotationMatrix(theta, phi, gamma, l)
+        for k = 1:K
+            cvec_set(newvol,k,l, rot*cvec_get(volume, k,l) )
+        end
+    end
+    return newvol
 end
 """Overloaded version of the rotateStruture function"""
 function rotateStructure(volume::SphericalHarmonicsVolume, theta::Float64, phi::Float64, gamma::Float64, K::Int64, L::Int64)
-  return rotateStructure(volume, theta, phi, gamma, K, 1:L)
+    return rotateStructure(volume, theta, phi, gamma, K, 1:L)
 end
 
 """Calculates the function at k,phi,theta for a set of spherical harmonic coefficient"""

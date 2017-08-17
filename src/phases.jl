@@ -17,7 +17,7 @@ end
 function B(density::SurfaceVolume, amplitudes::SurfaceVolume)
 	# Fourier Transformation
 	fourier = forward(density)
-
+	
 	# Extract the phases from the Fourier transformation
 	for k = 1:fourier.KMAX
 		fourier.surf[k] = amplitudes.surf[k] .* exp(1im*angle(fourier.surf[k]))
@@ -32,8 +32,8 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 
 	Koff = ceil(Int64, intensity.KMAX / 2)
 
- 	amplitudes = getSurfaceVolume(intensity)
- 	amplitudes.surf = map(sqrt,  map((x)-> max(x, 0.0),  real(amplitudes.surf)) )
+	amplitudes = getSurfaceVolume(intensity)
+	amplitudes.surf = map(sqrt,  map((x)-> max(x, 0.0),  real(amplitudes.surf)) )
 
 	# #Calculating the phases of a ball
 	# ball = deepcopy(intensity)
@@ -43,29 +43,29 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 	# end
 	# ball_phases = getSurfaceVolume(forward(ball))
 
- 	# Setting up the starting amplitudes with random initial phases
+	# Setting up the starting amplitudes with random initial phases
 	fourier = deepcopy(amplitudes)
- 	for k = 1:fourier.KMAX
- 		phases = pi * 2 * rand(num_val(fourier.LMAX))
+	for k = 1:fourier.KMAX
+		phases = pi * 2 * rand(num_val(fourier.LMAX))
 		# phases = angle(ball_phases.surf[k])
- 		fourier.surf[k] = amplitudes.surf[k] .* exp(1im * phases)
- 	end
+		fourier.surf[k] = amplitudes.surf[k] .* exp(1im * phases)
+	end
 
 	density = backward(fourier)
- 	tmp1 = 2.0*B(density, amplitudes) - density #reflection
+	tmp1 = 2.0*B(density, amplitudes) - density #reflection
 	diffa = deepcopy(tmp1)
 	tmp2 = deepcopy(tmp1)
 
 	# progress = Progress(iterations, 1, "Phase retrieval...", 50)
-  diff_dens_list = Float64[]
-  diff_amp_list = Float64[]
+	diff_dens_list = Float64[]
+	diff_amp_list = Float64[]
 
- 	for n = 1:iterations
+	for n = 1:iterations
 		#Alternate reflections
 		beta = exp((-n/tau)^3.0)*beta0 + (1.0-exp((-n/tau)^3.0))*beta_max
- 		tmp3 = A(tmp1, Koff)
- 		tmp_u = 0.5*(beta*(2.0*tmp3 -tmp1) + (1.0-beta)*tmp1 + density)
- 		tmp2 = B(tmp_u, amplitudes)
+		tmp3 = A(tmp1, Koff)
+		tmp_u = 0.5*(beta*(2.0*tmp3 -tmp1) + (1.0-beta)*tmp1 + density)
+		tmp2 = B(tmp_u, amplitudes)
 
 		#Difference tracking in real space
 		diff_dens = sumabs(density - tmp_u)/sumabs(density)
@@ -75,22 +75,22 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 		#Difference tracking in Fourier space
 		# d_fourier = forward(tmp_u)
 		# diff_amp = sumabs([sumabs(amplitudes.surf[k]) > 1e-16 ? sumabs( abs(d_fourier.surf[k]) - amplitudes.surf[k])/sumabs(amplitudes.surf[k]) : 0.0 for k = 1:density.KMAX])
-    # push!(diff_amp_list, diff_amp)
+		# push!(diff_amp_list, diff_amp)
 
 		#Last step
 		density = deepcopy(tmp_u)
- 		tmp1 = 2.0*tmp2 - tmp_u
+		tmp1 = 2.0*tmp2 - tmp_u
 
 		#show progress
 		# progress.desc = "$(diff_dens) ($(diff_amp)): "
 		# next!(progress)
- 	end
-    if plotting
-        plot(collect(1:iterations), diff_dens_list, label="diff dens")
-        plot(collect(1:iterations), diff_amp_list, label="diff amp")
-    end
+	end
+	if plotting
+		plot(collect(1:iterations), diff_dens_list, label="diff dens")
+		plot(collect(1:iterations), diff_amp_list, label="diff amp")
+	end
 
- 	density = A(tmp2, Koff)
+	density = A(tmp2, Koff)
 	return getSphericalHarmonicsVolume(density)
 end
 
@@ -105,8 +105,8 @@ function createCenterCube(cubesize, ratio)
 	center = cubesize/2
 	println("Creating support cube with cubesize:$cubesize,ratio:$ratio,edge:$edge,core:$core")
 	c = [x > edge && x <= cubesize-edge &&
-	       y > edge && y <= cubesize-edge &&
-	       z > edge && z <= cubesize-edge ? 1.0 : 0.0 for x=1:cubesize, y=1:cubesize, z=1:cubesize]
+	y > edge && y <= cubesize-edge &&
+	z > edge && z <= cubesize-edge ? 1.0 : 0.0 for x=1:cubesize, y=1:cubesize, z=1:cubesize]
 	# c = [ norm([x,y,z] - [center, center, center]) < cubesize/4 ? 1.0 : 0.0 for x=1:cubesize, y=1:cubesize, z=1:cubesize  ]
 	# saveCube(c, cubesize, "supportCube.mrc")
 	return c

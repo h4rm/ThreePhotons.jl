@@ -6,13 +6,13 @@ end
 
 #Constant directory with atom information
 atomfactorlist = Dict( "C" => atomfactor(0.7, 6.0),
-                    "N" => atomfactor(0.65, 7.0),
-                    "S" => atomfactor(1.0, 16.0),
-                    "O" => atomfactor(0.6, 8.0),
-                "default" => atomfactor(0.7, 6.0),
-                    "P" => atomfactor(0.65, 15.0),
-                    "H" => atomfactor(0.3, 1.0),
-                    "D" => atomfactor(0.3, 1.0)
+"N" => atomfactor(0.65, 7.0),
+"S" => atomfactor(1.0, 16.0),
+"O" => atomfactor(0.6, 8.0),
+"default" => atomfactor(0.7, 6.0),
+"P" => atomfactor(0.65, 15.0),
+"H" => atomfactor(0.3, 1.0),
+"D" => atomfactor(0.3, 1.0)
 )
 
 """Atom type with position and type"""
@@ -122,28 +122,28 @@ end
 
 """Loads a pdb file and creates a cubic description of the electron denisty, the Fourier transform and the Intensity (absolute square FT)"""
 function createCubicStructure(moleculepdb, cubesize::Integer, rmax::Float64)
-  println("Initializing cubic structure from $moleculepdb with cubesize=$cubesize, rmax=$rmax.")
-  atomlist = loadPDB(moleculepdb)
+    println("Initializing cubic structure from $moleculepdb with cubesize=$cubesize, rmax=$rmax.")
+    atomlist = loadPDB(moleculepdb)
 
-  #Calculate optional cubic representation
-  densCube = getDensityCube(atomlist, cubesize, rmax)
-  fourierCube = forward(densCube)
-  intensCube = absoluteSquare(fourierCube)
+    #Calculate optional cubic representation
+    densCube = getDensityCube(atomlist, cubesize, rmax)
+    fourierCube = forward(densCube)
+    intensCube = absoluteSquare(fourierCube)
 
-  return densCube, fourierCube, intensCube
+    return densCube, fourierCube, intensCube
 end
 
 """Expands a cubic volume in a spherical harmonics expansion"""
 function cubeToSphericalHarmonics(volume::CubeVolume, KMAX::Int64, LMAX::Int64)
-  rmax = volume.rmax
-  surflist = Array{Complex{Float64},1}[]
-  dr = rmax/KMAX
-  for k = 1:KMAX
-      r = k*dr
-      push!(surflist, getSurface((phi,theta)->getVolumeInterpolated(volume, sphericalToCartesian(r,phi,theta)), LMAX))
-  end
-  surfVolume = SurfaceVolume(surflist, LMAX, KMAX, rmax)
+    rmax = volume.rmax
+    surflist = Array{Complex{Float64},1}[]
+    dr = rmax/KMAX
+    for k = 1:KMAX
+        r = k*dr
+        push!(surflist, getSurface((phi,theta)->getVolumeInterpolated(volume, sphericalToCartesian(r,phi,theta)), LMAX))
+    end
+    surfVolume = SurfaceVolume(surflist, LMAX, KMAX, rmax)
 
-  return getSphericalHarmonicsVolume(surfVolume)
+    return getSphericalHarmonicsVolume(surfVolume)
 
 end
