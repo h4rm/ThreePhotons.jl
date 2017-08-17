@@ -95,7 +95,7 @@ function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::I
     generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K=$K, N=$N, max_triplets=$max_triplets, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles))
     """
 
-    launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs)
+    launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="haswell|broadwell|skylake")
 end
 
 """Calculates the resolution of corresponding (dq,K,L) combination"""
