@@ -40,21 +40,21 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 
         if state["state"] == "running"
             params,state = rotation_search(params, state)
-            postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
+            postprocess_run(params, state, "$(reference_pdb_path)", true, 35, $sigma)
         elseif state["state"] == "finished_structure" && $postprocess
-            postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
+            postprocess_run(params, state, "$(reference_pdb_path)", true, 35, $sigma)
         elseif $force_repostprocess
             #TODO: Temporary fix for wrong results in noise runs
             params["rmax"] = $rmax
             state["intensity"].rmax = qmax(params["KMAX"], params["rmax"])
-            postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
+            postprocess_run(params, state, "$(reference_pdb_path)", true, 35, $sigma)
         end
 
         #Or start a completely new run
     else
         params,state = rotation_search(Dict( "reference_pdb_path"=>"$(reference_pdb_path)", "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(histograms)", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax))
         if $postprocess
-            postprocess_run(params, state, $(reference_pdb_path), true, 35, $sigma)
+            postprocess_run(params, state, "$(reference_pdb_path)", true, 35, $sigma)
         end
     end
     """
