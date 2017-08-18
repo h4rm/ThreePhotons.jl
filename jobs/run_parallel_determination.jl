@@ -43,7 +43,7 @@ if ENV_name == "owl" || ENV_name == "gwdg"
 end
 
 #For coliphage
-run_determination("exp_data/coliphage_determination", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage/correlations.dat", initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1000, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01)
+# run_determination("exp_data/coliphage_determination", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage/correlations.dat", initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1000, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01)
 
 #For multi particle
-run_determination("multi_particle", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/data_generation/multi_2_SH_10p_N32_K38_R38.0_P3276800000/histo.dat", initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01)
+# run_determination("multi_particle", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/data_generation/multi_2_SH_10p_N32_K38_R38.0_P3276800000/histo.dat", initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/data/structures/crambin.pdb")
