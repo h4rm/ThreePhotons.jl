@@ -41,11 +41,11 @@ function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64
 end
 
 #Combine noisy histograms
-combine_set_noise(Integer(3.2768e9), Integer(2*2.048e7), [2.5], [0.4, 0.5], 10, 38, 32)
+# combine_set_noise(Integer(3.2768e9), Integer(2*2.048e7), [2.5], [0.4, 0.5], 10, 38, 32)
 
-function combine_set(images::Array{Int64}, setsize::Int64, ppi::Int64=10, K::Int64=38, N::Int64=32)
+function combine_set(images::Array{Int64}, setsize::Int64, ppi::Int64=10, K::Int64=38, N::Int64=32, prefix::String="$(ENV["DETERMINATION_DATA"])/data_generation/parts/SH_")
   for pic in images
-    name = histogram_name("parallel/data_generation/parts/SH_", ppi, N, K, float(K), setsize, "")
+    name = histogram_name(prefix, ppi, N, K, float(K), setsize, "")
     combine_histograms(name, pic, K, N, setsize)
   end
 end
@@ -53,3 +53,7 @@ end
 #Combine non noisy histograms
 # combine_set(calculate_images_ppi(25)[5:6], calculate_images_ppi(25)[4], 25)
 # combine_set(calculate_images_ppi(50)[5:6], calculate_images_ppi(50)[4], 50)
+
+#Combine multi particle
+#generate_single_multiparticle_histogram(Integer(3.2768e9), Integer(2*2.048e7), 2)
+# combine_set([Integer(3.2768e9)], Integer(2*2.048e7), 10, 38, 32, environment_path("data_generation/parts/multi_2_SH_"))
