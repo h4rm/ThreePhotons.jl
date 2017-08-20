@@ -121,18 +121,6 @@ export
 	countTriplets,
 	countDoublets,
 
-	#correlations
-	C2, C3,
-	C2Shared, C3Shared,
-	AbstractBasisType,
-	BasisType,
-	twoPhotons,
-	retrieveSolution,
-	alpharange,
-	complexBasis,
-	FullCorrelation_parallized,
-	energy,
-
 	#structure determination
 	randomStartStructure,
 	randomPertubation,

@@ -1,3 +1,19 @@
+export
+    C2, C3,
+    C2Shared, C3Shared,
+    AbstractBasisType,
+    BasisType,
+    twoPhotons,
+    retrieveSolution,
+    alpharange,
+    complexBasis,
+    FullCorrelation_parallized,
+    energy,
+    flab,
+    alpharange
+
+
+
 typealias C2 Array{Float64, 3}
 typealias C2Shared SharedArray{Float64, 3}
 typealias C3 Array{Float64, 5}
