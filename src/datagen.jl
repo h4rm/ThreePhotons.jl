@@ -276,26 +276,27 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
 
         c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
-        c1 = zeros(Float64,K)
-        c2 = zeros(Float64,N,K,K)
-        c3 = zeros(Float64,N,N,K,K,K)
+            c1 = zeros(Float64,K)
+            c2 = zeros(Float64,N,K,K)
+            c3 = zeros(Float64,N,N,K,K,K)
 
-        for j=1:batchsize
-            photon_list = Vector{Float64}[]
+            for j=1:batchsize
+                photon_list = Vector{Float64}[]
 
-            for n=1:number_particles
-                single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance)
+                for n=1:number_particles
+                    single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance)
 
-                if noise.gamma > 0.0
-                    noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot)
-                    append!(single_molecule, noise)
+                    if noise.gamma > 0.0
+                        noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot)
+                        append!(single_molecule, noise)
+                    end
+                    append!(photon_list, single_molecule)
                 end
-                append!(photon_list, single_molecule)
-            end
 
-            histogramMethod(photon_list, c1, c2, c3, dq, N, K)
+                histogramMethod(photon_list, c1, c2, c3, dq, N, K)
+            end
+            (c1, c2, c3)
         end
-        (c1, c2, c3)
     end
 
     c1_full += c1_part
