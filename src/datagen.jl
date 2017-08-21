@@ -123,7 +123,7 @@ end
 # end
 
 """This calculates the 3 photon correlation for a sparse image"""
-function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c2::C2, c3::C3, dq::Float64, N::Int64, K::Int64)
+function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c1::C1, c2::C2, c3::C3, dq::Float64, N::Int64, K::Int64)
     da = pi/N
 
     #Define picture filter function
@@ -140,6 +140,8 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
     for i = 1:l
         p1 = picture[i]
         k1 = round(Int64,norm(p1)/dq)
+
+        c1[k1] += Float64(1.0 / k1)
 
         for j = 1:(i-1)
 
@@ -253,6 +255,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     #cutoff parameters
     dq = qcut/K
 
+    c1_full = zeros(Float64, K)
     c2_full = zeros(Float64,(N, K,K))
     c3_full = zeros(Float64,(N,N,K,K,K))
     params = Dict("num_pictures"=>0, "num_incident_photons"=>number_incident_photons, "noise"=>noise, "qcut"=>qcut, "K"=>K, "N"=>N, "qcut"=>qcut, "dq"=>dq)
@@ -272,7 +275,8 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     #Make batches of 1000 pictures so we can save often
     while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
 
-        c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2])) for i = 1:numprocesses
+        c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
+        c1 = zeros(Float64,K)
         c2 = zeros(Float64,N,K,K)
         c3 = zeros(Float64,N,N,K,K,K)
 
@@ -289,29 +293,29 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
                 append!(photon_list, single_molecule)
             end
 
-            histogramMethod(photon_list, c2, c3, dq, N, K)
+            histogramMethod(photon_list, c1, c2, c3, dq, N, K)
         end
-        (c2, c3)
+        (c1, c2, c3)
     end
 
+    c1_full += c1_part
     c2_full += c2_part
     c3_full += c3_part
 
     params["num_pictures"] += numprocesses*batchsize #In numprocesses, we created 'batchsize' pictures
     current_triplets = countTriplets(c3_full)
-    serializeToFile(file, (params, c2_full, c3_full))
+    serializeToFile(file, (params, c2_full, c3_full, c1_full))
 
     println("triplets: $current_triplets\tpictures: $(params["num_pictures"]) / $(max_pictures) ($(params["num_pictures"]/max_pictures*100.0) perc.)")
     flush(STDOUT)
 
-end
 end
 
 "Loading a histogram from a file and store two/three photon histograms in global variables."
 function loadHistograms(K::Int64, file="expdata/correlations_N32_K25_P2048000.dat")
 
     #Try loading two different structure types
-    params, c2_full, c3_full = deserializeFromFile(file)
+    params, c2_full, c3_full, c1_full = deserializeFromFile(file)
     println("Loaded $(countDoublets(c2_full)) doublets and $(countTriplets(c3_full)) triplets from $file generated from $(params["num_pictures"]) pictures.")
 
     c2_full = max(c2_full, 1e-30)
@@ -323,7 +327,7 @@ function loadHistograms(K::Int64, file="expdata/correlations_N32_K25_P2048000.da
     c3 = c3_full[:,:,1:K,1:K,1:K]
     c3 = c3 / sumabs(c3)
 
-    return c2_full, c2, c3_full, c3
+    return c2_full, c2, c3_full, c3, c1_full
 end
 
 """Calculates the total number of triplets in a histogram"""

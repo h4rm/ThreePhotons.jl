@@ -1,5 +1,5 @@
 export
-    C2, C3,
+    C1, C2, C3,
     C2Shared, C3Shared,
     AbstractBasisType,
     BasisType,
@@ -13,7 +13,8 @@ export
     alpharange
 
 
-
+typealias C1 Vector{Float64}
+typealias C1Shared SharedArray{Float64, 1}
 typealias C2 Array{Float64, 3}
 typealias C2Shared SharedArray{Float64, 3}
 typealias C3 Array{Float64, 5}
