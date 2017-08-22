@@ -64,6 +64,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
     distances,angles2,angles3 = precompute_distances_and_angles(sx, N)
 
+    c1_full = zeros(Float64, K2)
     c2_full = zeros(Float64, N, K2, K2)
     c3_full = zeros(Float64, N, N, K3, K3, K3)
     number_analyzed_images = 0
@@ -71,14 +72,16 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
     for j=1:ceil(Int64, length(image_list)/nworkers())
         println("Processing batch $j")
         #Processing next batch of nworkers() images
-        c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2])) for i=((j-1)*nworkers()+1):clamp(j*nworkers()+1, 1, length(image_list))
+        c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i=((j-1)*nworkers()+1):clamp(j*nworkers()+1, 1, length(image_list))
             image = image_list[i]
             println("Processing image #$(i)")
+            c1_local = zeros(Float64, K2)
             c2_local = zeros(Float64, N, K2, K2)
             c3_local = zeros(Float64, N, N, K3, K3, K3)
             for x1 = range
                 for y1 = range
                     @inbounds k1 = distances[x1,y1]
+                    @inbounds c1_local[k1] += (1/k1)
 
                     for x2 = range
                         for y2 = range
@@ -111,13 +114,14 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                 end
             end
             flush(STDOUT)
-            (c2_local, c3_local)
+            (c1_local, c2_local, c3_local)
         end
+        c1_full += c1_part
         c2_full += c2_part
         c3_full += c3_part
         number_analyzed_images += nworkers()
 
-        serializeToFile(filename, ( Dict("num_pictures"=>number_analyzed_images, "num_incident_photons"=>0, "qcut"=>1.0, "K2"=>K2, "K3"=>K3, "N"=>N, "dq"=>0.1), c2_full, c3_full))
+        serializeToFile(filename, ( Dict("num_pictures"=>number_analyzed_images, "num_incident_photons"=>0, "qcut"=>1.0, "K2"=>K2, "K3"=>K3, "N"=>N, "dq"=>0.1), c2_full, c3_full, c1_full))
         flush(STDOUT)
     end
 end
