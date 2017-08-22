@@ -1,3 +1,20 @@
+export
+    Noise,
+    GaussianNoise,
+    pointsPerOrientation,
+    tripletFactor,
+    doubletFactor,
+    histogramCorrelationsInPicture_alltoall,
+    get_noise_volume,
+    compton_scattering,
+    compton_scattering_q,
+    get_compton_noise_volume,
+    generateHistogram,
+    loadHistograms,
+    countTriplets,
+    countDoublets,
+    detector_to_Ewald_sphere
+
 """Abstract noise type, to be extended in the future"""
 abstract Noise
 
@@ -6,6 +23,14 @@ type GaussianNoise <: Noise
     gamma::Float64
     sigma::Float64
     photons::Int64
+end
+
+function detector_to_Ewald_sphere(vec::Vector{Float64}, lambda::Float64=1.0)
+    k = norm(vec[1:2])
+    theta = acos(k*lambda/(4*pi))
+    c = cos(theta) #Note that theta should be pi/2 for lambda -> 0
+    s = sin(theta)
+    return Float64[s*vec[1:2]; c*k]
 end
 
 """
@@ -17,7 +42,7 @@ Returns a scattering image for one random orientation given a cubic Intensity vo
 @params gamma: contribution of noise as ratio to intensity
 @params sigma: width of noise
 """
-function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Float64, number_incident_photons::Int64; incident_photon_variance::Int64 = 0, rot::Matrix{Float64}=random_rotation(3))
+function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Float64, number_incident_photons::Int64; incident_photon_variance::Int64 = 0, rot::Matrix{Float64}=random_rotation(3), lambda::Float64=1.0)
     maxIntensity = real(getVolumeInterpolated(volume, [0.0,0.0,0.0]))
     if typeof(volume) == SurfaceVolume
         maxIntensity *= 1.3
@@ -47,7 +72,7 @@ function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Flo
         p = incidents[:,i]
 
         if norm(p) <= qcut
-            rp = rot*p
+            rp = rot*detector_to_Ewald_sphere(p, lambda)
             ratio = real(getVolumeInterpolated(volume, rp))/(maxIntensity/max_gauss*gx(rp))
             if ratio > 1.0
                 println(STDERR, "Probability ratio is larger than 1.0: ratio:$ratio, norm:$(norm(rp)), incident_photons:$(number_incident_photons), sigma:$(envelope_sigma), qcut:$(qcut).")
@@ -154,7 +179,7 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
             val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
             c2[a2i,k2,k1] += val2
-            c2[N-a2i+1,k2,k1] += val2
+            # c2[N-a2i+1,k2,k1] += val2 #TODO: Check if this is still valid for lambda > 0.0
 
             for k = 1:(j-1) #this implies k2 >= k3
 
@@ -165,7 +190,7 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
                 val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
                 c3[a3i,bi,k3,k2,k1] += val3
-                c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3
+                # c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3 #TODO: Check if this is still valid for lambda > 0.0
             end
         end
     end
@@ -250,7 +275,7 @@ Generates pictures and histograms the triplets in these pictures without reusing
 @params gamma:
 @params sigma:
 """
-function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N::Int64=32, max_triplets::Int64=Int64(1e10), max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1)
+function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N::Int64=32, max_triplets::Int64=Int64(1e10), max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0)
 
     #cutoff parameters
     dq = qcut/K
@@ -284,10 +309,10 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
                 photon_list = Vector{Float64}[]
 
                 for n=1:number_particles
-                    single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance)
+                    single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance, lambda=lambda)
 
                     if noise.gamma > 0.0
-                        noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot)
+                        noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot, lambda=lambda)
                         append!(single_molecule, noise)
                     end
                     append!(photon_list, single_molecule)

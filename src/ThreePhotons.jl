@@ -105,22 +105,6 @@ export
 	get_value,
 	negativityCheck,
 
-	#datagen
-	Noise,
-	GaussianNoise,
-	pointsPerOrientation,
-	tripletFactor,
-	doubletFactor,
-	histogramCorrelationsInPicture_alltoall,
-	get_noise_volume,
-	compton_scattering,
-	compton_scattering_q,
-	get_compton_noise_volume,
-	generateHistogram,
-	loadHistograms,
-	countTriplets,
-	countDoublets,
-
 	#structure determination
 	randomStartStructure,
 	randomPertubation,
