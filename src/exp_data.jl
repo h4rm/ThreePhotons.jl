@@ -29,6 +29,7 @@ function precompute_distances_and_angles(image_width::Int64, N::Int64)
     distances = zeros(Int64, image_width, image_width)
     angles2 = zeros(Int64, image_width, image_width, image_width, image_width)
     angles3 = zeros(Int64, image_width, image_width, image_width, image_width)
+
     range = 1:image_width
     center = Float64[image_width/2+0.5,image_width/2+0.5, 0.0]
     da = pi/N
@@ -39,10 +40,12 @@ function precompute_distances_and_angles(image_width::Int64, N::Int64)
             for x2 = range
                 for y2 = range
                     p2 = Float64[x2,y2, 0.0] - center
-                    angle2 = angle_between_simple(p1,p2)
-                    angle3 = mod(angle_between(p1,p2),pi)
+                    @fastmath angle2 = angle_between_simple(p1,p2)
+                    @fastmath angle3 = mod(angle_between(p1,p2),pi)
+
                     @inbounds angles2[x1, y1, x2, y2] = clamp(floor(Int64, angle2/da) + 1, 1, N)
                     @inbounds angles3[x1, y1, x2, y2] = clamp(floor(Int64, angle3/da) + 1, 1, N)
+
                 end
             end
         end
