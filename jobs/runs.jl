@@ -69,7 +69,7 @@ function histogram_name(prefix::String, ppi::Int64, N::Int64, KMAX::Int64, rmax:
 end
 
 """Starts a cluster job for synthetic correlation generation"""
-function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K::Integer=35, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1)
+function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K::Integer=35, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0)
     name = ""
     if max_triplets > 0
         name = "$(prefix)_N$(N)_K$(K)_R$(rmax)_T$(max_triplets)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
@@ -92,7 +92,7 @@ function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::I
         volume.radial_interp = false
     end
 
-    generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K=$K, N=$N, max_triplets=$max_triplets, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles))
+    generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K=$K, N=$N, max_triplets=$max_triplets, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles), lambda=$(lambda))
     """
 
     launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="haswell|broadwell|skylake")
