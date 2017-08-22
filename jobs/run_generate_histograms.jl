@@ -1,6 +1,6 @@
 include("runs.jl")
 
-function generate_histogram_image(img::Int64, K::Int64, N::Int64; setsize::Int64=Integer(2*2.048e7), name::String="", lambda::Float64=1.0)
+function generate_histogram_image(img::Int64, ppi::Int64, K::Int64, N::Int64; setsize::Int64=Integer(2*2.048e7), name::String="", lambda::Float64=1.0)
     if img <= setsize
         generate_histograms(; max_pictures = img, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(img/8), successive_jobs=1, prefix="SH_", suffix="", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", lambda=lambda)
 
@@ -14,11 +14,11 @@ end
 
 function generate_histogram_set_ppi(ppi::Int64=10; K::Int64=38, N::Int64=32)
     for img in calculate_images_ppi(ppi)
-        generate_histogram_image(img, K, N)
+        generate_histogram_image(img, ppi, K, N)
     end
 end
 
-# generate_histogram_image(Integer(3.2768e9), 38, 32; setsize=Integer(2*2.048e7), name="Ewald_", lambda=1.0)
+# generate_histogram_image(Integer(3.2768e8), 100, 38, 32; setsize=Integer(2*2.048e7), name="Ewald_", lambda=1.0)
 
 # generate_histogram_set_ppi(25)
 # generate_histogram_set_ppi(50)
