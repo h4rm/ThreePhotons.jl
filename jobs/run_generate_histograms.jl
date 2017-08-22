@@ -2,12 +2,12 @@ include("runs.jl")
 
 function generate_histogram_image(img::Int64, ppi::Int64, K::Int64, N::Int64; setsize::Int64=Integer(2*2.048e7), name::String="", lambda::Float64=1.0)
     if img <= setsize
-        generate_histograms(; max_pictures = img, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(img/8), successive_jobs=1, prefix="SH_", suffix="", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["THREEPHOTONS_PATH"])/structures/crambin.pdb", lambda=lambda)
+        generate_histograms(; max_pictures = img, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(img/8), successive_jobs=1, prefix="SH_", suffix="", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=lambda)
 
     else
         numbersets = ceil(Int64, img / setsize)
         for i = 1:numbersets
-            generate_histograms(; max_pictures = setsize, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(setsize/8), successive_jobs=1, prefix="parts/$(name)SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/data/structures/crambin.pdb", lambda=lambda)
+            generate_histograms(; max_pictures = setsize, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(setsize/8), successive_jobs=1, prefix="parts/$(name)SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=lambda)
         end
     end
 end
@@ -32,7 +32,7 @@ function generate_noisy_histograms()
                 setsize = Integer(2*2.048e7)
                 numbersets = Integer(3.2768e9 / setsize)
                 for i = 1:numbersets
-                    generate_histograms(; max_pictures = setsize, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=10, batchsize = Integer(2.56e5), successive_jobs=3, prefix="parts/SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", gamma=gamma, sigma=sigma, noise_photons=round(Int64, noise_photons[sigma] * gamma), structure_pdb_path="$(ENV["DETERMINATION_DATA"])/data/structures/crambin.pdb")
+                    generate_histograms(; max_pictures = setsize, max_triplets = Integer(0), Ncores=8, N=N, photons_per_image=10, batchsize = Integer(2.56e5), successive_jobs=3, prefix="parts/SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K=K, rmax=float(K), histogram_method="histogramCorrelationsInPicture_alltoall", gamma=gamma, sigma=sigma, noise_photons=round(Int64, noise_photons[sigma] * gamma), structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb")
                 end
             end
         end
