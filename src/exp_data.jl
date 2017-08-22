@@ -39,8 +39,9 @@ function precompute_distances_and_angles(image_width::Int64, N::Int64)
             for x2 = range
                 for y2 = range
                     p2 = Float64[x2,y2, 0.0] - center
-                    angle = mod(angle_between(p1,p2),pi)
-                    @inbounds angles[x1, y1, x2, y2] = clamp(floor(Int64, angle/da) + 1, 1, N)
+                    angle2 = angle_between_simple(p1,p2)
+                    angle3 = mod(angle_between(p1,p2),pi)
+                    @inbounds angles[x1, y1, x2, y2] = ( clamp(floor(Int64, angle2/da) + 1, 1, N), clamp(floor(Int64, angle3/da) + 1, 1, N))
                 end
             end
         end
@@ -80,16 +81,23 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                             @inbounds k2 = distances[x2,y2]
 
                             if k1 >= k2 && k1 > 0 && k2 > 0 && k1 <= K2 && k2 <= K2
-                                @inbounds ai = angles[x1,y1,x2,y2]
-                                @inbounds c2_local[ai,k2,k1] += real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
+                                @inbounds a2i = angles[x1,y1,x2,y2][1]
+                                @fastmath val2 = real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
+
+                                @inbounds c2_local[a2i,k2,k1] += val2
+                                @inbounds c2_local[N-a2i+1,k2,k1] += val2
 
                                 for x3 = range
                                     for y3 = range
                                         @inbounds k3 = distances[x3,y3]
 
                                         if k2 >= k3 && k3 > 0 && k1 <= K3 && k2<= K3 && k3 <= K3
-                                            bi = angles[x1,y1,x3,y3]
-                                            @inbounds c3_local[ai,bi,k3,k2,k1] += real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
+                                            @inbounds a3i = angles[x1,y1,x2,y2][2]
+                                            @inbounds bi = angles[x1,y1,x3,y3]
+                                            @fastmath val3 = real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
+
+                                            @inbounds c3_local[a3i,bi,k3,k2,k1] += val3
+                                            @inbounds c3_local[N-a3i+1,N-bi+1,k3,k2,k1] += val3
                                         end
                                     end
                                 end
