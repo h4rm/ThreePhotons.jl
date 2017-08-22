@@ -81,30 +81,35 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
             for x1 = range
                 for y1 = range
                     @inbounds k1 = distances[x1,y1]
-                    @inbounds c1_local[k1] += (1/k1)
 
-                    for x2 = range
-                        for y2 = range
-                            @inbounds k2 = distances[x2,y2]
+                    if k1 > 0 && k1 <= K2
+                        @inbounds c1_local[k1] += (1/k1)
 
-                            if k1 >= k2 && k1 > 0 && k2 > 0 && k1 <= K2 && k2 <= K2
-                                @inbounds a2i = angles2[x1,y1,x2,y2]
-                                @fastmath val2 = real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
+                        for x2 = range
+                            for y2 = range
+                                @inbounds k2 = distances[x2,y2]
 
-                                @inbounds c2_local[a2i,k2,k1] += val2
-                                @inbounds c2_local[N-a2i+1,k2,k1] += val2
+                                if k2 <= k1  && k2 > 0 && k2 <= K2
+                                    @inbounds a2i = angles2[x1,y1,x2,y2]
+                                    @fastmath val2 = real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
 
-                                for x3 = range
-                                    for y3 = range
-                                        @inbounds k3 = distances[x3,y3]
+                                    @inbounds c2_local[a2i,k2,k1] += val2
+                                    @inbounds c2_local[N-a2i+1,k2,k1] += val2
 
-                                        if k2 >= k3 && k3 > 0 && k1 <= K3 && k2<= K3 && k3 <= K3
-                                            @inbounds a3i = angles3[x1,y1,x2,y2]
-                                            @inbounds bi = angles3[x1,y1,x3,y3]
-                                            @fastmath val3 = real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
+                                    if k1 <= K3 && k2<= K3
+                                        for x3 = range
+                                            for y3 = range
+                                                @inbounds k3 = distances[x3,y3]
 
-                                            @inbounds c3_local[a3i,bi,k3,k2,k1] += val3
-                                            @inbounds c3_local[N-a3i+1,N-bi+1,k3,k2,k1] += val3
+                                                if k3 <= k2 && k3 > 0 && k3 <= K3
+                                                    @inbounds a3i = angles3[x1,y1,x2,y2]
+                                                    @inbounds bi = angles3[x1,y1,x3,y3]
+                                                    @fastmath val3 = real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
+
+                                                    @inbounds c3_local[a3i,bi,k3,k2,k1] += val3
+                                                    @inbounds c3_local[N-a3i+1,N-bi+1,k3,k2,k1] += val3
+                                                end
+                                            end
                                         end
                                     end
                                 end
