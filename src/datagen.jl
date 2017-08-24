@@ -191,7 +191,7 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
                 beta = mod(angle_between(p1,p3), pi)
                 bi = Int64(mod(floor(Int64, beta/da),N)+1)
 
-                @fastmth val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
+                @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
                 @inbounds c3[a3i,bi,k3,k2,k1] += val3
                 #TODO: Check if this is still valid for lambda > 0.0
                 # if lambda == 0.0
