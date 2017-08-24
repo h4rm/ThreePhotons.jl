@@ -26,11 +26,11 @@ type GaussianNoise <: Noise
 end
 
 function detector_to_Ewald_sphere(vec::Vector{Float64}, lambda::Float64=1.0)
-    k = norm(vec[1:2])
-    theta = acos(k*lambda/(4*pi))
+    q = norm(vec[1:2])
+    theta = acos(q*lambda/(4*pi))
     c = cos(theta) #Note that theta should be pi/2 for lambda -> 0
     s = sin(theta)
-    return Float64[s*vec[1:2]; c*k]
+    return Float64[s*vec[1:2]; c*q]
 end
 
 """
@@ -177,9 +177,12 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
             alpha3 = mod(angle_between(p1,p2), pi)
             a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
 
-            val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
-            c2[a2i,k2,k1] += val2
-            # c2[N-a2i+1,k2,k1] += val2 #TODO: Check if this is still valid for lambda > 0.0
+            @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
+            @inbounds c2[a2i,k2,k1] += val2
+            #TODO: Check if this is still valid for lambda > 0.0
+            # if lambda == 0.0
+            #     @inbounds c2[N-a2i+1,k2,k1] += val2
+            # end
 
             for k = 1:(j-1) #this implies k2 >= k3
 
@@ -188,9 +191,12 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
                 beta = mod(angle_between(p1,p3), pi)
                 bi = Int64(mod(floor(Int64, beta/da),N)+1)
 
-                val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
-                c3[a3i,bi,k3,k2,k1] += val3
-                # c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3 #TODO: Check if this is still valid for lambda > 0.0
+                @fastmth val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
+                @inbounds c3[a3i,bi,k3,k2,k1] += val3
+                #TODO: Check if this is still valid for lambda > 0.0
+                # if lambda == 0.0
+                #     @inbounds c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3
+                #  end
             end
         end
     end

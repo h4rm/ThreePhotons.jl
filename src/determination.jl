@@ -206,7 +206,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
         println("!!! Fallback to CPU-backend.")
     end
     flush(STDOUT)
-    
+
     #begin optimization with given optimizer
     params["optimizer"](out, params, state, c3ref)
 
