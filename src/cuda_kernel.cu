@@ -11,56 +11,38 @@
 
 extern "C"
 {
-
-  //Multiplies the coefficients according to basisindices list
-  __global__ void calculate_coefficient_matrix(const cuFloatComplex* coeff, const int numcoeff, const int kcut, const int* basisindices, const int basislen, float *faclist)
+  //Multiplies the coefficients according to indices list
+  __global__ void calculate_coefficient_matrix(const cuFloatComplex* coeff, const int numcoeff, const float* wignerlist, const int* indices, const int indiceslength, const int* PAcombos, const int combolength, float *PA, const int klength)
   {
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-    if(i<basislen)
+    int i = threadIdx.x + blockIdx.x * blockDim.x + 1;
+    if(i<=combolength)
     {
-      int k1i = basisindices[IDX2F(i+1, 1, basislen)];
-      int k2i = basisindices[IDX2F(i+1, 2, basislen)];
-      int k3i = basisindices[IDX2F(i+1, 3, basislen)];
+      const int k1 = PAcombos[IDX2F(1, i, 9)];
+      const int k2 = PAcombos[IDX2F(2, i, 9)];
+      const int k3 = PAcombos[IDX2F(3, i, 9)];
+      const int ki = PAcombos[IDX2F(4, i, 9)];
+      const int jstart = PAcombos[IDX2F(8, i, 9)];
+      const int mcombos = PAcombos[IDX2F(9, i, 9)];
 
-      int j = 0;
-      for(int k1=1; k1<=kcut; k1++){
-        const cuFloatComplex* ck1 = &coeff[(k1-1)*numcoeff];
-        for(int k2=1; k2<=k1; k2++){
-          const cuFloatComplex* ck2 = &coeff[(k2-1)*numcoeff];
-          for(int k3=1; k3<=k2; k3++){
-            const cuFloatComplex* ck3 = &coeff[(k3-1)*numcoeff];
-
-            // int j = IDX3(k1,k2,k3,kcut);
-            faclist[IDX2F(i+1, j+1, basislen)] = cuCrealf( cuCmulf(ck1[k1i-1], cuCmulf(ck2[k2i-1],ck3[k3i-1])) );
-            j += 1;
-          }
-        }
-      }
-    }
-  }
-
-  //Multiplies the coefficients according to basisindices list
-  __global__ void calculate_coefficient_matrix_optimized(const cuFloatComplex* coeff, const int* kmapping, const int numcoeff, const int kcut, const int* basisindices, const int basislen, float *faclist, const int klength)
-  {
-    const int i = threadIdx.x + blockIdx.x * blockDim.x;
-    const int j = threadIdx.y + blockIdx.y * blockDim.y;
-
-    if(i<basislen && j < klength)
-    {
-      const int k1i = basisindices[IDX2F(i+1, 1, basislen)];
-      const int k2i = basisindices[IDX2F(i+1, 2, basislen)];
-      const int k3i = basisindices[IDX2F(i+1, 3, basislen)];
-
-      const int k1 = kmapping[IDX2F(j+1, 1, klength)];
-      const int k2 = kmapping[IDX2F(j+1, 2, klength)];
-      const int k3 = kmapping[IDX2F(j+1, 3, klength)];
+      // printf("%d %d %d %d %d %d %d\n\n", i, k1, k2, k3, ki, jstart, mcombos);
 
       const cuFloatComplex* ck1 = &coeff[(k1-1)*numcoeff];
       const cuFloatComplex* ck2 = &coeff[(k2-1)*numcoeff];
       const cuFloatComplex* ck3 = &coeff[(k3-1)*numcoeff];
 
-      faclist[IDX2F(i+1, j+1, basislen)] = cuCrealf( cuCmulf(ck1[k1i-1], cuCmulf(ck2[k2i-1],ck3[k3i-1])) );
+      float As = 0.0;
+      for(int n=0; n < mcombos; n++){
+        const int j = jstart + n;
+        const int k1i = indices[IDX2F(1, j, 9)];
+        const int k2i = indices[IDX2F(2, j, 9)];
+        const int k3i = indices[IDX2F(3, j, 9)];
+        // printf("%d %d %d %d\n", j, k1i, k2i, k3i);
+        As += wignerlist[j-1]*cuCrealf(cuCmulf(ck1[k1i-1], cuCmulf(ck2[k2i-1],ck3[k3i-1])) );
+      }
+
+      for(int n=0; n <mcombos; n++){
+        PA[IDX2F(jstart+n,ki, indiceslength)] *= As;
+      }
     }
   }
-
 }

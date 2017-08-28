@@ -6,10 +6,12 @@ export
     twoPhotons,
     retrieveSolution,
     alpharange,
-    complexBasis,
+    calculate_basis,
     FullCorrelation_parallized,
     energy,
-    flab
+    flab,
+    calculate_triple_products,
+    calculate_triple_products_fast
 
 typealias C1 Vector{Float64}
 typealias C1Shared SharedArray{Float64, 1}
@@ -20,10 +22,14 @@ typealias C3Shared SharedArray{Float64, 5}
 
 abstract AbstractBasisType
 
+
 """Datatype for precalculated three photon correlation basis function"""
 type BasisType <: AbstractBasisType
-    basis::SharedArray{Float64,2}
-    basisindices::SharedArray{Int64,2}
+    wignerlist::Array{Float64,1}
+    indices::Array{Int64,2}
+    PAcombos::Array{Int64,2}
+    B::SharedArray{Float64,2}
+    P::SharedArray{Float64,2}
     basislen::Int64
     N::Int64
     L::Int64
@@ -31,7 +37,122 @@ type BasisType <: AbstractBasisType
     lrange::StepRange
     ctr::Dict
     rtc::Dict
+    K::Int64
+    lambda::Float64
+    dq::Float64
 end
+
+"""Helper function to calculate basis"""
+function calculate_combolist(K::Int64, mcombolist)
+    PAcombos = Int64[]
+    ki::Int64 = 1
+    num::Int64 = 0
+    for k1 = 1:K
+        for k2 = 1:k1
+            for k3 = 1:k2
+                for (l1,l2,l3,mcombos, jstart) in mcombolist
+                    num+=1
+                    append!(PAcombos, [k1,k2,k3,ki,l1,l2,l3,jstart,mcombos])
+                end
+                ki+=1
+            end
+        end
+    end
+    return reshape(PAcombos, 9, num)
+end
+
+"""Precalculated values for calculating the three-photon and two-photon correlation"""
+function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
+    lrange = forIntensity ? (0:2:L) : (0:L)
+    basislen = sum(abs(wigner(l1,m1, l2,m2, l3,-m3)) > 100*eps() ? 1 : 0 for l1=lrange for l2=lrange for l3=lrange for m1=-l1:l1 for m2=-l2:l2 for m3=-l3:l3)
+    klength = Integer(K*(K+1)*(K+2)/6)
+    qlist = Float64[acos(k*lambda*dq/(4*pi)) for k=1:K]
+
+    wignerlist = Array(Float64, basislen)
+    indiceslist = Array(Int64, 9, basislen)
+    B = SharedArray(Float64, N^2, basislen)
+    P = SharedArray(Float64, klength, basislen)
+    mcombolist = Vector{Int64}[]
+
+    ctr = Dict(l => Umat(l) for l=lrange)
+    rtc = Dict(l => ctranspose(ctr[l]) for l=lrange)
+
+    i = 1
+    for l1 = lrange
+        for l2 = lrange
+            for l3 = lrange
+                mcombos = 0
+                mcombo_istart = i
+                for m1 = -l1:l1
+                    for m2 = -l2:l2
+                        for m3 = -l3:l3
+                            w = wigner(l1,m1, l2,m2, l3,-m3)
+                            if abs(w) > 100*eps()
+                                wignerlist[i] = w
+                                indiceslist[:,i] = Int64[seanindex(l1,m1,LMAX), seanindex(l2,m2,LMAX),seanindex(l3,-m3,LMAX), l1,m1, l2,m2, l3,-m3]
+                                i+=1
+                                mcombos += 1
+                            end
+                        end
+                    end
+                end
+                if mcombos>0 push!(mcombolist, Int64[l1,l2,l3,mcombos,mcombo_istart]) end
+            end
+        end
+    end
+
+    PAcombos = calculate_combolist(K,mcombolist)
+
+    @sync @parallel for i=1:basislen
+        l1,m1,l2,m2,l3,m3 = indiceslist[4:9,i]
+        w = wignerlist[i]
+        #Here, only the real part of the complex exponential plays a role
+        B[:,i] = reshape(Float64[cos(m2*a + m3*b) for a in alpharange(N), b in alpharange(N)], N^2)
+        P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
+    end
+
+    println("Calculated complex basis with N=$N L=$L K=$K (LMAX=$LMAX, lambda=$lambda, dq=$dq): $basislen basislen")
+    return BasisType(wignerlist, indiceslist, PAcombos, B, P', basislen, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
+end
+
+function calculate_triple_products_fast(intensity::SphericalHarmonicsVolume, basis::BasisType)
+    coeff = intensity.coeff
+    PAcombos = basis.PAcombos
+    indices = basis.indices
+    wignerlist = basis.wignerlist
+    P = basis.P
+    PA = SharedArray(Float64, Base.size(P))
+
+    @sync @parallel for i = 1:Base.size(PAcombos)[2]
+        k1,k2,k3,ki,l1,l2,l3,jstart,mcombos = PAcombos[:,i]
+        ck1,ck2,ck3 = coeff[k1],coeff[k2],coeff[k3]
+        As::Float64=0.0
+        for n = 1:mcombos
+            j = jstart + n - 1
+            @inbounds @fastmath As += wignerlist[j]*real(ck1[indices[1, j]]*ck2[indices[2, j]]*ck3[indices[3, j]])
+        end
+        @inbounds @fastmath PA[jstart:jstart+mcombos-1,ki] = As * P[jstart:jstart+mcombos-1,ki]
+    end
+    return sdata(PA)
+end
+
+"Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
+function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisType, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
+
+    @time PA = calculate_triple_products_fast(intensity, basis)
+    @time res = basis.B*PA
+
+    if return_raw return res end
+
+    t = zeros(Float64, basis.N, basis.N, basis.K, basis.K, basis.K)
+    i = 1
+    for k1=1:basis.K for k2=1:k1 for k3=1:k2
+        t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
+        i += 1
+    end end end
+    return normalize ? t / sumabs(t) : t
+end
+
 
 """Calculates the two photon correlation from spherical harmonics coefficients"""
 function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false)
@@ -128,142 +249,31 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
     return intensity
 end
 
-"Part of the three photon correlation basis functions"
-function flab(k1::Int64, k2::Int64, k3::Int64, lambda::Float64, dq::Float64, l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
-    fl = zero(Complex{Float64})
-    theta1 = acos(k1*lambda*dq/(4*pi))
-    theta2 = acos(k2*lambda*dq/(4*pi))
-    theta3 = acos(k3*lambda*dq/(4*pi))
 
-    if !(abs(l1-l2) <= l3 <= (l1+l2)) return 0.0 end
 
-    for m1p=-l1:l1
-        for m2p=-l2:l2
-            for m3p=-l3:l3
-
-                fac = wigner(l1,m1p, l2,m2p, l3,-m3p)
-
-                if abs(fac) > 100*eps()
-                    cont = sphPlm(l1,m1p,theta1) * sphPlm(l2,m2p,theta2) * sphPlm(l3,-m3p,theta3) * exp(1im*(m2p*a - m3p*b))
-                    fl += fac* cont
-                end
-            end
-        end
-    end
-    return Float64(real(fl)) #this really is always real
-end
-
-"Precalcualtes the basis functions of the three photon correlations"
-function complexBasis(L::Int64, N::Int64, LMAX::Int64, forIntensity=true)
-    basisindiceslist = Int64[]
-    basislist = Float64[]
-
-    lrange = forIntensity ? (0:2:L) : (0:L)
-    ctr = Dict(l => Umat(l) for l=lrange)
-    rtc = Dict(l => ctranspose(ctr[l]) for l=lrange)
-
-    num = 0
-    for l1 = lrange
-        for l2 = lrange
-            for l3 = lrange
-
-                m = Float64[ flab(l1,l2,l3, a,b) for a=alpharange(N), b=alpharange(N)]
-                if norm(m) > 100*eps()
-
-                    for m1 = -l1:l1
-                        for m2 = -l2:l2
-                            for m3 = -l3:l3
-
-                                w = wigner(l1,m1, l2,m2, l3,-m3)
-
-                                if abs(w) > 100*eps()
-
-                                    append!(basisindiceslist, Int64[seanindex(l1,m1,LMAX), seanindex(l2,m2,LMAX),seanindex(l3,-m3,LMAX), l1,m1, l2,m2, l3,-m3])
-
-                                    append!(basislist, reshape(m*w, N*N))
-                                    num += 1
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    basis = SharedArray(Float64,(N*N,num))
-    basis[:,:] = reshape(basislist, N*N, num)
-
-    basisindices = SharedArray(Int64, (num,3+6))
-    basisindices[:,:] = transpose(reshape(basisindiceslist,3+6, num))
-
-    basislen = Base.size(basisindices,1)
-    println("Calculated complex basis with N=$N L=$L (LMAX=$LMAX): $basislen basislen")
-
-    return BasisType(basis, basisindices, basislen, N, L, LMAX, lrange, ctr, rtc)
-end
-
-complexBasis_choice = complexBasis
-
-function calculate_coefficient_matrix(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64)
-    coeff = intensity.coeff
-    faclist = zeros(Float64, basis.basislen,Integer(K*(K+1)*(K+2)/6))
-    i = 1
-    for k1 = 1:K
-        ck1 = coeff[k1]
-        for k2 = 1:k1
-            ck2 = coeff[k2]
-            for k3 = 1:k2
-                ck3 = coeff[k3]
-                faclist[:,i] = Float64[real(ck1[basis.basisindices[i,1]]*ck2[basis.basisindices[i,2]]*ck3[basis.basisindices[i,3]]) for i=1:basis.basislen]
-                i = i + 1
-            end
-        end
-    end
-    return faclist
-end
-
-"Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
-function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64=8, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
-    c = SharedArray(Float64,(basis.N,basis.N,K,K,K))
-
-    fac_matrix = calculate_coefficient_matrix(intensity, basis, K)
-    res = basis.basis * fac_matrix
-
-    if return_raw return res end
-
-    t = zeros(Float64, basis.N, basis.N, K, K, K)
-    i = 1
-    for k1=1:K for k2=1:k1 for k3=1:k2
-        t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
-        i += 1
-    end end end
-    return normalize ? t / sumabs(t) : t
-end
-
-"""Calculate correlation slices for a list of (k1,k2,k3)"""
-function calculateCorrelationSlices!(c::C3Shared, coeff::Array{Array{Complex{Float64}}}, basis::BasisType, k1::Int64, k2::Int64, k3::Int64)
-    basisvec = basis.basis
-
-    ck1,ck2,ck3 = coeff[k1],coeff[k2],coeff[k3]
-    faclist = Float64[real(ck1[basis.basisindices[i,1]]*ck2[basis.basisindices[i,2]]*ck3[basis.basisindices[i,3]]) for i=1:basis.basislen]
-
-    c[:,:,k3,k2,k1] = reshape(basisvec*faclist,basis.N,basis.N)
-end
-
-"Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
-function FullCorrelation_parallized_piecewise(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64=8, minimal::Bool=true, normalize::Bool=false)
-    kcombinations = Tuple{Int64,Int64,Int64}[(k1,k2,k3) for k1 = 1:K for k2 = 1:(minimal ? k1 : K) for k3 = 1:(minimal ? k2 : K)]
-
-    c = SharedArray(Float64,(basis.N,basis.N,K,K,K))
-
-    # Here I had a GC problem:
-    # https://github.com/JuliaLang/julia/issues/15155
-    # https://github.com/JuliaLang/julia/issues/15415
-    pmap((combo)-> calculateCorrelationSlices!( c, intensity.coeff, basis, combo[1], combo[2], combo[3]), kcombinations)
-    res = sdata(c)
-    return normalize ? res / sumabs(res) : res
-end
+# """Calculate correlation slices for a list of (k1,k2,k3)"""
+# function calculateCorrelationSlices!(c::C3Shared, coeff::Array{Array{Complex{Float64}}}, basis::BasisType, k1::Int64, k2::Int64, k3::Int64)
+#     basisvec = basis.basis
+#
+#     ck1,ck2,ck3 = coeff[k1],coeff[k2],coeff[k3]
+#     faclist = Float64[real(ck1[basis.basisindices[i,1]]*ck2[basis.basisindices[i,2]]*ck3[basis.basisindices[i,3]]) for i=1:basis.basislen]
+#
+#     c[:,:,k3,k2,k1] = reshape(basisvec*faclist,basis.N,basis.N)
+# end
+#
+# "Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
+# function FullCorrelation_parallized_piecewise(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64=8, minimal::Bool=true, normalize::Bool=false)
+#     kcombinations = Tuple{Int64,Int64,Int64}[(k1,k2,k3) for k1 = 1:K for k2 = 1:(minimal ? k1 : K) for k3 = 1:(minimal ? k2 : K)]
+#
+#     c = SharedArray(Float64,(basis.N,basis.N,K,K,K))
+#
+#     # Here I had a GC problem:
+#     # https://github.com/JuliaLang/julia/issues/15155
+#     # https://github.com/JuliaLang/julia/issues/15415
+#     pmap((combo)-> calculateCorrelationSlices!( c, intensity.coeff, basis, combo[1], combo[2], combo[3]), kcombinations)
+#     res = sdata(c)
+#     return normalize ? res / sumabs(res) : res
+# end
 
 #--------------------------------------------------
 

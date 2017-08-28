@@ -3,22 +3,26 @@ using CUBLAS
 global CUDA_enabled = false
 
 #cuda
-export BasisTypeCuda, complexBasis_CUDA, CUDA_init
+export BasisTypeCuda, CUDA_store_basis, CUDA_init, FullCorrelation_parallized
 
 function CUDA_init()
     CUDArt.init(0)
     CUDArt.device(0)
     global md = CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
     global calculate_coefficient_matrix_cuda = CuFunction(md, "calculate_coefficient_matrix")
-    global calculate_coefficient_matrix_optimized_cuda = CuFunction(md, "calculate_coefficient_matrix_optimized")
     global CUDA_enabled = true
     println("Initialization of CUDA complete.")
 end
 
 """Datatype for precalculated three photon correlation basis function"""
 type BasisTypeCuda <: AbstractBasisType
-    basis::CudaArray
-    basisindices::CudaArray
+    d_wignerlist::CudaArray
+    d_indices::CudaArray
+    d_PAcombos::CudaArray
+    B::CudaArray
+    P::SharedArray{Float64,2}
+    d_correlation::CudaArray
+
     basislen::Int64
     N::Int64
     L::Int64
@@ -26,14 +30,21 @@ type BasisTypeCuda <: AbstractBasisType
     lrange::StepRange
     ctr::Dict
     rtc::Dict
+    K::Int64
+    lambda::Float64
+    dq::Float64
 end
 
 """Overrides the original complexBasis function"""
-function complexBasis_CUDA(basis::BasisType, L::Int64, N::Int64, LMAX::Int64, forIntensity=true)
+function CUDA_store_basis(basis::BasisType, L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
     if CUDA_enabled
-        d_basis = CudaArray(convert(Array{Float32}, sdata(basis.basis)))
-        d_basisindices = CudaArray(convert(Array{Int32}, sdata(basis.basisindices)))
-        cuda_basis =  BasisTypeCuda(d_basis, d_basisindices, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc)
+        d_wignerlist = CudaArray(convert(Array{Float32}, sdata(basis.wignerlist)))
+        d_indices = CudaArray(convert(Array{Int32}, sdata(basis.indices)))
+        d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
+        d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
+        d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
+
+        cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, basis.P, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
         println("Initialized CUDA basis.")
         return cuda_basis
     else
@@ -41,53 +52,38 @@ function complexBasis_CUDA(basis::BasisType, L::Int64, N::Int64, LMAX::Int64, fo
     end
 end
 
-"""Overrides the original complexBasis function"""
-function complexBasis_CUDA(L::Int64, N::Int64, LMAX::Int64, forIntensity=true)
-    basis = complexBasis(L, N, LMAX, forIntensity)
+function CUDA_store_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
+    basis = calculate_basis(L, LMAX, N, K, lambda, dq, forIntensity)
     if CUDA_enabled
-        d_basis = CudaArray(convert(Array{Float32}, sdata(basis.basis)))
-        d_basisindices = CudaArray(convert(Array{Int32}, sdata(basis.basisindices)))
-        cuda_basis =  BasisTypeCuda(d_basis, d_basisindices, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc)
-        println("Initialized CUDA basis.")
-        return cuda_basis
+        return CUDA_store_basis(basis, L, LMAX, N, K, lambda, dq, forIntensity)
     else
         return basis
     end
 end
 
-complexBasis_choice = complexBasis_CUDA
+
+complexBasis_choice = CUDA_store_basis
 
 """Calculates the full three photon correlation"""
-function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, K::Int64, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
+function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
 
     #Prepare all arrays on GPU
-    numcoeff = num_coeff(intensity.LMAX)
-    KMAX = intensity.KMAX
-    d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:KMAX, i=1:numcoeff]')
-
-    klength = round(Int64, K*(K+1)*(K+2)/6)
-    d_faclist = CudaArray(Float32,(basis.basislen, klength))
-    d_correlation = CudaArray(Float32,(basis.N^2,klength))
-
-    # Set up grid and block, see below
-    # kmapping = [(k1,k2,k3) for k1=1:K for k2=1:k1 for k3=1:k2]
-    # d_kmapping = CudaArray(Int32[kmapping[i][j] for i=1:klength,j=1:3])
-    # threadsperblock = (32,32)
-    # blockspergrid = ( ceil( Int32, basis.basislen / threadsperblock[1]), ceil(Int32, klength / threadsperblock[2]) )
-    # launch(calculate_coefficient_matrix_optimized_cuda, blockspergrid, threadsperblock, (d_coeff, d_kmapping, numcoeff, K, basis.basisindices, basis.basislen, d_faclist, klength))
+    klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
+    numcoeff = num_coeff(basis.LMAX)
+    d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
+    d_PA = CudaArray(convert(Array{Float32}, basis.P))
 
     threadsperblock = 1024
-    blockspergrid = ceil(Int32, basis.basislen / threadsperblock)
-    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, K, basis.basisindices, basis.basislen, d_faclist))
-
-    CUBLAS.gemm!('N','N',Float32(1.0), basis.basis, d_faclist, Float32(0.0), d_correlation)
+    blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
+    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
+    println("Done with factor matrix")
+    CUBLAS.gemm!('N','N',Float32(1.0), basis.B, d_PA, Float32(0.0), basis.d_correlation)
 
     #Transfer result to host
-    res = to_host(d_correlation)
+    res = to_host(basis.d_correlation)
 
     #Enforce GC to avoid crashes
-    CUDArt.free(d_faclist)
-    CUDArt.free(d_correlation)
+    CUDArt.free(d_PA)
     CUDArt.free(d_coeff)
     if return_raw return res end
 
