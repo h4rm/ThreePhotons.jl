@@ -20,7 +20,7 @@ type BasisTypeCuda <: AbstractBasisType
     d_indices::CudaArray
     d_PAcombos::CudaArray
     B::CudaArray
-    P::SharedArray{Float64,2}
+    P::HostArray
     d_correlation::CudaArray
 
     basislen::Int64
@@ -41,7 +41,7 @@ function CUDA_store_basis(basis::BasisType)
     d_indices = CudaArray(convert(Array{Int32}, sdata(basis.indices)))
     d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
     d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
-    d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
+    d_correlation = CudaArray(Float32,(basis.N^2,round(Int32, basis.K*(basis.K+1)*(basis.K+2)/6)))
 
     cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, basis.P, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
     println("Initialized CUDA basis.")
@@ -72,7 +72,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     numcoeff = num_coeff(basis.LMAX)
     @time begin
         d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
-        d_PA = CudaArray(convert(Array{Float32}, basis.P))
+        d_PA = CudaArray(basis.P)
     end
 
     @time begin
@@ -85,7 +85,6 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
 
     #Transfer result to host
     @time res = to_host(basis.d_correlation)
-    println("Finished with CUDA calculation.")
 
     #Enforce GC to avoid crashes
     CUDArt.free(d_PA)
