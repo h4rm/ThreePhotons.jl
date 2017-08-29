@@ -19,8 +19,9 @@ type BasisTypeCuda <: AbstractBasisType
     d_wignerlist::CudaArray
     d_indices::CudaArray
     d_PAcombos::CudaArray
-    B::CudaArray
-    P::HostArray
+    d_B::CudaArray
+    d_P::CudaArray
+    d_PA::CudaArray
     d_correlation::CudaArray
 
     basislen::Int64
@@ -42,8 +43,10 @@ function CUDA_store_basis(basis::BasisType)
     d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
     d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
     d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
+    d_P = CudaArray(convert(Array{Float32}, sdata(basis.P)))
+    d_PA = CudaArray(convert(Array{Float32}, sdata(basis.P)))
 
-    cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, basis.P, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
+    cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, d_P, d_PA, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
     println("Initialized CUDA basis.")
     return cuda_basis
 end
@@ -70,24 +73,19 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     #Prepare all arrays on GPU
     klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
     numcoeff = num_coeff(basis.LMAX)
-    @time begin
-        d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
-        d_PA = CudaArray(basis.P)
-    end
+    d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
+    # d_PA = CudaArray(basis.P)
 
-    @time begin
-        threadsperblock = 1024
-        blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
-        launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
-    end
+    threadsperblock = 1024
+    blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
+    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], basis.d_P, basis.d_PA, klength))
 
-    @time CUBLAS.gemm!('N','N',Float32(1.0), basis.B, d_PA, Float32(0.0), basis.d_correlation)
+    CUBLAS.gemm!('N','N',Float32(1.0), basis.d_B, basis.d_PA, Float32(0.0), basis.d_correlation)
 
-    #Transfer result to host
-    @time res = to_host(basis.d_correlation)
+    #Wait for computation to finish and transfer result to host
+    res = to_host(basis.d_correlation)
 
     #Enforce GC to avoid crashes
-    CUDArt.free(d_PA)
     CUDArt.free(d_coeff)
     if return_raw return res end
 
