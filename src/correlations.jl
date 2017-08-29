@@ -30,7 +30,7 @@ type BasisType <: AbstractBasisType
     indices::Array{Int64,2}
     PAcombos::Array{Int64,2}
     B::Array{Float64,2}
-    P::Array{Float64,2}
+    h_P::HostArray
     basislen::Int64
     N::Int64
     L::Int64
@@ -112,8 +112,10 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
         P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
     end
 
+    h_P = HostArray(Float32, Base.size(P'))
+    h_P[:] = transpose(P)[:]
     println("Calculated complex basis with N=$N L=$L K=$K (LMAX=$LMAX, lambda=$lambda, dq=$dq): $basislen basislen")
-    return BasisType(wignerlist, indiceslist, PAcombos, sdata(B), sdata(P)', basislen, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
+    return BasisType(wignerlist, indiceslist, PAcombos, sdata(B), h_P, basislen, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
 end
 
 """Precalculated values for calculating the three-photon and two-photon correlation"""
