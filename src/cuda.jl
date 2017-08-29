@@ -51,7 +51,7 @@ end
 function CUDA_calculate_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
     basis = calculate_basis(L, LMAX, N, K, lambda, dq, forIntensity)
     if CUDA_enabled
-        return CUDA_store_basis(basis, L, LMAX, N, K, lambda, dq, forIntensity)
+        return CUDA_store_basis(basis)
     else
         return basis
     end
