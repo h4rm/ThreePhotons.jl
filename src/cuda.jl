@@ -79,9 +79,9 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
 
     threadsperblock = 1024
     blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
-    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], basis.d_PA, klength))
+    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
 
-    CUBLAS.gemm!('N','N',Float32(1.0), basis.d_B, basis.d_PA, Float32(0.0), basis.d_correlation)
+    CUBLAS.gemm!('N','N',Float32(1.0), basis.d_B, d_PA, Float32(0.0), basis.d_correlation)
 
     #Wait for computation to finish and transfer result to host
     res = to_host(basis.d_correlation)
