@@ -151,7 +151,7 @@ end
 """Main rotation search method
 `params` - rotation search parameters
 `state` - starting state"""
-function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "rmax"=>35.0), state = Dict{Any,Any}("newRun"=>true) )
+function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "rmax"=>35.0, "lambda"=>0.0), state = Dict{Any,Any}("newRun"=>true) )
 
     #Don't start a finished run
     if haskey(state, "state") && state["state"] == "finished_structure"

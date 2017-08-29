@@ -27,7 +27,7 @@ function check_git_status()
     return readstring(`git rev-parse HEAD`)
 end
 
-function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K::Integer=8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, KMAX::Int64=35, rmax::Float64=35.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="")
+function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K::Integer=8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, KMAX::Int64=35, rmax::Float64=35.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="", lambda::Float64=0.0)
 
     julia_script = """
     using ThreePhotons
@@ -52,7 +52,7 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 
         #Or start a completely new run
     else
-        params,state = rotation_search(Dict( "reference_pdb_path"=>"$(reference_pdb_path)", "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(histograms)", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax))
+        params,state = rotation_search(Dict( "reference_pdb_path"=>"$(reference_pdb_path)", "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(histograms)", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax, "lambda"=>$lambda))
         if $postprocess
             postprocess_run(params, state, "$(reference_pdb_path)", true, 35, $sigma)
         end
