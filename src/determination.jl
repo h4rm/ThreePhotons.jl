@@ -240,7 +240,7 @@ function calculate_temperature(state::Dict, params::Dict, basis::AbstractBasisTy
 
         for i = 1:iterations
             step = get_MC_step(state["intensity"], basis, state["stepsizes"])
-            e = energy(step, basis, c3ref, state["K"], params["measure"])
+            e = energy(step, basis, c3ref, params["measure"])
             println("Energy calculation step $i: $e")
             push!(energy_sample,e)
         end
@@ -286,10 +286,10 @@ function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
         state["stepsizes"] = Dict(l=>params["initial_stepsize"]*(l-1) for l=2:2:state["L"])
 
         #calculate the initial energy with that resolution
-        state["E"] = energy(state["intensity"], d_basis, c3ref, state["K"], params["measure"])
+        state["E"] = energy(state["intensity"], d_basis, c3ref, params["measure"])
 
         #Calculate reference energy
-        state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, state["K"], params["measure"]) : 0.0
+        state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, params["measure"]) : 0.0
 
         println("Reference energy: ", state["reference_energy"])
 
@@ -336,10 +336,10 @@ function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
             state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
 
             #calculate the initial energy with that resolution
-            state["E"] = energy(state["intensity"], d_basis, c3ref, state["K"], params["measure"])
+            state["E"] = energy(state["intensity"], d_basis, c3ref, params["measure"])
 
             #Calculate reference energy
-            state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, state["K"], params["measure"]) : 0.0
+            state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, params["measure"]) : 0.0
 
             #reset the temperature for that resolution
             state["T"] = calculate_temperature(state, params, d_basis, c3ref)
@@ -475,7 +475,7 @@ function evaluate_step(out, params::Dict, state::Dict, basis::AbstractBasisType,
     sign = 0.0
 
     #Calculate the triple correlation and return difference to reference triple correlation
-    E_new = energy(state["step"], basis, c3ref, state["K"], params["measure"])
+    E_new = energy(state["step"], basis, c3ref, params["measure"])
     delta_E = E_new - state["E"]
     ap  = exp(-(delta_E)/state["T"]) #acceptance energy
 
