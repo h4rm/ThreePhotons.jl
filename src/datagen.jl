@@ -344,10 +344,16 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
 end
 
 "Loading a histogram from a file and store two/three photon histograms in global variables."
-function loadHistograms(K::Int64, file="expdata/correlations_N32_K25_P2048000.dat")
+function loadHistograms(K::Int64, file::String, load_c1::Bool=false)
 
+    params, c2_full, c3_full, c1_full = 0,0,0,0
     #Try loading two different structure types
-    params, c2_full, c3_full, c1_full = deserializeFromFile(file)
+    if load_c1
+        params, c2_full, c3_full, c1_full = deserializeFromFile(file)
+    else
+        params, c2_full, c3_full = deserializeFromFile(file)
+    end
+
     println("Loaded $(countDoublets(c2_full)) doublets and $(countTriplets(c3_full)) triplets from $file generated from $(params["num_pictures"]) pictures.")
 
     c2_full = max(c2_full, 1e-30)
@@ -358,8 +364,11 @@ function loadHistograms(K::Int64, file="expdata/correlations_N32_K25_P2048000.da
     c2 = c2 / sumabs(c2)
     c3 = c3_full[:,:,1:K,1:K,1:K]
     c3 = c3 / sumabs(c3)
-
-    return c2_full, c2, c3_full, c3, c1_full
+    if load_c1
+        return c2_full, c2, c3_full, c3, c1_full
+    else
+        return c2_full, c2, c3_full, c3
+    end
 end
 
 """Calculates the total number of triplets in a histogram"""
