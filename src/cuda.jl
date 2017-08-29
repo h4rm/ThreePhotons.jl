@@ -42,9 +42,9 @@ function CUDA_store_basis(basis::BasisType)
     d_indices = CudaArray(convert(Array{Int32}, sdata(basis.indices)))
     d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
     d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
-    d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
     d_P = CudaArray(convert(Array{Float32}, sdata(basis.P)))
     d_PA = CudaArray(convert(Array{Float32}, sdata(basis.P)))
+    d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
 
     cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, d_P, d_PA, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
     println("Initialized CUDA basis.")
@@ -74,7 +74,6 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
     numcoeff = num_coeff(basis.LMAX)
     d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
-    # d_PA = CudaArray(basis.P)
 
     threadsperblock = 1024
     blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)

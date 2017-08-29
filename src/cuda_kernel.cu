@@ -12,7 +12,7 @@
 extern "C"
 {
   //Multiplies the coefficients according to indices list
-  __global__ void calculate_coefficient_matrix(const cuFloatComplex* coeff, const int numcoeff, const float* wignerlist, const int* indices, const int indiceslength, const int* PAcombos, const int combolength, float* P, float *PA, const int klength)
+  __global__ void calculate_coefficient_matrix(const cuFloatComplex* coeff, const int numcoeff, const float* wignerlist, const int* indices, const int indiceslength, const int* PAcombos, const int combolength, const float* P, const float *PA, const int klength)
   {
     int i = threadIdx.x + blockIdx.x * blockDim.x + 1;
     if(i<=combolength)
@@ -24,8 +24,6 @@ extern "C"
       const int jstart = PAcombos[IDX2F(8, i, 9)];
       const int mcombos = PAcombos[IDX2F(9, i, 9)];
 
-      // printf("%d %d %d %d %d %d %d\n\n", i, k1, k2, k3, ki, jstart, mcombos);
-
       const cuFloatComplex* ck1 = &coeff[(k1-1)*numcoeff];
       const cuFloatComplex* ck2 = &coeff[(k2-1)*numcoeff];
       const cuFloatComplex* ck3 = &coeff[(k3-1)*numcoeff];
@@ -36,7 +34,6 @@ extern "C"
         const int k1i = indices[IDX2F(1, j, 9)];
         const int k2i = indices[IDX2F(2, j, 9)];
         const int k3i = indices[IDX2F(3, j, 9)];
-        // printf("%d %d %d %d\n", j, k1i, k2i, k3i);
         As += wignerlist[j-1]*cuCrealf(cuCmulf(ck1[k1i-1], cuCmulf(ck2[k2i-1],ck3[k3i-1])) );
       }
 
