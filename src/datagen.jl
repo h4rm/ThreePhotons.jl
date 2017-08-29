@@ -345,7 +345,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
 end
 
 "Loading a histogram from a file and store two/three photon histograms in global variables."
-function loadHistograms(K::Int64, file::String, load_c1::Bool=false)
+function loadHistograms(K::Int64, file::String, load_c1::Bool=true)
 
     params, c2_full, c3_full, c1_full = 0,0,0,0
     #Try loading two different structure types
