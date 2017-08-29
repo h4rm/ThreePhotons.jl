@@ -6,6 +6,7 @@ function combine_histograms(dir::String, num::Int64)
 
   println("\tLoading file #1")
   params,c2_full,c3_full,c1_full = deserializeFromFile("$(dir)_1/histo.dat")
+  part_images = params["num_pictures"]
 
   for i = 2:num
     println("\tLoading file #$i")
@@ -26,8 +27,9 @@ function combine_histograms(dir::String, num::Int64)
   end
 
   finalpath = replace(dir, "parts/", "")
+  finalpath = replace(finalpath, "P$(part_images)", "P$(params["num_pictures"])")
 
-  println("Writing to $(finalpath).")
+  println("Writing to $(finalpath)/histo.dat")
   try mkdir(finalpath) end
   serializeToFile("$(finalpath)/histo.dat", (params, c2_full, c3_full, c1_full))
 end
