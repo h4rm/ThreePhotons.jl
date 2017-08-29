@@ -13,7 +13,6 @@ extern "C"
 {
   //Multiplies the coefficients according to indices list
   __global__ void calculate_coefficient_matrix(const cuFloatComplex* coeff, const int numcoeff, const float* wignerlist, const int* indices, const int indiceslength, const int* PAcombos, const int combolength, float *PA, const int klength)
-  //  __global__ void calculate_coefficient_matrix(const cuFloatComplex* coeff, const int numcoeff, const float* wignerlist, const int* indices, const int indiceslength, const int* PAcombos, const int combolength, const float* P, float *PA, const int klength)
   {
     int i = threadIdx.x + blockIdx.x * blockDim.x + 1;
     if(i<=combolength)
@@ -40,7 +39,6 @@ extern "C"
 
       for(int n=0; n <mcombos; n++){
         PA[IDX2F(jstart+n,ki, indiceslength)] *= As;
-        // PA[IDX2F(jstart+n,ki, indiceslength)] = P[IDX2F(jstart+n,ki, indiceslength)] * As;
       }
     }
   }

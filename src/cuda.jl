@@ -83,6 +83,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     res = to_host(basis.d_correlation)
 
     #Enforce GC to avoid crashes
+    CUDArt.free(d_PA)
     CUDArt.free(d_coeff)
     if return_raw return res end
 
