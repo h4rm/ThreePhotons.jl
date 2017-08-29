@@ -73,7 +73,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
     d_PA = CudaArray(basis.h_P)
 
-    threadsperblock = 2048
+    threadsperblock = 1024
     blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
     launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
 
