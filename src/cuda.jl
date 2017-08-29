@@ -41,7 +41,7 @@ function CUDA_store_basis(basis::BasisType)
     d_indices = CudaArray(convert(Array{Int32}, sdata(basis.indices)))
     d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
     d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
-    d_correlation = CudaArray(Float32,(basis.N^2,round(Int32, basis.K*(basis.K+1)*(basis.K+2)/6)))
+    d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
 
     cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, basis.P, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
     println("Initialized CUDA basis.")
