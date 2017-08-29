@@ -294,7 +294,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     #Load preexisting histogram file so we can continue from where we left off
     if isfile(file)
         println("Continue from preexisting correlation in $file.")
-        (params, c2_full, c3_full) = deserializeFromFile(file)
+        (params, c2_full, c3_full, c1_full) = deserializeFromFile(file)
     end
 
     #Calculate noise volume if necessary
@@ -303,7 +303,10 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     #Count current triplets
     current_triplets = countTriplets(c3_full)
 
-    #Make batches of 1000 pictures so we can save often
+    println("Starting to collect images")
+    flush(STDOUT)
+
+    #Make batches of pictures so we can save often
     while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
 
         c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
@@ -328,19 +331,17 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
             end
             (c1, c2, c3)
         end
+        c1_full += c1_part
+        c2_full += c2_part
+        c3_full += c3_part
+
+        params["num_pictures"] += numprocesses*batchsize #In numprocesses, we created 'batchsize' pictures
+        current_triplets = countTriplets(c3_full)
+        serializeToFile(file, (params, c2_full, c3_full, c1_full))
+
+        println("triplets: $current_triplets\tpictures: $(params["num_pictures"]) / $(max_pictures) ($(params["num_pictures"]/max_pictures*100.0) perc.)")
+        flush(STDOUT)
     end
-
-    c1_full += c1_part
-    c2_full += c2_part
-    c3_full += c3_part
-
-    params["num_pictures"] += numprocesses*batchsize #In numprocesses, we created 'batchsize' pictures
-    current_triplets = countTriplets(c3_full)
-    serializeToFile(file, (params, c2_full, c3_full, c1_full))
-
-    println("triplets: $current_triplets\tpictures: $(params["num_pictures"]) / $(max_pictures) ($(params["num_pictures"]/max_pictures*100.0) perc.)")
-    flush(STDOUT)
-
 end
 
 "Loading a histogram from a file and store two/three photon histograms in global variables."
@@ -356,6 +357,7 @@ function loadHistograms(K::Int64, file::String, load_c1::Bool=false)
 
     println("Loaded $(countDoublets(c2_full)) doublets and $(countTriplets(c3_full)) triplets from $file generated from $(params["num_pictures"]) pictures.")
 
+    c1_full = max(c1_full, 1e-30)
     c2_full = max(c2_full, 1e-30)
     c3_full = max(c3_full, 1e-30)
 
@@ -364,6 +366,7 @@ function loadHistograms(K::Int64, file::String, load_c1::Bool=false)
     c2 = c2 / sumabs(c2)
     c3 = c3_full[:,:,1:K,1:K,1:K]
     c3 = c3 / sumabs(c3)
+
     if load_c1
         return c2_full, c2, c3_full, c3, c1_full
     else
