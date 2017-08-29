@@ -130,7 +130,7 @@ function calculate_triple_products_fast(intensity::SphericalHarmonicsVolume, bas
     PAcombos = basis.PAcombos
     indices = basis.indices
     wignerlist = basis.wignerlist
-    P = basis.P
+    P = basis.h_P
     PA = SharedArray(Float64, Base.size(P))
 
     @sync @parallel for i = 1:Base.size(PAcombos)[2]

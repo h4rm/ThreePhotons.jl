@@ -61,7 +61,6 @@ function CUDA_calculate_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, forInt
     return CUDA_calculate_basis(L,LMAX,N,K, 0.0, 0.0, forIntensity)
 end
 
-
 complexBasis_choice = CUDA_calculate_basis
 
 """Calculates the full three photon correlation"""

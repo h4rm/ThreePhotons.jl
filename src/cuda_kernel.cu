@@ -1,5 +1,4 @@
-//nvcc -ptx cuda_kernel.cu --gpu-architecture=compute_30 --gpu-code=compute_30
-//In case of compilation error: https://github.com/arrayfire/arrayfire/issues/1384
+//nvcc -ptx cuda_kernel.cu --gpu-architecture=compute_30 --gpu-code=compute_30 --optimize 2
 #include "cuComplex.h"
 // CUDA runtime
 #include "cuda_runtime.h"
