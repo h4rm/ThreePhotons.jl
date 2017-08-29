@@ -47,7 +47,7 @@ function generate_single_multiparticle_histogram(number_images::Int64, setsize::
 end
 
 # generate_single_multiparticle_histogram(Integer(3.2768e8), Integer(2*2.048e6), 2)
-# combine_set([Integer(3.2768e8)], Integer(2*2.048e6), 10, 38, 32, environment_path("data_generation/parts/multi_2_SH_"))
+# combine_histograms(environment_path("data_generation/parts/multi_2_SH_10p_N32_K38_R38.0_P4096000"), 80)
 
 # generate_histogram_image(Integer(3.2768e8), 10, 38, 32; setsize=Integer(2*2.048e6), name="Ewald_", lambda=1.0)
-# combine_set([Integer(3.2768e8)], Integer(2*2.048e6), 10, 38, 32, environment_path("data_generation/parts/Ewald_SH_"))
+# combine_histograms(environment_path("data_generation/parts/Ewald_SH_10p_N32_K38_R38.0_P4096000"), 80)

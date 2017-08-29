@@ -135,7 +135,6 @@ end
 
 """Distributes the calculation of correlations among many jobs"""
 function run_calculate_correlation_from_images(particle_name::String, images_path::String, number_images::Int64, K2::Int64, K3::Int64, N::Int64, number_runs::Int64; Ncores::Int64=8)
-    name = "exp_data/$(particle_name)"
     for n in 1:number_runs
         julia_script = """
         using HDF5
@@ -151,7 +150,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         resized_image_list = [ Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K2, 2*K2)).data for i=$((n-1)*number_images+1):$(n*number_images)]
         calculate_correlations_in_image(resized_image_list, K2, K3, N)
         """
-        launch_job("parts/$(name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
+        launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
 end
 
