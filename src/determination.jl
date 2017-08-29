@@ -268,70 +268,11 @@ function regular_action(out, state, params)
     end
 end
 
-# """Optimizes structure by changing all rotation matrices at once and comparing the structure's three photon correlation with the experimental one"""
-# function rotate_all_choose_best(out, params::Dict, state::Dict, c3ref::C3)
-#
-#   state["L"] = params["L"]
-#   d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
-#
-#   #Check if this is a continuation or a new run by checking stepsizes
-#   if !haskey(state["stepsizes"], state["L"])
-#
-#     #gradually increase K
-#     state["K"] = params["K"]
-#
-#     #set stepsize for this resolution
-#     state["stepsizes"] = Dict(l=>params["initial_stepsize"] for l=2:2:state["L"])
-#     # state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
-#
-#     #calculate the initial energy with that resolution
-#     state["E"] = energy(state["intensity"], d_basis, c3ref, state["K"], params["measure"])
-#
-#     #Calculate reference energy
-#     state["reference_energy"] = energy(state["reference_intensity"], d_basis, c3ref, state["K"], params["measure"])
-#
-#     state["step"] = deepcopy(state["intensity"])
-#
-#   end
-#
-#   #run until we have converged with the stepsize (stepsize for largest L must below threshold)
-#   while state["stepsizes"][state["L"]] > minstepsize
-#
-#     for j = 1:200
-#       #counter
-#       state["i"] += 1
-#
-#       #Monte Carlo step
-#       state["step"] = get_MC_step(state["step"], d_basis, state["stepsizes"])
-#
-#       #Calculate energy
-#       E_new = energy(state["step"], d_basis, c3ref, state["K"], params["measure"])
-#       delta_E = E_new - state["E"]
-#
-#       if E_new < state["E"]
-#         state["E"] = E_new
-#         state["intensity"] = deepcopy(state["step"])
-#       end
-#
-#       #Logging current step
-#       line = "$(state["i"])\t1.0\t$E_new\t$(state["E"])\t$delta_E\t$(state["reference_energy"])\t$(state["E"]-state["reference_energy"])\t1.0\t1.0\t$(state["stepsizes"])\t$(state["L"])\t$(state["K"])\n"
-#       write(out, line)
-#       println(line)
-#
-#       regular_action(out, state, params)
-#     end
-#
-#     #decrease stepsize and go to best intensity so far
-#     decrease_stepsize(state, params)
-#     state["step"] = deepcopy(state["intensity"])
-#   end
-# end
-
 """Optimizes structure by changing all rotation matrices at once and comparing the structure's three photon correlation with the experimental one"""
 function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
 
     state["L"] = params["L"]
-    d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
+    d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], params["K"], params["lambda"], dq(state["intensity"]))
 
     #Check if this is a continuation or a new run by checking stepsizes
     if !haskey(state["stepsizes"], state["L"])
@@ -383,7 +324,7 @@ function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
 
     for state["L"] = state["L"]:2:params["L"]
 
-        d_basis = complexBasis_choice(state["L"], params["N"], params["LMAX"])
+        d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], params["K"], params["lambda"], dq(state["intensity"]))
 
         #Check if this is a continuation or a new run by checking stepsizes
         if !haskey(state["stepsizes"], state["L"])

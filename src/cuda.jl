@@ -3,7 +3,7 @@ using CUBLAS
 global CUDA_enabled = false
 
 #cuda
-export BasisTypeCuda, CUDA_store_basis, CUDA_init, FullCorrelation_parallized
+export BasisTypeCuda, CUDA_store_basis, CUDA_calculate_basis, complexBasis_choice, CUDA_init, FullCorrelation_parallized
 
 function CUDA_init()
     CUDArt.init(0)
@@ -36,23 +36,19 @@ type BasisTypeCuda <: AbstractBasisType
 end
 
 """Overrides the original complexBasis function"""
-function CUDA_store_basis(basis::BasisType, L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
-    if CUDA_enabled
-        d_wignerlist = CudaArray(convert(Array{Float32}, sdata(basis.wignerlist)))
-        d_indices = CudaArray(convert(Array{Int32}, sdata(basis.indices)))
-        d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
-        d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
-        d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
+function CUDA_store_basis(basis::BasisType)
+    d_wignerlist = CudaArray(convert(Array{Float32}, sdata(basis.wignerlist)))
+    d_indices = CudaArray(convert(Array{Int32}, sdata(basis.indices)))
+    d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
+    d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
+    d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
 
-        cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, basis.P, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
-        println("Initialized CUDA basis.")
-        return cuda_basis
-    else
-        return basis
-    end
+    cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, basis.P, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
+    println("Initialized CUDA basis.")
+    return cuda_basis
 end
 
-function CUDA_store_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
+function CUDA_calculate_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
     basis = calculate_basis(L, LMAX, N, K, lambda, dq, forIntensity)
     if CUDA_enabled
         return CUDA_store_basis(basis, L, LMAX, N, K, lambda, dq, forIntensity)
@@ -61,8 +57,12 @@ function CUDA_store_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Fl
     end
 end
 
+function CUDA_calculate_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, forIntensity=true)
+    return CUDA_calculate_basis(L,LMAX,N,K, 0.0, 0.0, forIntensity)
+end
 
-complexBasis_choice = CUDA_store_basis
+
+complexBasis_choice = CUDA_calculate_basis
 
 """Calculates the full three photon correlation"""
 function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
@@ -70,17 +70,22 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     #Prepare all arrays on GPU
     klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
     numcoeff = num_coeff(basis.LMAX)
-    d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
-    d_PA = CudaArray(convert(Array{Float32}, basis.P))
+    @time begin
+        d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
+        d_PA = CudaArray(convert(Array{Float32}, basis.P))
+    end
 
-    threadsperblock = 1024
-    blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
-    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
-    println("Done with factor matrix")
-    CUBLAS.gemm!('N','N',Float32(1.0), basis.B, d_PA, Float32(0.0), basis.d_correlation)
+    @time begin
+        threadsperblock = 1024
+        blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
+        launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
+    end
+
+    @time CUBLAS.gemm!('N','N',Float32(1.0), basis.B, d_PA, Float32(0.0), basis.d_correlation)
 
     #Transfer result to host
-    res = to_host(basis.d_correlation)
+    @time res = to_host(basis.d_correlation)
+    println("Finished with CUDA calculation.")
 
     #Enforce GC to avoid crashes
     CUDArt.free(d_PA)
@@ -88,9 +93,9 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     if return_raw return res end
 
     #Translate matrix into 5dimensional correlation format
-    t = zeros(Float64, basis.N, basis.N, K, K, K)
+    t = zeros(Float64, basis.N, basis.N, basis.K, basis.K, basis.K)
     i = 1
-    for k1=1:K for k2=1:k1 for k3=1:k2
+    for k1=1:basis.K for k2=1:k1 for k3=1:k2
         t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
         i += 1
     end end end

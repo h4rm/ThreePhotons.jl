@@ -11,7 +11,8 @@ export
     energy,
     flab,
     calculate_triple_products,
-    calculate_triple_products_fast
+    calculate_triple_products_fast,
+    FullC3
 
 typealias C1 Vector{Float64}
 typealias C1Shared SharedArray{Float64, 1}
@@ -115,6 +116,13 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
     return BasisType(wignerlist, indiceslist, PAcombos, B, P', basislen, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
 end
 
+"""Precalculated values for calculating the three-photon and two-photon correlation"""
+function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, forIntensity=true)
+    return calculate_basis(L, LMAX, N, K, 0.0, 0.0, forIntensity)
+end
+
+complexBasis_choice = calculate_basis
+
 function calculate_triple_products_fast(intensity::SphericalHarmonicsVolume, basis::BasisType)
     coeff = intensity.coeff
     PAcombos = basis.PAcombos
@@ -139,8 +147,8 @@ end
 "Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
 function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisType, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
 
-    @time PA = calculate_triple_products_fast(intensity, basis)
-    @time res = basis.B*PA
+    PA = calculate_triple_products_fast(intensity, basis)
+    res = basis.B*PA
 
     if return_raw return res end
 
@@ -151,6 +159,30 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
         i += 1
     end end end
     return normalize ? t / sumabs(t) : t
+end
+
+"""Central energy calculation function"""
+function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, measure::String="Bayes")
+    c3 = FullCorrelation_parallized(intensity, basis, true, true, true)
+    c3 = max(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
+
+    res = 0.0
+    if measure == "Bayes"
+        i = 1
+        for k1 = 1:basis.K
+            for k2 = 1:k1
+                for k3 = 1:k2
+                    p = reshape(c3[:, i], basis.N, basis.N)
+                    i += 1
+                    q = c3ref[:,:,k3,k2,k1]
+                    p = p / sumabs(p)
+                    q = q / sumabs(q)
+                    @fastmath res += -1.0*sum(q.*log(p))*tripletFactor(k1,k2,k3)
+                end
+            end
+        end
+    end
+    return res
 end
 
 
@@ -249,59 +281,37 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
     return intensity
 end
 
+#------------------------------------------------------------------------
 
+"Part of the three photon correlation basis functions"
+function flab(k1::Int64, k2::Int64, k3::Int64, lambda::Float64, dq::Float64, l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
+    fl = zero(Complex{Float64})
+    theta1 = acos(k1*lambda*dq/(4*pi))
+    theta2 = acos(k2*lambda*dq/(4*pi))
+    theta3 = acos(k3*lambda*dq/(4*pi))
 
-# """Calculate correlation slices for a list of (k1,k2,k3)"""
-# function calculateCorrelationSlices!(c::C3Shared, coeff::Array{Array{Complex{Float64}}}, basis::BasisType, k1::Int64, k2::Int64, k3::Int64)
-#     basisvec = basis.basis
-#
-#     ck1,ck2,ck3 = coeff[k1],coeff[k2],coeff[k3]
-#     faclist = Float64[real(ck1[basis.basisindices[i,1]]*ck2[basis.basisindices[i,2]]*ck3[basis.basisindices[i,3]]) for i=1:basis.basislen]
-#
-#     c[:,:,k3,k2,k1] = reshape(basisvec*faclist,basis.N,basis.N)
-# end
-#
-# "Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
-# function FullCorrelation_parallized_piecewise(intensity::SphericalHarmonicsVolume, basis::BasisType, K::Int64=8, minimal::Bool=true, normalize::Bool=false)
-#     kcombinations = Tuple{Int64,Int64,Int64}[(k1,k2,k3) for k1 = 1:K for k2 = 1:(minimal ? k1 : K) for k3 = 1:(minimal ? k2 : K)]
-#
-#     c = SharedArray(Float64,(basis.N,basis.N,K,K,K))
-#
-#     # Here I had a GC problem:
-#     # https://github.com/JuliaLang/julia/issues/15155
-#     # https://github.com/JuliaLang/julia/issues/15415
-#     pmap((combo)-> calculateCorrelationSlices!( c, intensity.coeff, basis, combo[1], combo[2], combo[3]), kcombinations)
-#     res = sdata(c)
-#     return normalize ? res / sumabs(res) : res
-# end
+    if !(abs(l1-l2) <= l3 <= (l1+l2)) return 0.0 end
 
-#--------------------------------------------------
+    for m1p=-l1:l1
+        for m2p=-l2:l2
+            for m3p=-l3:l3
 
-"""Central energy calculation function"""
-function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, K::Int64, measure::String="Bayes")
-    c3 = FullCorrelation_parallized(intensity, basis, K, true, true, true)
-    c3 = max(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
+                fac = wigner(l1,m1p, l2,m2p, l3,-m3p)
 
-    res = 0.0
-    if measure == "Bayes"
-        i = 1
-        for k1 = 1:K
-            for k2 = 1:k1
-                for k3 = 1:k2
-                    p = reshape(c3[:, i], basis.N, basis.N)
-                    i += 1
-                    q = c3ref[:,:,k3,k2,k1]
-                    p = p / sumabs(p)
-                    q = q / sumabs(q)
-                    @fastmath res += -1.0*sum(q.*log(p))*tripletFactor(k1,k2,k3)
+                if abs(fac) > 100*eps()
+                    cont = sphPlm(l1,m1p,theta1) * sphPlm(l2,m2p,theta2) * sphPlm(l3,-m3p,theta3) * exp(1im*(m2p*a - m3p*b))
+                    fl += fac* cont
                 end
             end
         end
     end
-    return res
+    return Float64(real(fl)) #this really is always real
 end
 
-#------------------------------------------------------------------------
+"Part of the three photon correlation basis functions"
+function flab(l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
+    return flab(0, 0, 0, 0.0, 0.0, l1, l2, l3, a, b)
+end
 
 """Calculate complete three-photon correlation
 This is just for testing because it's a slow calculation."""
@@ -342,7 +352,7 @@ function FullC3(volume::SphericalHarmonicsVolume, L::Int64, K::Int64, N::Int64, 
             end
         end
     end
-    return c3 / sumabs(c3)
+    return c3 #/ sumabs(c3)
 end
 
 """From a two-photon correlation with k1>k2 restriction, calculates the full version."""
@@ -380,114 +390,6 @@ function complete_three_photon_correlation(c3::C3)
     end
     return c3new
 end
-
-# #d t / d U_l,m,mp
-# function derivative_slice(coeff,coeff0,k1,k2,k3, l, m, mp)
-#     c = zeros(Complex{Float64}, N*N)
-
-#     for i=1:Base.size(basisindices,1)
-#         b = basisindices[i,:]
-#         l1,m1,l2,m2,l3,m3
-#         l1,m1,l2,m2,l3,m3 = b[1],b[2],b[3],b[4],b[5],b[6]
-#         # println("$l1 $l2 $l3 $m1 $m2 $m3")
-#         f1 = getc(coeff[k1], l1, m1)
-#         f2 = getc(coeff[k2], l2, m2)
-#         f3 = getc(coeff[k3], l3, -m3)
-#         bas = basis[:,i]
-
-#         if l == l1 && m == m1
-#             c+= getc(coeff0[k1], l, mp) * f2 * f3 * basis[:,i]
-#         end
-#         if l == l2 && m == m2
-#             c+= getc(coeff0[k2], l, mp) * f1 * f3 * basis[:,i]
-#         end
-#         if l == l3 && m == -m3
-#             c+= getc(coeff0[k3], l, mp) * f1 * f2 * basis[:,i]
-#         end
-#     end
-#     return c
-# end
-
-# function derivative(coeff, coeff0, l, m, mp, ksize = KMAX)
-# #     c = Complex{Float64}[]
-#     for k1 = 1:ksize
-#         for k2 = 1:ksize
-#             for k3 =1:ksize
-#                 append!(c, derivative_slice(coeff, coeff0, k1, k2, k3, l, m, mp))
-#             end
-#         end
-#     end
-#     return c
-# end
-
-# function delta_U(l,coeff, coeff0, K)
-
-#     global tnew = FullCorrelation(coeff, K)
-#     diff = tref - tnew
-#     n = norm(diff)/norm(tref)
-
-#     d = zeros(Complex{Float64},2*l+1, 2*l+1)
-
-#     for m = -l:l
-#         for mp = -l:l
-#             dtdU = derivative(coeff, coeff0, l,m,mp, K)
-#             # dtdU = dtdU / dtdU:norm()
-
-#             delta = - 2.0 * transpose(diff) * dtdU
-#             d[m+l+1,mp+l+1] = delta[1]
-#         end
-#     end
-
-#     return d,n
-# end
-
-# function dtest()
-#     K = 7
-#     L = 4
-#     list = Float64[]
-#     complexBasis(L, 16)
-#     global new = deleteTerms(deepcopy(rCoeff), K, L)
-#     # global new = deepcopy(intensCoeff)
-#     global tref = FullCorrelation(intensCoeff, K)
-#     for k = 1:K
-#         setc(new[k], 0, 0, 0.0)
-#     end
-
-#     global orig = deepcopy(new)
-
-#     #Initialize with random unitary matrices
-#     for l = 4:2:L
-#         # global rot = convert(Array{Complex{Float64}},eye(2*l+1)*random_rotation_step(2*l+1, pi/180.0 * 1.0))
-#         # println(rot)
-#         global rot = complex(random_rotation(2*l+1))
-#         # rot = complex(eye(2*l+1))
-#         for k = 1:K cvec_set(new[k],l, rot*cvec_get(orig[k],l)) end
-#     end
-#     modCube = getCube(new, cubesize, K, L)
-#     origCube = getCube(orig, cubesize, K, L)
-#     saveCube(modCube, cubesize, "mirror.mrc")
-#     saveCube(origCube, cubesize, "orig.mrc")
-#     a = reshape(modCube,cubesize^3)
-#     b = reshape(origCube,cubesize^3)
-#     println(dot(a,b) / (norm(a)*norm(b)))
-#     # rot = convert_real_to_complex_matrix(rot, L)
-#     # new = real_to_comp(new)
-#     # global nrot = deepcopy(rot)
-#     # global bla
-#     # du, = delta_U(4, new, intensCoeff, K) #/norm(tref)
-#     # du = du / norm(du)
-#     # for i = 1:1e5
-#     #     du,n = delta_U(4,new,intensCoeff, K)
-#     #     du = du/ norm(du)
-#     #     # push!(list,n)
-
-#     #     nrot = ( real(nrot-10.0*n*du))
-#     #     println("n=$n det=",det(nrot)," eyediff = ", norm(eye(2*4+1)-nrot))
-#     #     for k = 1:K cvec_set(new[k],L, complex(nrot)*cvec_get(intensCoeff[k],L)) end
-#     #     # plot([1:length(list)], list)
-#     # end
-#     # plotCorrelationSlice(FullCorrelation(new,3),1,2,3,3)
-# end
 
 #----------------------------------------------------------------
 
