@@ -52,11 +52,3 @@ function combine_set(images::Array{Int64}, setsize::Int64, ppi::Int64=10, K::Int
     combine_histograms(name, pic, K, N, setsize)
   end
 end
-
-#Combine non noisy histograms
-# combine_set(calculate_images_ppi(25)[5:6], calculate_images_ppi(25)[4], 25)
-# combine_set(calculate_images_ppi(50)[5:6], calculate_images_ppi(50)[4], 50)
-
-#Combine multi particle
-#generate_single_multiparticle_histogram(Integer(3.2768e9), Integer(2*2.048e7), 2)
-# combine_set([Integer(3.2768e9)], Integer(2*2.048e7), 10, 38, 32, environment_path("data_generation/parts/multi_2_SH_"))

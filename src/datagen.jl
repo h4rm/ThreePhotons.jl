@@ -179,10 +179,8 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
             @inbounds c2[a2i,k2,k1] += val2
-            #TODO: Check if this is still valid for lambda > 0.0
-            # if lambda == 0.0
-            #     @inbounds c2[N-a2i+1,k2,k1] += val2
-            # end
+            #This symmetry is also valid for lambda != 0.0
+            # @inbounds c2[N-a2i+1,k2,k1] += val2
 
             for k = 1:(j-1) #this implies k2 >= k3
 
