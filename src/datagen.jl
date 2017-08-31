@@ -189,11 +189,12 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
             p2 = picture[j]
             k2 = round(Int64,norm(p2)/dq)
-            abound = alpha_star(float(pi), k1,k2,dq,lambda)-eps()
+            abu = alpha_star(float(pi), k1,k2,dq,lambda)-eps()
+            abl = alpha_star(0.0, k1,k2,dq,lambda)+eps()
 
-            alpha2 = alpha_star_inverse( mod(angle_between_simple(p1,p2), abound), k1,k2,dq,lambda)
+            alpha2 = alpha_star_inverse( clamp(angle_between_simple(p1,p2), abl, abu), k1,k2,dq,lambda)
             a2i = Int64(mod(floor(Int64, alpha2/da),N)+1)
-            alpha3 = alpha_star_inverse( mod(angle_between(p1,p2), abound), k1,k2,dq,lambda)
+            alpha3 = alpha_star_inverse( clamp(mod(angle_between(p1,p2), pi), abl, abu), k1,k2,dq,lambda)
             a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
@@ -205,9 +206,10 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
                 p3 = picture[k]
                 k3 = round(Int64,norm(p3)/dq)
-                bbound = alpha_star(float(pi), k1,k3,dq,lambda)-eps()
+                bbu = alpha_star(float(pi), k1,k3,dq,lambda)-eps()
+                bbl = alpha_star(0.0, k1,k3,dq,lambda)+eps()
 
-                beta = alpha_star_inverse( mod(angle_between(p1,p3), bbound), k1,k3,dq,lambda)
+                beta = alpha_star_inverse( clamp(mod(angle_between(p1,p3), pi), bbl, bbu), k1,k3,dq,lambda)
                 bi = Int64(mod(floor(Int64, beta/da),N)+1)
 
                 @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
@@ -328,7 +330,8 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     #Make batches of pictures so we can save often
     while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
 
-        c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
+        # c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
+        let i = 1
             c1 = zeros(Float64,K)
             c2 = zeros(Float64,N,K,K)
             c3 = zeros(Float64,N,N,K,K,K)
