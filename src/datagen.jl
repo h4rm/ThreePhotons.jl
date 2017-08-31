@@ -147,6 +147,13 @@ end
 #   end
 # end
 
+"""Corrects for Ewald sphere curvature"""
+function alpha_star_inverse(alpha_start::Float64, k1::Int64, k2::Int64, dq::Float64, lambda::Float64)
+    theta1 = acos(k1*dq*lambda/(4*pi))
+    theta2 = acos(k2*dq*lambda/(4*pi))
+    return acos((cos(alpha_start) - cos(theta1)*cos(theta2))/(sin(theta1)*sin(theta2)))
+end
+
 """This calculates the 3 photon correlation for a sparse image"""
 function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c1::C1, c2::C2, c3::C3, dq::Float64, N::Int64, K::Int64, lambda::Float64)
     da = pi/N
@@ -172,11 +179,10 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
             p2 = picture[j]
             k2 = round(Int64,norm(p2)/dq)
-            qf2 = qfac(k1,k2,dq,lambda)
 
-            alpha2 = angle_between_simple(p1,p2)/qf2
+            alpha2 = alpha_star_inverse( angle_between_simple(p1,p2), k1,k2,dq,lambda)
             a2i = Int64(mod(floor(Int64, alpha2/da),N)+1)
-            alpha3 = mod(angle_between(p1,p2), pi)/qf2
+            alpha3 = alpha_star_inverse( mod(angle_between(p1,p2), pi), k1,k2,dq,lambda)
             a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
@@ -184,22 +190,21 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
             #This symmetry is also valid for lambda != 0.0
             # @inbounds c2[N-a2i+1,k2,k1] += val2
 
-            # for k = 1:(j-1) #this implies k2 >= k3
-            #
-            #     p3 = picture[k]
-            #     k3 = round(Int64,norm(p3)/dq)
-            #     qf3 = qfac(k1,k3,dq,lambda)
-            #
-            #     beta = mod(angle_between(p1,p3), pi)/qf3
-            #     bi = Int64(mod(floor(Int64, beta/da),N)+1)
-            #
-            #     @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
-            #     @inbounds c3[a3i,bi,k3,k2,k1] += val3
-            #     #TODO: Check if this is still valid for lambda > 0.0
-            #     # if lambda == 0.0
-            #     #     @inbounds c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3
-            #     #  end
-            # end
+            for k = 1:(j-1) #this implies k2 >= k3
+
+                p3 = picture[k]
+                k3 = round(Int64,norm(p3)/dq)
+
+                beta = alpha_star_inverse( mod(angle_between(p1,p3), pi), k1,k3,dq,lambda)
+                bi = Int64(mod(floor(Int64, beta/da),N)+1)
+
+                @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
+                @inbounds c3[a3i,bi,k3,k2,k1] += val3
+                #TODO: Check if this is still valid for lambda > 0.0
+                # if lambda == 0.0
+                #     @inbounds c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3
+                #  end
+            end
         end
     end
 end
