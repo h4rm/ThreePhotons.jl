@@ -1,6 +1,6 @@
 #Data generation Cubic
 batchsize = Integer(1e4)
-generateHistogram(intensityCube; qcut=intensityCube.rmax, K=KMAX, N=N, max_pictures=batchsize,max_triplets=0, batchsize = batchsize, number_incident_photons=calculate_incident_photons(10), numprocesses=1, file="/tmp/correlations.dat", noise=GaussianNoise(0.1, 0.5, 14))
+generateHistogram(intensityCube; qcut=intensityCube.rmax, K=KMAX, N=N, max_pictures=batchsize,max_triplets=0, batchsize = batchsize, number_incident_photons=calculate_incident_photons(10), numprocesses=1, file="/tmp/correlations.dat", noise=GaussianNoise(0.1, 0.5, 14), lambda=4.0)
 loadHistograms(8, "/tmp/correlations.dat")
 
 #Data generation spherical harmonics

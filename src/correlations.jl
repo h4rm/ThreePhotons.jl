@@ -200,7 +200,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64
                     fac += getc(volume, k1, l, m) * conj(getc(volume, k2, l, m))
                 end
                 # qf = qfac(k1,k2,dq(volume), lambda)
-                slice += fac * Float64[ Plm(l,0,alpha) for alpha = alpharange(basis.N)]
+                slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, dq(volume), lambda)) for alpha = alpharange(basis.N)]
             end
             c[:,k2,k1] = real(slice)
         end

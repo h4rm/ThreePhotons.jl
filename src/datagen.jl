@@ -189,10 +189,11 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
             p2 = picture[j]
             k2 = round(Int64,norm(p2)/dq)
+            abound = alpha_star(float(pi), k1,k2,dq,lambda)-eps()
 
-            alpha2 = alpha_star_inverse( clamp(angle_between_simple(p1,p2), 0.0, pi-eps()), k1,k2,dq,lambda)
+            alpha2 = alpha_star_inverse( mod(angle_between_simple(p1,p2), abound), k1,k2,dq,lambda)
             a2i = Int64(mod(floor(Int64, alpha2/da),N)+1)
-            alpha3 = alpha_star_inverse( clamp(angle_between(p1,p2), 0.0,pi-eps()), k1,k2,dq,lambda)
+            alpha3 = alpha_star_inverse( mod(angle_between(p1,p2), abound), k1,k2,dq,lambda)
             a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
@@ -204,8 +205,9 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
                 p3 = picture[k]
                 k3 = round(Int64,norm(p3)/dq)
+                bbound = alpha_star(float(pi), k1,k3,dq,lambda)-eps()
 
-                beta = alpha_star_inverse( clamp(angle_between(p1,p3), 0.0,pi-eps()), k1,k3,dq,lambda)
+                beta = alpha_star_inverse( mod(angle_between(p1,p3), bbound), k1,k3,dq,lambda)
                 bi = Int64(mod(floor(Int64, beta/da),N)+1)
 
                 @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
