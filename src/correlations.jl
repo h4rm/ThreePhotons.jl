@@ -188,8 +188,12 @@ function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c
 end
 
 
+function qfac(k1::Int64, k2::Int64, dq::Float64, lambda::Float64)
+    return cos(pi/2-acos(k1*dq*lambda/(4*pi)))*cos(pi/2-acos(k2*dq*lambda/(4*pi)))
+end
+
 """Calculates the two photon correlation from spherical harmonics coefficients"""
-function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false)
+function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false, lambda::Float64=4.0)
     c = zeros(Float64,basis.N,K,K)
 
     for k1=1:K
@@ -200,6 +204,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64
                 for m = -l:l
                     fac += getc(volume, k1, l, m) * conj(getc(volume, k2, l, m))
                 end
+                # qf = qfac(k1,k2,dq(volume), lambda)
                 slice += fac * Float64[ Plm(l,0,alpha) for alpha = alpharange(basis.N)]
             end
             c[:,k2,k1] = real(slice)
