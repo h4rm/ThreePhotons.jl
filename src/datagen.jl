@@ -13,7 +13,9 @@ export
     loadHistograms,
     countTriplets,
     countDoublets,
-    detector_to_Ewald_sphere
+    detector_to_Ewald_sphere,
+    alpha_star_inverse,
+    alpha_star
 
 """Abstract noise type, to be extended in the future"""
 abstract Noise
@@ -31,6 +33,20 @@ function detector_to_Ewald_sphere(vec::Vector{Float64}, lambda::Float64=1.0)
     c = cos(theta) #Note that theta should be pi/2 for lambda -> 0
     s = sin(theta)
     return Float64[s*vec[1:2]; c*q]
+end
+
+"""Corrects for Ewald sphere curvature"""
+function alpha_star_inverse(alpha_star::Float64, k1::Int64, k2::Int64, dq::Float64, lambda::Float64)
+    theta1 = acos(k1*dq*lambda/(4*pi))
+    theta2 = acos(k2*dq*lambda/(4*pi))
+    return acos((cos(alpha_star) - cos(theta1)*cos(theta2))/(sin(theta1)*sin(theta2)))
+end
+
+"""Corrects for Ewald sphere curvature"""
+function alpha_star(alpha::Float64, k1::Int64, k2::Int64, dq::Float64, lambda::Float64)
+    theta1 = acos(k1*dq*lambda/(4*pi))
+    theta2 = acos(k2*dq*lambda/(4*pi))
+    return acos(sin(theta1)*sin(theta2)*cos(alpha) + cos(theta1)*cos(theta2))
 end
 
 """
@@ -147,12 +163,6 @@ end
 #   end
 # end
 
-"""Corrects for Ewald sphere curvature"""
-function alpha_star_inverse(alpha_start::Float64, k1::Int64, k2::Int64, dq::Float64, lambda::Float64)
-    theta1 = acos(k1*dq*lambda/(4*pi))
-    theta2 = acos(k2*dq*lambda/(4*pi))
-    return acos((cos(alpha_start) - cos(theta1)*cos(theta2))/(sin(theta1)*sin(theta2)))
-end
 
 """This calculates the 3 photon correlation for a sparse image"""
 function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c1::C1, c2::C2, c3::C3, dq::Float64, N::Int64, K::Int64, lambda::Float64)
@@ -180,7 +190,7 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
             p2 = picture[j]
             k2 = round(Int64,norm(p2)/dq)
 
-            alpha2 = alpha_star_inverse( angle_between_simple(p1,p2), k1,k2,dq,lambda)
+            alpha2 = alpha_star_inverse( mod(angle_between_simple(p1,p2), pi), k1,k2,dq,lambda)
             a2i = Int64(mod(floor(Int64, alpha2/da),N)+1)
             alpha3 = alpha_star_inverse( mod(angle_between(p1,p2), pi), k1,k2,dq,lambda)
             a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
