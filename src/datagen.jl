@@ -174,8 +174,8 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
             k2 = round(Int64,norm(p2)/dq)
             alpha2 = angle_between_simple(p1,p2)
             a2i = Int64(mod(floor(Int64, alpha2/da),N)+1)
-            alpha3 = mod(angle_between(p1,p2), pi)
-            a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
+            # alpha3 = mod(angle_between(p1,p2), pi)
+            # a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
             @inbounds c2[a2i,k2,k1] += val2
@@ -186,11 +186,12 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
                 p3 = picture[k]
                 k3 = round(Int64,norm(p3)/dq)
-                beta = mod(angle_between(p1,p3), pi)
+                # beta = mod(angle_between(p1,p3), pi)
+                beta = angle_between_simple(p1,p3)
                 bi = Int64(mod(floor(Int64, beta/da),N)+1)
 
                 @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
-                @inbounds c3[a3i,bi,k3,k2,k1] += val3
+                @inbounds c3[a2i,bi,k3,k2,k1] += val3
                 #TODO: Check if this is still valid for lambda > 0.0
                 # if lambda == 0.0
                 #     @inbounds c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3
