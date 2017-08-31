@@ -330,8 +330,8 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     #Make batches of pictures so we can save often
     while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
 
-        # c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
-        let i = 1
+        c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
+        # let i = 1
             c1 = zeros(Float64,K)
             c2 = zeros(Float64,N,K,K)
             c3 = zeros(Float64,N,N,K,K,K)
