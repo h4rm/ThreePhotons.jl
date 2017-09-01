@@ -189,35 +189,33 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
 
             p2 = picture[j]
             k2 = round(Int64,norm(p2)/dq)
-            abu = alpha_star(float(pi), k1,k2,dq,lambda)-eps()
-            abl = alpha_star(0.0, k1,k2,dq,lambda)+eps()
 
-            alpha2 = alpha_star_inverse( clamp(angle_between_simple(p1,p2), abl, abu), k1,k2,dq,lambda)
-            a2i = Int64(mod(floor(Int64, alpha2/da),N)+1)
-            alpha3 = alpha_star_inverse( clamp(mod(angle_between(p1,p2), pi), abl, abu), k1,k2,dq,lambda)
-            a3i = Int64(mod(floor(Int64, alpha3/da),N)+1)
+            alpha = angle_between(p1,p2)
+            if alpha > pi
+                alpha = 2*pi - alpha
+            end
+            ai = Int64(mod(floor(Int64, alpha/da),N)+1)
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
-            @inbounds c2[a2i,k2,k1] += val2
-            #This symmetry is also valid for lambda != 0.0
-            # @inbounds c2[N-a2i+1,k2,k1] += val2
+            @inbounds c2[a2,k2,k1] += val2
 
             for k = 1:(j-1) #this implies k2 >= k3
 
                 p3 = picture[k]
                 k3 = round(Int64,norm(p3)/dq)
-                bbu = alpha_star(float(pi), k1,k3,dq,lambda)-eps()
-                bbl = alpha_star(0.0, k1,k3,dq,lambda)+eps()
 
-                beta = alpha_star_inverse( clamp(mod(angle_between(p1,p3), pi), bbl, bbu), k1,k3,dq,lambda)
+                beta = angle_between(p1,p3)
+                if alpha > pi && beta > pi
+                    beta = 2*pi - beta
+                elseif alpha > pi && beta <= pi
+                    beta = pi - beta
+                elseif alpha <= pi && beta > pi
+                    beta = mod(beta,pi)
+                end
                 bi = Int64(mod(floor(Int64, beta/da),N)+1)
 
                 @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
                 @inbounds c3[a3i,bi,k3,k2,k1] += val3
-                #TODO: Check if this is still valid for lambda > 0.0
-                # if lambda == 0.0
-                #     @inbounds c3[N-a3i+1,N-bi+1,k3,k2,k1] += val3
-                #  end
             end
         end
     end
@@ -331,7 +329,6 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
 
         c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
-        # let i = 1
             c1 = zeros(Float64,K)
             c2 = zeros(Float64,N,K,K)
             c3 = zeros(Float64,N,N,K,K,K)

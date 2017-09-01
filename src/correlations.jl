@@ -12,7 +12,9 @@ export
     flab,
     calculate_triple_products,
     calculate_triple_products_fast,
-    FullC3
+    FullC3,
+    c3_slice,
+    integrate_c3_shell
 
 typealias C1 Vector{Float64}
 typealias C1Shared SharedArray{Float64, 1}
@@ -286,12 +288,11 @@ end
 #------------------------------------------------------------------------
 
 "Part of the three photon correlation basis functions"
-function flab(k1::Int64, k2::Int64, k3::Int64, lambda::Float64, dq::Float64, l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
+function flab(k1::Int64, k2::Int64, k3::Int64, dq::Float64, lambda::Float64, l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
     fl = zero(Complex{Float64})
     theta1 = acos(k1*lambda*dq/(4*pi))
     theta2 = acos(k2*lambda*dq/(4*pi))
     theta3 = acos(k3*lambda*dq/(4*pi))
-
     if !(abs(l1-l2) <= l3 <= (l1+l2)) return 0.0 end
 
     for m1p=-l1:l1
@@ -302,17 +303,45 @@ function flab(k1::Int64, k2::Int64, k3::Int64, lambda::Float64, dq::Float64, l1:
 
                 if abs(fac) > 100*eps()
                     cont = sphPlm(l1,m1p,theta1) * sphPlm(l2,m2p,theta2) * sphPlm(l3,-m3p,theta3) * exp(1im*(m2p*a - m3p*b))
+
+                    #The following is wrong, the curvature is already in the thetas, no need to adjust the alpha/betas (phew)
+                    # cont = sphPlm(l1,m1p,theta1) * sphPlm(l2,m2p,theta2) * sphPlm(l3,-m3p,theta3) * exp(1im*(m2p*alpha_star(a, k1, k2, dq, lambda) - m3p*alpha_star(b, k1, k3, dq, lambda)))
+
                     fl += fac* cont
                 end
             end
         end
     end
-    return Float64(real(fl)) #this really is always real
+    return Float64(real(fl))
 end
 
 "Part of the three photon correlation basis functions"
 function flab(l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
     return flab(0, 0, 0, 0.0, 0.0, l1, l2, l3, a, b)
+end
+
+function c3_slice(ck1::Vector{Complex{Float64}}, ck2::Vector{Complex{Float64}}, ck3::Vector{Complex{Float64}}, N::Int64, L::Int64, LMAX::Int64, k1::Int64, k2::Int64, k3::Int64, dq::Float64, lambda::Float64)
+    slice = zeros(Complex{Float64}, N, N)
+    for l1 = 0:2:L
+        for l2 = 0:2:L
+            for l3 = 0:2:L
+                m = Float64[ flab(k1,k2,k3,dq,lambda, l1,l2,l3, a,b) for a=alpharange(N), b=alpharange(N)]
+                if norm(m) > 3*eps()
+                    for m1 = -l1:l1
+                        for m2 = -l2:l2
+                            for m3 = -l3:l3
+                                w = wigner(l1,m1, l2,m2, l3,-m3)
+                                if abs(w) > 3*eps()
+                                    slice += m*w * ck1[seanindex(l1,m1,LMAX)] * ck2[seanindex(l2,m2,LMAX)] * ck3[seanindex(l3,-m3,LMAX)]
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return real(slice)
 end
 
 """Calculate complete three-photon correlation
@@ -326,31 +355,9 @@ function FullC3(volume::SphericalHarmonicsVolume, L::Int64, K::Int64, N::Int64, 
         ck1 = coeff[k1]
         for k2 = 1:k1
             ck2 = coeff[k2]
-
             for k3 = 1:k2
                 ck3 = coeff[k3]
-
-                slice = zeros(Complex{Float64}, N, N)
-                for l1 = 0:2:L
-                    for l2 = 0:2:L
-                        for l3 = 0:2:L
-                            m = Float64[ flab(l1,l2,l3, a,b) for a=alpharange(N), b=alpharange(N)]
-                            if norm(m) > 3*eps()
-                                for m1 = -l1:l1
-                                    for m2 = -l2:l2
-                                        for m3 = -l3:l3
-                                            w = wigner(l1,m1, l2,m2, l3,-m3)
-                                            if abs(w) > 3*eps()
-                                                slice += m*w * ck1[seanindex(l1,m1,LMAX)] * ck2[seanindex(l2,m2,LMAX)] * ck3[seanindex(l3,-m3,LMAX)]
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-                c3[:,:, k3,k2,k1] = real(slice)
+                c3[:,:, k3,k2,k1] = c3_slice(ck1, ck2, ck3, N, L)
             end
         end
     end
@@ -517,4 +524,53 @@ function integrateShell_3pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, K
         end
     end
     return c3 / sumabs(c3)
+end
+
+"""Integrate out a single shell for comparison with theory"""
+function integrate_c3_shell(intensity::SphericalHarmonicsVolume, k1::Int64, k2::Int64, k3::Int64, N::Int64, lambda::Float64, iterations::Int64=Integer(1e6))
+    da = pi/N
+    mdq = dq(intensity)
+    surf = getSurfaceVolume(intensity)
+
+    c3,c3counts = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2])) for i = 1:nworkers()
+        c3_local = zeros(Float64,N,N)
+        c3counts_local = zeros(Float64,N,N)
+        rotations = Matrix{Float64}[random_rotation(3) for k = 1: 10000]
+
+        for j = 1:iterations
+
+            a = rand()*2.0*pi
+            b = rand()*2.0*pi
+
+            rot = rotations[rand(1:length(rotations))]
+            p1 = k1*mdq*[0,1,0]
+            p2 = k2*mdq*[cos(a) sin(a) 0; -sin(a) cos(a) 0; 0 0 0]*[0,1,0]
+            p3 = k3*mdq*[cos(b) sin(b) 0; -sin(b) cos(b) 0; 0 0 0]*[0,1,0]
+
+            alpha,beta = angle_between(p1,p2),angle_between(p1,p3)
+            if alpha > pi
+                alpha = 2*pi - alpha
+            end
+            if alpha > pi && beta > pi
+                beta = 2*pi - beta
+            elseif alpha > pi && beta <= pi
+                beta = pi - beta
+            elseif alpha <= pi && beta > pi
+                beta = mod(beta,pi)
+            end
+
+            ai,bi = Int64(mod(floor(Int64, alpha/da),N)+1),Int64(mod(floor(Int64, beta/da),N)+1)
+
+            p1e = rot*detector_to_Ewald_sphere(p1, lambda)
+            p2e = rot*detector_to_Ewald_sphere(p2, lambda)
+            p3e = rot*detector_to_Ewald_sphere(p3, lambda)
+
+            @inbounds c3_local[ai,bi] += real(getVolumeInterpolated(surf, p1e))* real(getVolumeInterpolated(surf, p2e))* real(getVolumeInterpolated(surf, p3e))
+            @inbounds c3counts_local[ai,bi] += 1.0
+
+        end
+        (c3_local,c3counts_local)
+    end
+    #Removing the cout normalization doesn't change anything
+    return sdata(c3)./sdata(c3counts)
 end
