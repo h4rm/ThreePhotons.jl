@@ -210,7 +210,7 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
                 elseif alpha > pi && beta <= pi
                     beta = pi - beta
                 elseif alpha <= pi && beta > pi
-                    beta = mod(beta,pi)
+                    beta = beta - pi
                 end
                 bi = Int64(mod(floor(Int64, beta/da),N)+1)
 

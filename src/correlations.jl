@@ -556,7 +556,7 @@ function integrate_c3_shell(intensity::SphericalHarmonicsVolume, k1::Int64, k2::
             elseif alpha > pi && beta <= pi
                 beta = pi - beta
             elseif alpha <= pi && beta > pi
-                beta = mod(beta,pi)
+                beta = beta - pi
             end
 
             ai,bi = Int64(mod(floor(Int64, alpha/da),N)+1),Int64(mod(floor(Int64, beta/da),N)+1)
