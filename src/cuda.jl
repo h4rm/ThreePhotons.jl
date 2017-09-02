@@ -41,7 +41,7 @@ function CUDA_store_basis(basis::BasisType)
     d_indices = CudaArray(convert(Array{Int32}, sdata(basis.indices)))
     d_PAcombos = CudaArray(convert(Array{Int32}, sdata(basis.PAcombos)))
     d_B = CudaArray(convert(Array{Float32}, sdata(basis.B)))
-    d_correlation = CudaArray(Float32,(basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
+    d_correlation = CudaArray(Float32,(2*basis.N^2,round(Int64, basis.K*(basis.K+1)*(basis.K+2)/6)))
 
     cuda_basis =  BasisTypeCuda(d_wignerlist, d_indices, d_PAcombos, d_B, basis.h_P, d_correlation, basis.basislen, basis.N, basis.L, basis.LMAX, basis.lrange, basis.ctr, basis.rtc, basis.K, basis.lambda, basis.dq)
     println("Initialized CUDA basis.")
@@ -87,10 +87,10 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     if return_raw return res end
 
     #Translate matrix into 5dimensional correlation format
-    t = zeros(Float64, basis.N, basis.N, basis.K, basis.K, basis.K)
+    t = zeros(Float64, basis.N, 2*basis.N, basis.K, basis.K, basis.K)
     i = 1
     for k1=1:basis.K for k2=1:k1 for k3=1:k2
-        t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
+        t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, 2*basis.N)
         i += 1
     end end end
     return normalize ? t / sumabs(t) : t
