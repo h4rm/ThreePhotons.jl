@@ -73,7 +73,7 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
 
     wignerlist = Array(Float64, basislen)
     indiceslist = Array(Int64, 9, basislen)
-    B = SharedArray(Float64, N^2, basislen)
+    B = SharedArray(Float64, 2*N^2, basislen)
     P = SharedArray(Float64, klength, basislen)
     mcombolist = Vector{Int64}[]
 
@@ -110,7 +110,7 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
         l1,m1,l2,m2,l3,m3 = indiceslist[4:9,i]
         w = wignerlist[i]
         #Here, only the real part of the complex exponential plays a role
-        B[:,i] = reshape(Float64[cos(m2*a + m3*b) for a in alpharange(N), b in alpharange(N)], N^2)
+        B[:,i] = reshape(Float64[cos(m2*a + m3*b) for a in alpharange(N), b in alpharange_2pi(2*N)], 2*N^2)
         P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
     end
 
@@ -156,10 +156,10 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
 
     if return_raw return res end
 
-    t = zeros(Float64, basis.N, basis.N, basis.K, basis.K, basis.K)
+    t = zeros(Float64, basis.N, 2*basis.N, basis.K, basis.K, basis.K)
     i = 1
     for k1=1:basis.K for k2=1:k1 for k3=1:k2
-        t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, basis.N)
+        t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, 2*basis.N)
         i += 1
     end end end
     return normalize ? t / sumabs(t) : t
@@ -176,7 +176,7 @@ function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c
         for k1 = 1:basis.K
             for k2 = 1:k1
                 for k3 = 1:k2
-                    p = reshape(c3[:, i], basis.N, basis.N)
+                    p = reshape(c3[:, i], basis.N, 2*basis.N)
                     i += 1
                     q = c3ref[:,:,k3,k2,k1]
                     p = p / sumabs(p)
@@ -192,7 +192,7 @@ end
 """Calculates the two photon correlation from spherical harmonics coefficients"""
 function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false, lambda::Float64=4.0)
     c = zeros(Float64,basis.N,K,K)
-
+    mdq = dq(volume)
     for k1=1:K
         for k2=1:(minimal ? k1 : K)
             slice = zeros(Float64, basis.N)
@@ -202,7 +202,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64
                     fac += getc(volume, k1, l, m) * conj(getc(volume, k2, l, m))
                 end
                 # qf = qfac(k1,k2,dq(volume), lambda)
-                slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, dq(volume), lambda)) for alpha = alpharange(basis.N)]
+                slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(basis.N)]
             end
             c[:,k2,k1] = real(slice)
         end
@@ -236,13 +236,10 @@ end
 """Retrieves a set of spherical harmonics coefficeints"""
 function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Float64)
     N,K,_ = size(c2)
-    println("Extracting solution with K=$K and L=$L.")
-
-    A = Float64[ Plm(l,0,alpha) for alpha = alpharange(N), l = 0:L]
-    AI = pinv(A)
-
     #Create empty Spherical Harmonics volume
     intensity = SphericalHarmonicsVolume(LMAX, KMAX, qmax)
+    println("Extracting solution with K=$K and L=$L.")
+    mdq = dq(intensity)
     eigenvecs = Dict()
     eigenvals = Dict()
     Gmatrices = Dict()
@@ -255,6 +252,8 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
 
                 #Symmetrizing helps for intensities, but is wrong for complex Fourier results
                 slice = 0.5*(slice + reverse(slice)) #symmetrize
+
+                AI = pinv( Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:L])
 
                 fac = AI*slice
                 val = fac[l+1]
@@ -349,7 +348,7 @@ This is just for testing because it's a slow calculation."""
 function FullC3(volume::SphericalHarmonicsVolume, L::Int64, K::Int64, N::Int64, LMAX::Int64)
 
     coeff = volume.coeff
-    c3 = zeros(Float64, N, N, K, K, K)
+    c3 = zeros(Float64, N, 2*N, K, K, K)
 
     for k1 = 1:K
         ck1 = coeff[k1]
@@ -364,41 +363,41 @@ function FullC3(volume::SphericalHarmonicsVolume, L::Int64, K::Int64, N::Int64, 
     return c3 #/ sumabs(c3)
 end
 
-"""From a two-photon correlation with k1>k2 restriction, calculates the full version."""
-function complete_two_photon_correlation(c2::C2)
-    N,K,_= Base.size(c2)
-    Float64[k1 >= k2 ? c2[a,k2,k1] : c2[a,k1,k2] for a = 1:N, k1=1:K, k2=1:K]
-end
-
-"""From a three-photon correlation with k1>k2>k3 restriction, calculates the full version.
-This is used to complete the histogrammed three-photon correlation before integration."""
-function complete_three_photon_correlation(c3::C3)
-    N,_,K,_,_ = Base.size(c3)
-    c3new = deepcopy(c3)
-    for k1 = 1:K
-        for k2 = 1:K
-            for k3 = 1:K
-                if     k1 >= k3 && k3 >= k2 c3new[:,:,k3, k2, k1] = c3[:,:,k2,k3,k1]'
-
-                elseif k3 >= k1 && k1 >= k2
-                    b = c3[:,:,k2,k1,k3]
-                    c3new[:,:,k3, k2, k1] = [b[j,mod(j-i,N)+1] for i = 1:N, j=1:N]
-                elseif k3 >= k2 && k2 >= k1
-                    b = c3[:,:,k1,k2,k3]
-                    c3new[:,:,k3, k2, k1] = [b[mod(j-i,N)+1,j] for i = 1:N, j=1:N]
-
-                elseif k2 >= k3 && k3 >= k1
-                    b = c3[:,:,k1,k3,k2]
-                    c3new[:,:,k3, k2, k1] = [b[mod(i-j,N)+1,i] for i = 1:N, j=1:N]
-                elseif k2 >= k1 && k1 >= k3
-                    b = c3[:,:,k3,k1,k2]
-                    c3new[:,:,k3, k2, k1] = [b[i,mod(i-j,N)+1] for i = 1:N, j=1:N]
-                end
-            end
-        end
-    end
-    return c3new
-end
+# """From a two-photon correlation with k1>k2 restriction, calculates the full version."""
+# function complete_two_photon_correlation(c2::C2)
+#     N,K,_= Base.size(c2)
+#     Float64[k1 >= k2 ? c2[a,k2,k1] : c2[a,k1,k2] for a = 1:N, k1=1:K, k2=1:K]
+# end
+#
+# """From a three-photon correlation with k1>k2>k3 restriction, calculates the full version.
+# This is used to complete the histogrammed three-photon correlation before integration."""
+# function complete_three_photon_correlation(c3::C3)
+#     N,_,K,_,_ = Base.size(c3)
+#     c3new = deepcopy(c3)
+#     for k1 = 1:K
+#         for k2 = 1:K
+#             for k3 = 1:K
+#                 if     k1 >= k3 && k3 >= k2 c3new[:,:,k3, k2, k1] = c3[:,:,k2,k3,k1]'
+#
+#                 elseif k3 >= k1 && k1 >= k2
+#                     b = c3[:,:,k2,k1,k3]
+#                     c3new[:,:,k3, k2, k1] = [b[j,mod(j-i,N)+1] for i = 1:N, j=1:N]
+#                 elseif k3 >= k2 && k2 >= k1
+#                     b = c3[:,:,k1,k2,k3]
+#                     c3new[:,:,k3, k2, k1] = [b[mod(j-i,N)+1,j] for i = 1:N, j=1:N]
+#
+#                 elseif k2 >= k3 && k3 >= k1
+#                     b = c3[:,:,k1,k3,k2]
+#                     c3new[:,:,k3, k2, k1] = [b[mod(i-j,N)+1,i] for i = 1:N, j=1:N]
+#                 elseif k2 >= k1 && k1 >= k3
+#                     b = c3[:,:,k3,k1,k2]
+#                     c3new[:,:,k3, k2, k1] = [b[i,mod(i-j,N)+1] for i = 1:N, j=1:N]
+#                 end
+#             end
+#         end
+#     end
+#     return c3new
+# end
 
 #----------------------------------------------------------------
 
