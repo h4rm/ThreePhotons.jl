@@ -59,7 +59,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
     center = Float64[cx,cy, 0.0]
     da = pi/N
 
-    distances,angles2,angles3 = precompute_distances_and_angles(sx, N)
+    distances,angles = precompute_distances_and_angles(sx, N)
 
     c1_full = zeros(Float64, K2)
     c2_full = zeros(Float64, N, K2, K2)
