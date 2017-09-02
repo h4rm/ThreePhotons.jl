@@ -63,7 +63,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
     c1_full = zeros(Float64, K2)
     c2_full = zeros(Float64, N, K2, K2)
-    c3_full = zeros(Float64, N, N, K3, K3, K3)
+    c3_full = zeros(Float64, N, 2*N, K3, K3, K3)
     number_analyzed_images = 0
 
     for j=1:ceil(Int64, length(image_list)/nworkers())
@@ -74,7 +74,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
             println("Processing image #$(i)")
             c1_local = zeros(Float64, K2)
             c2_local = zeros(Float64, N, K2, K2)
-            c3_local = zeros(Float64, N, N, K3, K3, K3)
+            c3_local = zeros(Float64, N, 2*N, K3, K3, K3)
             for x1 = range
                 for y1 = range
                     @inbounds k1 = distances[x1,y1]
@@ -101,13 +101,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                                                 if k3 <= k2 && k3 > 0 && k3 <= K3
                                                     @inbounds bi = angles[x1,y1,x3,y3]
                                                     bis = bi
-                                                    if ai > N && bi > N
-                                                        bis = 2*N - bis
-                                                    elseif ai > N && bi <= N
-                                                        bis = N - bis
-                                                    elseif ai <= N && bi > N
-                                                        bis = bis - N
-                                                    end
+                                                    if ai > N bis = 2*N - bis end
 
                                                     @fastmath val3 = real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
                                                     @inbounds c3_local[ais,bis,k3,k2,k1] += val3
