@@ -191,13 +191,14 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
             k2 = round(Int64,norm(p2)/dq)
 
             alpha = angle_between(p1,p2)
+            alpha_s = alpha
             if alpha > pi
-                alpha = 2*pi - alpha
+                alpha_s = 2*pi - alpha
             end
-            ai = Int64(mod(floor(Int64, alpha/da),N)+1)
+            ai = Int64(mod(floor(Int64, alpha_s/da),N)+1)
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
-            @inbounds c2[a2,k2,k1] += val2
+            @inbounds c2[ai,k2,k1] += val2
 
             for k = 1:(j-1) #this implies k2 >= k3
 
@@ -205,17 +206,13 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
                 k3 = round(Int64,norm(p3)/dq)
 
                 beta = angle_between(p1,p3)
-                if alpha > pi && beta > pi
+                if alpha > pi
                     beta = 2*pi - beta
-                elseif alpha > pi && beta <= pi
-                    beta = pi - beta
-                elseif alpha <= pi && beta > pi
-                    beta = beta - pi
                 end
-                bi = Int64(mod(floor(Int64, beta/da),N)+1)
+                bi = Int64(mod(floor(Int64, beta/da),2*N)+1)
 
                 @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
-                @inbounds c3[a3i,bi,k3,k2,k1] += val3
+                @inbounds c3[ai,bi,k3,k2,k1] += val3
             end
         end
     end
@@ -307,7 +304,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
 
     c1_full = zeros(Float64, K)
     c2_full = zeros(Float64,(N, K,K))
-    c3_full = zeros(Float64,(N,N,K,K,K))
+    c3_full = zeros(Float64,(N,2*N,K,K,K))
     params = Dict("num_pictures"=>0, "num_incident_photons"=>number_incident_photons, "noise"=>noise, "qcut"=>qcut, "K"=>K, "N"=>N, "qcut"=>qcut, "dq"=>dq)
 
     #Load preexisting histogram file so we can continue from where we left off
@@ -331,7 +328,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
         c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
             c1 = zeros(Float64,K)
             c2 = zeros(Float64,N,K,K)
-            c3 = zeros(Float64,N,N,K,K,K)
+            c3 = zeros(Float64,N,2*N,K,K,K)
 
             for j=1:batchsize
                 photon_list = Vector{Float64}[]

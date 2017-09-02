@@ -228,9 +228,9 @@ function alpharange(N)
 end
 
 """Alpharange of histograms"""
-function alpharange_alt(N)
-    da = pi/N
-    linspace(0,pi-da,N)
+function alpharange_2pi(N)
+    da = 2*pi/N
+    linspace(da/2,2*pi-da/2,N)
 end
 
 """Retrieves a set of spherical harmonics coefficeints"""
@@ -321,11 +321,11 @@ function flab(l1::Int64, l2::Int64, l3::Int64, a::Float64, b::Float64)
 end
 
 function c3_slice(ck1::Vector{Complex{Float64}}, ck2::Vector{Complex{Float64}}, ck3::Vector{Complex{Float64}}, N::Int64, L::Int64, LMAX::Int64, k1::Int64, k2::Int64, k3::Int64, dq::Float64, lambda::Float64)
-    slice = zeros(Complex{Float64}, N, N)
+    slice = zeros(Complex{Float64}, N, 2*N)
     for l1 = 0:2:L
         for l2 = 0:2:L
             for l3 = 0:2:L
-                m = Float64[ flab(k1,k2,k3,dq,lambda, l1,l2,l3, a,b) for a=alpharange(N), b=alpharange(N)]
+                m = Float64[ flab(k1,k2,k3,dq,lambda, l1,l2,l3, a,b) for a=alpharange(N), b=alpharange_2pi(2*N)]
                 if norm(m) > 3*eps()
                     for m1 = -l1:l1
                         for m2 = -l2:l2
@@ -533,8 +533,8 @@ function integrate_c3_shell(intensity::SphericalHarmonicsVolume, k1::Int64, k2::
     surf = getSurfaceVolume(intensity)
 
     c3,c3counts = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2])) for i = 1:nworkers()
-        c3_local = zeros(Float64,N,N)
-        c3counts_local = zeros(Float64,N,N)
+        c3_local = zeros(Float64,N,2*N)
+        c3counts_local = zeros(Float64,N,2*N)
         rotations = Matrix{Float64}[random_rotation(3) for k = 1: 10000]
 
         for j = 1:iterations
@@ -550,16 +550,10 @@ function integrate_c3_shell(intensity::SphericalHarmonicsVolume, k1::Int64, k2::
             alpha,beta = angle_between(p1,p2),angle_between(p1,p3)
             if alpha > pi
                 alpha = 2*pi - alpha
-            end
-            if alpha > pi && beta > pi
                 beta = 2*pi - beta
-            elseif alpha > pi && beta <= pi
-                beta = pi - beta
-            elseif alpha <= pi && beta > pi
-                beta = beta - pi
             end
 
-            ai,bi = Int64(mod(floor(Int64, alpha/da),N)+1),Int64(mod(floor(Int64, beta/da),N)+1)
+            ai,bi = Int64(mod(floor(Int64, alpha/da),N)+1),Int64(mod(floor(Int64, beta/da),2*N)+1)
 
             p1e = rot*detector_to_Ewald_sphere(p1, lambda)
             p2e = rot*detector_to_Ewald_sphere(p2, lambda)
