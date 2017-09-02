@@ -174,7 +174,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
         #Retrieve initial structure from 2p-correlation if not provided
         if !haskey(state,"intensity")
-            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["rmax"]))
+            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["rmax"]), params["lambda"])
             # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
         end
 

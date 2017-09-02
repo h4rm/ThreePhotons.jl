@@ -234,7 +234,7 @@ function alpharange_2pi(N)
 end
 
 """Retrieves a set of spherical harmonics coefficeints"""
-function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Float64)
+function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Float64, lambda::Float64)
     N,K,_ = size(c2)
     #Create empty Spherical Harmonics volume
     intensity = SphericalHarmonicsVolume(LMAX, KMAX, qmax)
