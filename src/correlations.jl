@@ -255,8 +255,10 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
         for k1 = 1:K
             for k2 = 1:k1
                 slice = c2[:,k2,k1]
-
-                AI = pinv( Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:L])
+                A = Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:L]
+                tol = 1.0e6*sqrt(eps(real(float(one(eltype(A))))))
+                # println("tol: $tol")
+                AI = pinv(A, tol)
 
                 fac = AI*slice
                 val = fac[l+1]
