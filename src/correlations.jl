@@ -43,7 +43,13 @@ type BasisType <: AbstractBasisType
     K::Int64
     lambda::Float64
     dq::Float64
+
+    function BasisType(N::Int64,L::Int64,LMAX::Int64,K::Int64,lambda::Float64,dq::Float64)
+        new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), HostArray(Float64,2,2), 0, N, L, LMAX, 0:2:L, Dict(), Dict(), K, lambda, dq)
+    end
 end
+
+
 
 """Helper function to calculate basis"""
 function calculate_combolist(K::Int64, mcombolist)
@@ -190,7 +196,7 @@ function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c
 end
 
 """Calculates the two photon correlation from spherical harmonics coefficients"""
-function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false, lambda::Float64=4.0)
+function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false)
     c = zeros(Float64,basis.N,K,K)
     mdq = dq(volume)
     for k1=1:K
@@ -202,7 +208,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64
                     fac += getc(volume, k1, l, m) * conj(getc(volume, k2, l, m))
                 end
                 # qf = qfac(k1,k2,dq(volume), lambda)
-                slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(basis.N)]
+                slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, basis.lambda)) for alpha = alpharange(basis.N)]
             end
             c[:,k2,k1] = real(slice)
         end
@@ -250,19 +256,19 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
             for k2 = 1:k1
                 slice = c2[:,k2,k1]
 
-                #Symmetrizing helps for intensities, but is wrong for complex Fourier results
-                slice = 0.5*(slice + reverse(slice)) #symmetrize
-
                 AI = pinv( Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:L])
 
                 fac = AI*slice
                 val = fac[l+1]
-                G[k1,k2] = val
                 G[k2,k1] = val
+
+                # fac = AI*reverse(slice)
+                # val = fac[l+1]
+                G[k1,k2] = val
             end
         end
         #Diagonalize the matrix
-        eigenval, eigenvectors = eig(G) #, permute=false, scale=false doesnt do anything here
+        eigenval, eigenvectors = eig(G, permute=false, scale=false)
 
         #Calculate the vectors
         eigenvalmatrix = diagm(sqrt(max(eigenval, 0.0)))
@@ -281,7 +287,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
     sign = negativityCheck(intensity) > 0.33 ? -1.0 : 1.0
     for k = 1:intensity.KMAX intensity.coeff[k] *= sign end
 
-    return intensity
+    return intensity,eigenvecs,eigenvals,Gmatrices
 end
 
 #------------------------------------------------------------------------

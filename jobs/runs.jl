@@ -155,3 +155,5 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
 end
 
 # run_calculate_correlation_from_images("coliphage_symmetric", "$(ENV["DETERMINATION_DATA"])/exp_data/Coliphage_PR772/amo86615_194_PR772_single.h5", 24, 38, 26, 16, 42)
+
+# run_calculate_correlation_from_images("coliphage_symmetric_N32", "$(ENV["DETERMINATION_DATA"])/exp_data/Coliphage_PR772/amo86615_194_PR772_single.h5", 24, 38, 26, 32, 42)
