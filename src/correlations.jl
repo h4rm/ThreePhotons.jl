@@ -294,7 +294,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
     sign = negativityCheck(intensity) > 0.33 ? -1.0 : 1.0
     for k = 1:intensity.KMAX intensity.coeff[k] *= sign end
 
-    return intensity,eigenvecs,eigenvals,Gmatrices
+    return intensity#,eigenvecs,eigenvals,Gmatrices
 end
 
 #------------------------------------------------------------------------
