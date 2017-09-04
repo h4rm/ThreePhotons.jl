@@ -255,6 +255,11 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
         for k1 = 1:K
             for k2 = 1:k1
                 slice = c2[:,k2,k1]
+                #symmetrize 2 photon correlation if lambda = 0.0
+                if lambda == 0.0
+                    slice = 0.5*(slice + reverse(slice))
+                end
+
                 A = Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:L]
                 tol = 1.0e6*sqrt(eps(real(float(one(eltype(A))))))
                 # println("tol: $tol")

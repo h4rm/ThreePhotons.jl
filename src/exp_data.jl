@@ -51,7 +51,7 @@ function precompute_distances_and_angles(image_width::Int64, N::Int64)
 end
 
 """Calculates the two- and three-photon correlation from dense pixelized images"""
-function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64=32, filename::String="correlations.dat")
+function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64=32, filename::String="histo.dat")
 
     (sx,sy) = Base.size(image_list[1])
     (cx,cy) = (round(Int64, sx/2),round(Int64, sx/2))
