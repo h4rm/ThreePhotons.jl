@@ -44,6 +44,10 @@ type BasisType <: AbstractBasisType
     lambda::Float64
     dq::Float64
 
+    function BasisType( wignerlist::Array{Float64,1}, indices::Array{Int64,2}, PAcombos::Array{Int64,2}, B::Array{Float64,2}, h_P::HostArray,  basislen::Int64, N::Int64, L::Int64, LMAX::Int64, lrange::StepRange, ctr::Dict, rtc::Dict, K::Int64, lambda::Float64, dq::Float64)
+        new(wignerlist, indices, PAcombos, B, h_P,  basislen, N, L, LMAX, lrange, ctr rtc K, lambda, dq)
+    end
+
     function BasisType(N::Int64,L::Int64,LMAX::Int64,K::Int64,lambda::Float64,dq::Float64)
         new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), HostArray(Float64,2,2), 0, N, L, LMAX, 0:2:L, Dict(), Dict(), K, lambda, dq)
     end
