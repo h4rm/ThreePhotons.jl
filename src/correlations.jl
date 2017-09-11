@@ -49,7 +49,11 @@ type BasisType <: AbstractBasisType
     end
 
     function BasisType(N::Int64,L::Int64,LMAX::Int64,K::Int64,lambda::Float64,dq::Float64)
-        new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), HostArray(Float64,2,2), 0, N, L, LMAX, 0:2:L, Dict(), Dict(), K, lambda, dq)
+        lrange = (0:2:L)
+        ctr = Dict(l => Umat(l) for l=lrange)
+        rtc = Dict(l => ctranspose(ctr[l]) for l=lrange)
+
+        new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), HostArray(Float64,2,2), 0, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
     end
 end
 
