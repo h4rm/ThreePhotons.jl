@@ -159,7 +159,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
     end
 
     #load the histogrammed dataset into the global scope
-    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(params["K"], params["K"], params["histograms"])
+    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(params["K"], params["K"], params["histograms"], false)
 
     #Open output file for logging
     out = open("det.out", state["newRun"] ? "w+" : "a")

@@ -38,7 +38,7 @@ if ENV_name == "owl" || ENV_name == "gwdg"
     end
   end
 
-  run_noise_set([0.5, 0.75, 1.125, 2.5], collect(0.1:0.1:0.5), 38, 32, 18, 26, 0.99998, 10)
+  # run_noise_set([0.5, 0.75, 1.125, 2.5], collect(0.1:0.1:0.5), 38, 32, 18, 26, 0.99998, 10)
 
 end
 
@@ -54,4 +54,4 @@ end
 #For Ewald SH structure determination
 # run_determination("Ewald_lambda_4.0_alt_SH_10p_N32_K38_R38.0_P319488000", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/data_generation/Ewald_lambda_4.0_alt_SH_10p_N32_K38_R38.0_P319488000/histo.dat", lambda=4.0, initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb")
 
-# run_determination("Ewald_lambda_4.0_alt_infinity", histograms="$(ENV["DETERMINATION_DATA"])/data/output/data_generation/correlations_N32_K238_K326_L18_inf.dat", lambda=4.0, initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb")
+# run_determination("Ewald_lambda_4.0_alt_infinity", histograms="$(ENV["DETERMINATION_DATA"])/output/data_generation/correlations_N32_K238_K326_L18_inf.dat", lambda=4.0, initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb")
