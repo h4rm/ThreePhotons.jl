@@ -9,6 +9,7 @@ end
 
 using Distributions
 using Optim
+using ProgressMeter
 
 export
 	#structures

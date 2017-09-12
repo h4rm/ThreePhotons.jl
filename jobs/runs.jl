@@ -64,19 +64,14 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
     end
 end
 
-function histogram_name(prefix::String, ppi::Int64, N::Int64, KMAX::Int64, rmax::Float64, max_pictures::Int64, suffix::String, gamma::Float64=0.0, sigma::Float64=1.0)
-    return "$(prefix)$(ppi)p_N$(N)_K$(KMAX)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
+function histogram_name(prefix::String, ppi::Int64, N::Int64, K2::Int64, K3::Int64, rmax::Float64, max_pictures::Int64, suffix::String, gamma::Float64=0.0, sigma::Float64=1.0)
+    return "$(prefix)$(ppi)p_N$(N)_K2$(K2)_K3$(K3)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
 end
 
 """Starts a cluster job for synthetic correlation generation"""
-function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K::Integer=35, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0)
-    name = ""
-    if max_triplets > 0
-        name = "$(prefix)_N$(N)_K$(K)_R$(rmax)_T$(max_triplets)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
-    elseif max_pictures > 0
-        # name = "$(prefix)_N$(N)_K$(K)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
-        name = histogram_name(prefix, photons_per_image, N, K, rmax, max_pictures, suffix, gamma, sigma)
-    end
+function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K2::Int64=38, K3::Int64=26, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0)
+    name = histogram_name(prefix, photons_per_image, N, K2, K3, rmax, max_pictures, suffix, gamma, sigma)
+
     number_incident_photons = calculate_incident_photons(photons_per_image)
     julia_script = """
     using ThreePhotons
@@ -84,15 +79,15 @@ function generate_histograms(; max_triplets::Integer=Integer(0), max_pictures::I
     volume = 0.0
 
     if $(use_cube)
-        # _,_,volume = createCubicStructure("$(structure_pdb_path)", 4*$K+1, 2.0*$rmax)
+        # _,_,volume = createCubicStructure("$(structure_pdb_path)", 4*$K2+1, 2.0*$rmax)
         volume = loadCube("$(ENV["DETERMINATION_DATA"])/histograms/synthetic_crambin/intensityCube_high.mrc")
     else
-        _,_,intensity = createSphericalHarmonicsStructure("$(structure_pdb_path)", 35, $K, $rmax)
+        _,_,intensity = createSphericalHarmonicsStructure("$(structure_pdb_path)", 35, $K2, $rmax)
         volume = getSurfaceVolume(intensity)
         volume.radial_interp = false
     end
 
-    generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K=$K, N=$N, max_triplets=$max_triplets, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles), lambda=$(lambda))
+    generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K2=$K2, K3=$K3, N=$N, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles), lambda=$(lambda))
     """
 
     launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="haswell|broadwell|skylake")

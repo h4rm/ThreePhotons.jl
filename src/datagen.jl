@@ -165,13 +165,13 @@ end
 
 
 """This calculates the 3 photon correlation for a sparse image"""
-function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c1::C1, c2::C2, c3::C3, dq::Float64, N::Int64, K::Int64, lambda::Float64)
+function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}}, c1::C1, c2::C2, c3::C3, dq::Float64, N::Int64, K2::Int64, K3::Int64, lambda::Float64)
     da = pi/N
 
     #Define picture filter function
     picturefilter = function(p::Vector{Float64})
         k = round(Int64,norm(p)/dq)
-        return k >= 1 && k <= K
+        return k >= 1 && k <= K2
     end
 
     filter!(picturefilter,picture)
@@ -205,14 +205,17 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
                 p3 = picture[k]
                 k3 = round(Int64,norm(p3)/dq)
 
-                beta = angle_between(p1,p3)
-                if alpha > pi
-                    beta = 2*pi - beta
-                end
-                bi = Int64(mod(floor(Int64, beta/da),2*N)+1)
+                if k1 <= K3 && k2 <= K3 && k3 <= K3
 
-                @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
-                @inbounds c3[ai,bi,k3,k2,k1] += val3
+                    beta = angle_between(p1,p3)
+                    if alpha > pi
+                        beta = 2*pi - beta
+                    end
+                    bi = Int64(mod(floor(Int64, beta/da),2*N)+1)
+
+                    @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
+                    @inbounds c3[ai,bi,k3,k2,k1] += val3
+                end
             end
         end
     end
@@ -297,15 +300,15 @@ Generates pictures and histograms the triplets in these pictures without reusing
 @params gamma:
 @params sigma:
 """
-function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N::Int64=32, max_triplets::Int64=Int64(1e10), max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0)
+function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K3::Int64=26, N::Int64=32, max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0)
 
     #cutoff parameters
-    dq = qcut/K
+    dq = qcut/K2
 
-    c1_full = zeros(Float64, K)
-    c2_full = zeros(Float64,(N, K,K))
-    c3_full = zeros(Float64,(N,2*N,K,K,K))
-    params = Dict("num_pictures"=>0, "num_incident_photons"=>number_incident_photons, "noise"=>noise, "qcut"=>qcut, "K"=>K, "N"=>N, "qcut"=>qcut, "dq"=>dq)
+    c1_full = zeros(Float64, K2)
+    c2_full = zeros(Float64,(N, K2,K2))
+    c3_full = zeros(Float64,(N,2*N,K3,K3,K3))
+    params = Dict("num_pictures"=>0, "num_incident_photons"=>number_incident_photons, "noise"=>noise, "qcut"=>qcut, "K2"=>K2, "K3"=>K3, "N"=>N, "qcut"=>qcut, "dq"=>dq)
 
     #Load preexisting histogram file so we can continue from where we left off
     if isfile(file)
@@ -323,12 +326,12 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
     flush(STDOUT)
 
     #Make batches of pictures so we can save often
-    while (max_triplets > 0 && current_triplets < max_triplets) || (max_pictures > 0 && params["num_pictures"] < max_pictures)
+    while max_pictures > 0 && params["num_pictures"] < max_pictures
 
         c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i = 1:numprocesses
-            c1 = zeros(Float64,K)
-            c2 = zeros(Float64,N,K,K)
-            c3 = zeros(Float64,N,2*N,K,K,K)
+            c1 = zeros(Float64,K2)
+            c2 = zeros(Float64,N,K2,K2)
+            c3 = zeros(Float64,N,2*N,K3,K3,K3)
 
             for j=1:batchsize
                 photon_list = Vector{Float64}[]
@@ -343,7 +346,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
                     append!(photon_list, single_molecule)
                 end
 
-                histogramMethod(photon_list, c1, c2, c3, dq, N, K, lambda)
+                histogramMethod(photon_list, c1, c2, c3, dq, N, K2, K3, lambda)
             end
             (c1, c2, c3)
         end
@@ -361,7 +364,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K::Int64=25, N:
 end
 
 "Loading a histogram from a file and store two/three photon histograms in global variables."
-function loadHistograms(K::Int64, file::String, load_c1::Bool=true)
+function loadHistograms(K2::Int64, K3::Int64, file::String, load_c1::Bool=true)
 
     params, c2_full, c3_full, c1_full = 0,0,0,0
     #Try loading two different structure types
@@ -378,9 +381,9 @@ function loadHistograms(K::Int64, file::String, load_c1::Bool=true)
     c3_full = max(c3_full, 1e-30)
 
     #Cut down to designated K
-    c2 = c2_full[:,1:K,1:K]
+    c2 = c2_full[:,1:K2,1:K2]
     c2 = c2 / sumabs(c2)
-    c3 = c3_full[:,:,1:K,1:K,1:K]
+    c3 = c3_full[:,:,1:K3,1:K3,1:K3]
     c3 = c3 / sumabs(c3)
 
     if load_c1

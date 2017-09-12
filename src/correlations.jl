@@ -79,7 +79,10 @@ function calculate_combolist(K::Int64, mcombolist)
 end
 
 """Precalculated values for calculating the three-photon and two-photon correlation"""
-function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
+function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64=0.0, dq::Float64=0.0, forIntensity=true)
+
+    println("Calculating complex basis with N=$N L=$L K=$K (LMAX=$LMAX, lambda=$lambda, dq=$dq).")
+
     lrange = forIntensity ? (0:2:L) : (0:L)
     basislen = sum(abs(wigner(l1,m1, l2,m2, l3,-m3)) > 100*eps() ? 1 : 0 for l1=lrange for l2=lrange for l3=lrange for m1=-l1:l1 for m2=-l2:l2 for m3=-l3:l3)
     klength = Integer(K*(K+1)*(K+2)/6)
@@ -89,6 +92,8 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
     indiceslist = Array(Int64, 9, basislen)
     B = SharedArray(Float64, 2*N^2, basislen)
     P = SharedArray(Float64, klength, basislen)
+    # B = zeros(Float64, 2*N^2, basislen)
+    # P = zeros(Float64, klength, basislen)
     mcombolist = Vector{Int64}[]
 
     ctr = Dict(l => Umat(l) for l=lrange)
@@ -120,17 +125,20 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
 
     PAcombos = calculate_combolist(K,mcombolist)
 
-    @sync @parallel for i=1:basislen
-        l1,m1,l2,m2,l3,m3 = indiceslist[4:9,i]
-        w = wignerlist[i]
-        #Here, only the real part of the complex exponential plays a role
-        B[:,i] = reshape(Float64[cos(m2*a + m3*b) for a in alpharange(N), b in alpharange_2pi(2*N)], 2*N^2)
-        P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
+    @time begin
+        @sync @parallel for i=1:basislen
+            l1,m1,l2,m2,l3,m3 = indiceslist[4:9,i]
+            w = wignerlist[i]
+            #Here, only the real part of the complex exponential plays a role
+            B[:,i] = reshape(Float64[cos(m2*a + m3*b) for a in alpharange(N), b in alpharange_2pi(2*N)], 2*N^2)
+            P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
+        end
     end
-
     h_P = HostArray(Float32, Base.size(P'))
-    h_P[:] = transpose(P)[:]
-    println("Calculated complex basis with N=$N L=$L K=$K (LMAX=$LMAX, lambda=$lambda, dq=$dq): $basislen basislen")
+    h_P[:] = transpose(sdata(P))[:]
+
+    println("Calculation complete ($basislen basislen).")
+
     return BasisType(wignerlist, indiceslist, PAcombos, sdata(B), h_P, basislen, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
 end
 
@@ -204,11 +212,11 @@ function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c
 end
 
 """Calculates the two photon correlation from spherical harmonics coefficients"""
-function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64, minimal::Bool=false, normalize::Bool=false)
-    c = zeros(Float64,basis.N,K,K)
+function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K2::Int64, minimal::Bool=false, normalize::Bool=false)
+    c = zeros(Float64,basis.N,K2,K2)
     mdq = dq(volume)
-    for k1=1:K
-        for k2=1:(minimal ? k1 : K)
+    for k1=1:K2
+        for k2=1:(minimal ? k1 : K2)
             slice = zeros(Float64, basis.N)
             for l = basis.lrange
                 fac = 0
@@ -222,17 +230,6 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K::Int64
         end
     end
     return normalize ? c/sumabs(c) : c
-end
-
-"""Calculates the difference between 2 two-photon correlations"""
-function diff_c2(c2_a::C2,c2_b::C2)
-    sabs = 0
-    for k1=1:K
-        for k2=1:K
-            sabs += sumabs(c2_a[:,k2,k1] - c2_b[:,k2,k1])/sumabs(c2_a[:,k2,k1])
-        end
-    end
-    return sabs/K^2
 end
 
 """Alpharange of theory"""
@@ -263,18 +260,18 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
         for k1 = 1:K
             for k2 = 1:k1
                 slice = c2[:,k2,k1]
+
                 #symmetrize 2 photon correlation if lambda = 0.0
                 if lambda == 0.0
                     slice = 0.5*(slice + reverse(slice))
                 end
 
-                A = Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:L]
-                tol = 1.0e6*sqrt(eps(real(float(one(eltype(A))))))
-                # println("tol: $tol")
-                AI = pinv(A, tol)
+                A = Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
+                # tol = sqrt(eps(real(float(one(eltype(A))))))
+                AI = pinv(A)#, tol)
 
                 fac = AI*slice
-                val = fac[l+1]
+                val = fac[round(Int64,l/2)+1]
                 G[k2,k1] = val
 
                 # fac = AI*reverse(slice)

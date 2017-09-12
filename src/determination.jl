@@ -159,7 +159,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
     end
 
     #load the histogrammed dataset into the global scope
-    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(params["K"], params["histograms"])
+    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(params["K"], params["K"], params["histograms"])
 
     #Open output file for logging
     out = open("det.out", state["newRun"] ? "w+" : "a")
@@ -499,7 +499,7 @@ end
 #----------------------------------------------------------------------------------------
 
 function checkRotationSearch(reference::SphericalHarmonicsVolume, K::Int64, L::Int64, basis::AbstractBasisType; histogram="../expdata/correlations_N32_K25_P2048000.dat", save_structures::Bool=false)
-    c2full,c2,c3full,c3 = loadHistograms(K, histogram)
+    c2full,c2,c3full,c3 = loadHistograms(K, K, histogram)
     start = retrieveSolution(c2full, L, reference.LMAX, reference.KMAX, reference.rmax)
     start = randomStartStructure(deleteTerms(start, K, L), K, L)
     checkRotationSearch(start, deleteTerms(reference, K, L), K, L, basis, save_structures=save_structures)
