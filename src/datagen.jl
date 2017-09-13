@@ -195,7 +195,7 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
             if alpha > pi
                 alpha_s = 2*pi - alpha
             end
-            ai = Int64(mod(floor(Int64, alpha_s/da),N)+1)
+            ai = Int64(mod(floor(Int64, alpha_s/da),N-1)+1)
 
             @fastmath val2 = Float64(1.0 / (doubletFactor(k1,k2)*k1*k2))
             @inbounds c2[ai,k2,k1] += val2
@@ -211,7 +211,7 @@ function histogramCorrelationsInPicture_alltoall(picture::Vector{Vector{Float64}
                     if alpha > pi
                         beta = 2*pi - beta
                     end
-                    bi = Int64(mod(floor(Int64, beta/da),2*N)+1)
+                    bi = Int64(mod(floor(Int64, beta/da),2*N-1)+1)
 
                     @fastmath val3 = Float64(1.0 / (tripletFactor(k1,k2,k3)*k1*k2*k3))
                     @inbounds c3[ai,bi,k3,k2,k1] += val3

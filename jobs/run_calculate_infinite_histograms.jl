@@ -16,7 +16,7 @@ for N in [32]
 
           c3 = FullCorrelation_parallized(intensity, basis, true)
           c2 = twoPhotons(intensity, basis, K2, true)
-          serializeToFile("$(ENV["DETERMINATION_DATA"])/output/data_generation/correlations_N$(N)_K2$(K2)_K3$(K3)_L$(L)_inf.dat", (Dict("num_pictures"=>"inf"),c2,c3))
+          serializeToFile("$(ENV["DETERMINATION_DATA"])/output/data_generation/correlations_N$(N)_K2_$(K2)_K3_$(K3)_L$(L)_inf.dat", (Dict("num_pictures"=>"inf"),c2,c3))
       end
     end
   end

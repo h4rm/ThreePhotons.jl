@@ -65,7 +65,7 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 end
 
 function histogram_name(prefix::String, ppi::Int64, N::Int64, K2::Int64, K3::Int64, rmax::Float64, max_pictures::Int64, suffix::String, gamma::Float64=0.0, sigma::Float64=1.0)
-    return "$(prefix)$(ppi)p_N$(N)_K2$(K2)_K3$(K3)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
+    return "$(prefix)$(ppi)p_N$(N)_K2_$(K2)_K3_$(K3)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
 end
 
 """Starts a cluster job for synthetic correlation generation"""

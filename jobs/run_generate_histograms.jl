@@ -49,18 +49,12 @@ end
 # generate_single_multiparticle_histogram(Integer(3.2768e8), Integer(2*2.048e6), 2)
 # combine_histograms(environment_path("data_generation/parts/multi_2_SH_10p_N32_K38_R38.0_P4096000"), 80)
 
-# generate_histogram_image(Integer(3.2768e8), 10, 38, 32; setsize=Integer(2*2.048e6), name="Ewald_", lambda=1.0)
-# combine_histograms(environment_path("data_generation/parts/Ewald_SH_10p_N32_K38_R38.0_P4096000"), 80)
-
-# generate_histogram_image(Integer(3.2768e8), 10, 38, 16; setsize=Integer(2*2.048e6), name="Ewald_lambda_4.0_alt_", lambda=4.0)
-# combine_histograms(environment_path("data_generation/parts/Ewald_lambda_4.0_alt_SH_10p_N16_K38_R38.0_P4096000"), 80)
 
 
-# generate_histogram_image(Integer(3.2768e8), 10, 38, 32; setsize=Integer(2*2.048e6), name="Ewald_lambda_4.0_alt_", lambda=4.0)
-# combine_histograms(environment_path("data_generation/parts/Ewald_lambda_4.0_alt_SH_10p_N32_K38_R38.0_P4096000"), 80)
+# generate_histogram_image(Integer(3.2768e9), 10, 38, 32; setsize=Integer(2*2.048e7), name="Ewald_lambda_2.0_", lambda=4.0)
+# combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K38_R38.0_P40960000"), 80)
 
-#More images
-# generate_histogram_image(Integer(3.2768e9), 10, 38, 32; setsize=Integer(2*2.048e7), name="Ewald_lambda_4.0_alt_", lambda=4.0)
+
 
 #Coliphage
 # combine_histograms(environment_path("exp_data/parts/coliphage_symmetric"), 42)

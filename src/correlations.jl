@@ -267,37 +267,33 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
                 end
 
                 A = Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
-                # tol = sqrt(eps(real(float(one(eltype(A))))))
-                AI = pinv(A)#, tol)
-
-                fac = AI*slice
+                fac = A \ slice
                 val = fac[round(Int64,l/2)+1]
                 G[k2,k1] = val
-
-                # fac = AI*reverse(slice)
-                # val = fac[l+1]
                 G[k1,k2] = val
             end
         end
         #Diagonalize the matrix
-        eigenval, eigenvectors = eig(G, permute=false, scale=false)
+        F = eigfact(Symmetric(-G),1:(2*l+1))#, permute=true, scale=true)
+        eigenval, eigenvectors = F[:values], F[:vectors]
 
         #Calculate the vectors
-        eigenvalmatrix = diagm(sqrt(max(eigenval, 0.0)))
+        eigenvalmatrix = diagm(sqrt(complex(eigenval)))
         eigenvecs[l] = eigenvectors'
         eigenvals[l] = eigenvalmatrix
         Gmatrices[l] = G
         m = eigenvalmatrix*eigenvectors'
+
         for k = 1:K
-            vec = m[K-(2*l):K,k]
-            cvec_set(intensity,k,l, vec)
+            cvec_set(intensity,k,l,m[:,k])
         end
     end
 
-    intensity = real_to_comp(intensity)
+#     intensity = real_to_comp(intensity)
 
-    sign = negativityCheck(intensity) > 0.33 ? -1.0 : 1.0
-    for k = 1:intensity.KMAX intensity.coeff[k] *= sign end
+    if negativityCheck(intensity) > 0.33
+        for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
+    end
 
     return intensity#,eigenvecs,eigenvals,Gmatrices
 end
