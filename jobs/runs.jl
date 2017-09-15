@@ -2,6 +2,14 @@
 #                     SGE-Scheduling
 ###############################################################
 
+function check_git_status()
+    status = readstring(`git ls-files --modified`)
+    @assert length(status) == 0 "Please commit all changes before running server scripts."
+
+    return readstring(`git rev-parse HEAD`)
+end
+
+
 if contains(readstring(`hostname`), "owl")
     include("environment_owl.jl")
 elseif contains(readstring(`hostname`), "hydra")
