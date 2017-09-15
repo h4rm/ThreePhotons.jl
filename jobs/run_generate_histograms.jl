@@ -1,4 +1,31 @@
-include("runs.jl")
+function histogram_name(prefix::String, ppi::Int64, N::Int64, K2::Int64, K3::Int64, rmax::Float64, max_pictures::Int64, suffix::String, gamma::Float64=0.0, sigma::Float64=1.0)
+    return "$(prefix)$(ppi)p_N$(N)_K2_$(K2)_K3_$(K3)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
+end
+
+"""Starts a cluster job for synthetic correlation generation"""
+function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K2::Int64=38, K3::Int64=26, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0)
+    name = histogram_name(prefix, photons_per_image, N, K2, K3, rmax, max_pictures, suffix, gamma, sigma)
+
+    number_incident_photons = calculate_incident_photons(photons_per_image)
+    julia_script = """
+    using ThreePhotons
+
+    volume = 0.0
+
+    if $(use_cube)
+        # _,_,volume = createCubicStructure("$(structure_pdb_path)", 4*$K2+1, 2.0*$rmax)
+        volume = loadCube("$(ENV["DETERMINATION_DATA"])/histograms/synthetic_crambin/intensityCube_high.mrc")
+    else
+        _,_,intensity = createSphericalHarmonicsStructure("$(structure_pdb_path)", 35, $K2, $rmax)
+        volume = getSurfaceVolume(intensity)
+        volume.radial_interp = false
+    end
+
+    generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K2=$K2, K3=$K3, N=$N, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles), lambda=$(lambda))
+    """
+
+    launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="haswell|broadwell|skylake")
+end
 
 function generate_histogram_image(img::Int64, ppi::Int64, K2::Int64, K3::Int64, N::Int64; setsize::Int64=Integer(2*2.048e7), name::String="", lambda::Float64=1.0)
     if img <= setsize
@@ -46,13 +73,86 @@ function generate_single_multiparticle_histogram(number_images::Int64, setsize::
     end
 end
 
+"""Distributes the calculation of correlations among many jobs"""
+function run_calculate_correlation_from_images(particle_name::String, images_path::String, number_images::Int64, K2::Int64, K3::Int64, N::Int64, number_runs::Int64; Ncores::Int64=8)
+    for n in 1:number_runs
+        julia_script = """
+        using HDF5
+        using ThreePhotons
+        using Images
+
+        K2 = $K2
+        K3 = $K3
+        N = $N
+
+        file = h5open("$(images_path)", "r")
+        photonConverter = read(file["photonConverter"])
+        resized_image_list = [ Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K2, 2*K2)).data for i=$((n-1)*number_images+1):$(n*number_images)]
+        calculate_correlations_in_image(resized_image_list, K2, K3, N)
+        """
+        launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
+    end
+end
+
+function combine_histograms(dir::String, num::Int64)
+    println("Processing $dir")
+
+    println("\tLoading file #1")
+    params,c2_full,c3_full,c1_full = deserializeFromFile("$(dir)_1/histo.dat")
+    part_images = params["num_pictures"]
+
+    for i = 2:num
+        println("\tLoading file #$i")
+        histofile = "$(dir)_$(i)/histo.dat"
+        if isfile(histofile)
+            params_part, c2_part, c3_part, c1_part =  deserializeFromFile(histofile)
+            part_triplets = sum(c3_part)
+            if part_triplets < float(1.0e20)
+                params["num_pictures"] += params_part["num_pictures"]
+                c1_full += c1_part
+                c2_full += c2_part
+                c3_full += c3_part
+                println("\tAdded $(part_triplets) triplets and $(params_part["num_pictures"]) images.")
+            else
+                println("\t------ERROR: $i file.")
+            end
+        end
+    end
+
+    finalpath = replace(dir, "parts/", "")
+    finalpath = replace(finalpath, "P$(part_images)", "P$(params["num_pictures"])")
+
+    println("Writing to $(finalpath)/histo.dat")
+    try mkdir(finalpath) end
+    serializeToFile("$(finalpath)/histo.dat", (params, c2_full, c3_full, c1_full))
+end
+
+function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64}=Float64[0.5, 0.75, 1.125], gammavals::Vector{Float64}=[0.1, 0.2, 0.3, 0.4, 0.5], ppi::Int64=10, K::Int64=38, N::Int64=32)
+    for sigma in sigmavals
+        for gamma in gammavals
+            name = histogram_name("parallel/data_generation/parts/SH_", ppi, N, K, float(K), setsize, "", gamma, sigma)
+            combine_histograms(name, img, K, N, setsize)
+        end
+    end
+end
+
+#Combine noisy histograms
+# combine_set_noise(Integer(3.2768e9), Integer(2*2.048e7), [2.5], [0.4, 0.5], 10, 38, 32)
+
+function combine_set(images::Array{Int64}, setsize::Int64, ppi::Int64=10, K::Int64=38, N::Int64=32, prefix::String="$(ENV["DETERMINATION_DATA"])/data_generation/parts/SH_")
+    for pic in images
+        name = histogram_name(prefix, ppi, N, K, float(K), setsize, "")
+        combine_histograms(name, pic, K, N, setsize)
+    end
+end
+
 # generate_single_multiparticle_histogram(Integer(3.2768e8), Integer(2*2.048e6), 2)
 # combine_histograms(environment_path("data_generation/parts/multi_2_SH_10p_N32_K38_R38.0_P4096000"), 80)
 
 
 
 # generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32; setsize=Integer(2*2.048e7), name="Ewald_lambda_2.0_", lambda=2.0)
-# combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K38_R38.0_P40960000"), 80)
+# combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K2_38_K3_26_R38.0_P40960000"), 80)
 
 
 

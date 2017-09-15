@@ -285,11 +285,11 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
         m = eigenvalmatrix*eigenvectors'
 
         for k = 1:K
-            cvec_set(intensity,k,l,m[:,k])
+            cvec_set(intensity,k,l,imag(m[:,k]))
         end
     end
 
-#     intensity = real_to_comp(intensity)
+    intensity = real_to_comp(intensity)
 
     if negativityCheck(intensity) > 0.33
         for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
