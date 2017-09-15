@@ -9,6 +9,11 @@ function check_git_status()
     return readstring(`git rev-parse HEAD`)
 end
 
+function jobname(directory, number::Int64=0)
+    main = replace(directory, "/", "_")
+    suffix = number > 0 ? "_$(number)" : ""
+    return "$main$suffix"
+end
 
 if contains(readstring(`hostname`), "owl")
     include("environment_owl.jl")
@@ -19,7 +24,7 @@ elseif contains(readstring(`hostname`), "gwdu103")
 else
     include("environment_local.jl")
 end
-
+include("../src/utilities.jl")
 include("run_generate_histograms.jl")
 include("run_optimal.jl")
 include("run_parallel_determination.jl")
