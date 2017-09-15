@@ -1,6 +1,4 @@
-###############################################################
-#                     SGE-Scheduling
-###############################################################
+using ThreePhotons
 
 function check_git_status()
     status = readstring(`git ls-files --modified`)
@@ -24,7 +22,7 @@ elseif contains(readstring(`hostname`), "gwdu103")
 else
     include("environment_local.jl")
 end
-include("../src/utilities.jl")
+
 include("run_generate_histograms.jl")
 include("run_optimal.jl")
 include("run_parallel_determination.jl")
