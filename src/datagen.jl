@@ -376,6 +376,21 @@ function loadHistograms(K2::Int64, K3::Int64, file::String, load_c1::Bool=true)
 
     println("Loaded $(countDoublets(c2_full)) doublets and $(countTriplets(c3_full)) triplets from $file generated from $(params["num_pictures"]) pictures.")
 
+    #Doubling old histograms
+    NA,NB,K3,_,_ = Base.size(c3_full)
+    if NA == NB
+        new_c3 = zeros(NA, 2*NB,K3,K3,K3)
+        for k1=1:K3
+            for k2=1:k1
+                for k3=1:k2
+                    new_c3[:,1:NB,k3,k2,k1] = c3_full[:,:,k3,k2,k1]
+                    new_c3[:,NB+1:2*NB,k3,k2,k1] = c3_full[:,:,k3,k2,k1]
+                end
+            end
+        end
+        c3_full = new_c3
+    end
+
     c1_full = max(c1_full, 1e-30)
     c2_full = max(c2_full, 1e-30)
     c3_full = max(c3_full, 1e-30)

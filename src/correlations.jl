@@ -229,7 +229,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K2::Int6
             c[:,k2,k1] = real(slice)
         end
     end
-    return normalize ? c/sumabs(c) : c
+    return normalize ? c/sumabs(c) : 1/(4*pi)*c
 end
 
 """Alpharange of theory"""
@@ -283,6 +283,14 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
         eigenvals[l] = eigenvalmatrix
         Gmatrices[l] = G
         m = eigenvalmatrix*eigenvectors'
+
+        #For debugging only
+        # begin
+        #     println(l)
+        #     println(sum(m))
+        #     println(eigenval)
+        #     println("-----")
+        # end
 
         for k = 1:K
             cvec_set(intensity,k,l,imag(m[:,k]))

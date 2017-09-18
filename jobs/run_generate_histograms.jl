@@ -39,12 +39,13 @@ function generate_histogram_image(img::Int64, ppi::Int64, K2::Int64, K3::Int64, 
     end
 end
 
-function generate_histogram_set_ppi(ppi::Int64=10; K2::Int64=38, K3::Int64=28, N::Int64=32)
+function generate_histogram_set_ppi(ppi::Int64=10; K2::Int64=38, K3::Int64=26, N::Int64=32)
     for img in calculate_images_ppi(ppi)
         generate_histogram_image(img, ppi, K2, K3, N)
     end
 end
 
+# generate_histogram_set_ppi(10, 38, 26, 32)
 # generate_histogram_set_ppi(25)
 # generate_histogram_set_ppi(50)
 
@@ -146,8 +147,8 @@ function combine_set(images::Array{Int64}, setsize::Int64, ppi::Int64=10, K::Int
     end
 end
 
-# generate_single_multiparticle_histogram(Integer(3.2768e8), Integer(2*2.048e6), 2)
-# combine_histograms(environment_path("data_generation/parts/multi_2_SH_10p_N32_K38_R38.0_P4096000"), 80)
+# generate_single_multiparticle_histogram(Integer(3.2768e9), Integer(2.048e7), 2)
+# combine_histograms(environment_path("data_generation/parts/multi_2_SH_10p_N32_K2_38_K3_26_R38.0_P40960000"), 80)
 
 
 
