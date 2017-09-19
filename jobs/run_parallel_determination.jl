@@ -1,4 +1,4 @@
-function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K::Integer=8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, KMAX::Int64=35, rmax::Float64=35.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="", lambda::Float64=0.0)
+function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K::Integer=8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, KMAX::Int64=35, rmax::Float64=35.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="", lambda::Float64=0.0, include_negativity::Bool=false)
 
     julia_script = """
     using ThreePhotons
@@ -23,7 +23,7 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 
         #Or start a completely new run
     else
-        params,state = rotation_search(Dict( "reference_pdb_path"=>"$(reference_pdb_path)", "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(histograms)", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax, "lambda"=>$lambda))
+        params,state = rotation_search(Dict( "reference_pdb_path"=>"$(reference_pdb_path)", "stepsizefactor"=>$stepsizefactor, "initial_stepsize" => $initial_stepsize, "L"=>$L, "K" =>$K, "N"=>$N, "histograms"=>"$(histograms)", "optimizer"=>$optimizer, "initial_temperature_factor"=>$initial_temperature_factor, "measure"=>"$measure", "temperature_decay"=>$temperature_decay, "LMAX"=>25, "KMAX"=>$KMAX, "rmax"=>$rmax, "lambda"=>$lambda, "include_negativity"=>$include_negativity))
         if $postprocess
             postprocess_run(params, state, "$(reference_pdb_path)", true, 35, $sigma)
         end
@@ -75,7 +75,7 @@ end
 
 
 #For coliphage
-# run_determination("exp_data/coliphage_determination", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01)
+# run_determination("exp_data/coliphage_determination_negativity", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=true)
 
 #For multi particle
 # run_determination("multi_particle", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/data_generation/multi_2_SH_10p_N32_K38_R38.0_P3276800000/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K=26, L=18, KMAX=38, rmax=float(38), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", force_repostprocess=true, run_denoise=true)

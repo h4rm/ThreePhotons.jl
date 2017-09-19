@@ -151,7 +151,7 @@ end
 """Main rotation search method
 `params` - rotation search parameters
 `state` - starting state"""
-function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "rmax"=>35.0, "lambda"=>0.0), state = Dict{Any,Any}("newRun"=>true) )
+function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "rmax"=>35.0, "lambda"=>0.0, "include_negativity"=>false), state = Dict{Any,Any}("newRun"=>true) )
 
     #Don't start a finished run
     if haskey(state, "state") && state["state"] == "finished_structure"
@@ -296,6 +296,15 @@ function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
         #reset the temperature for that resolution
         state["T"] = calculate_temperature(state, params, d_basis, c3ref)
 
+        if params["include_negativity"]
+            state["negativity_factor"] = log((state["E"]+state["T"])/state["E"])/0.3 #0.3 is expected initial negativity
+
+            #With new negativity_factor, recalculate energy
+            state["E"] = energy(state["intensity"], d_basis, c3ref, params["measure"], state["negativity_factor"])
+        else
+            state["negativity_factor"] = 0.0
+        end
+
         #Let's acknowledge that higher expansion limits L require slower temperature decay
         state["temperature_decay"] = params["temperature_decay"]
     end
@@ -319,55 +328,55 @@ function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
     end
 end
 
-"Iterativly optimizing a structure by increasing the angular resolution and adding more shells that are taken into consideration"
-function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
-
-    for state["L"] = state["L"]:2:params["L"]
-
-        d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], params["K"], params["lambda"], dq(state["intensity"]))
-
-        #Check if this is a continuation or a new run by checking stepsizes
-        if !haskey(state["stepsizes"], state["L"])
-
-            #gradually increase K
-            state["K"] = params["K"] - params["L"] + state["L"]
-
-            #set stepsize for this resolution
-            state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
-
-            #calculate the initial energy with that resolution
-            state["E"] = energy(state["intensity"], d_basis, c3ref, params["measure"])
-
-            #Calculate reference energy
-            state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, params["measure"]) : 0.0
-
-            #reset the temperature for that resolution
-            state["T"] = calculate_temperature(state, params, d_basis, c3ref)
-
-            #Let's acknowledge that higher expansion limits L require slower temperature decay
-            state["temperature_decay"] = params["temperature_decay"]
-        end
-
-        #run until we have converged with the stepsize (stepsize for largest L must below threshold)
-        while state["stepsizes"][state["L"]] > minstepsize
-
-            #increase overall step counter
-            state["i"] += 1
-
-            #adjust temperature each step with T_new = decay * T_old
-            state["T"] *= state["temperature_decay"]
-
-            #Monte Carlo step
-            state["step"] = get_MC_step(state["intensity"], d_basis, state["stepsizes"])
-
-            #evaluate step
-            @time evaluate_step(out, params, state, d_basis, c3ref)
-
-            #perform regular action such as logging
-            regular_action(out, state, params)
-        end
-    end
-end
+# "Iterativly optimizing a structure by increasing the angular resolution and adding more shells that are taken into consideration"
+# function rotate_hierarchical(out, params::Dict, state::Dict, c3ref::C3)
+#
+#     for state["L"] = state["L"]:2:params["L"]
+#
+#         d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], params["K"], params["lambda"], dq(state["intensity"]))
+#
+#         #Check if this is a continuation or a new run by checking stepsizes
+#         if !haskey(state["stepsizes"], state["L"])
+#
+#             #gradually increase K
+#             state["K"] = params["K"] - params["L"] + state["L"]
+#
+#             #set stepsize for this resolution
+#             state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
+#
+#             #calculate the initial energy with that resolution
+#             state["E"] = energy(state["intensity"], d_basis, c3ref, params["measure"])
+#
+#             #Calculate reference energy
+#             state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, params["measure"]) : 0.0
+#
+#             #reset the temperature for that resolution
+#             state["T"] = calculate_temperature(state, params, d_basis, c3ref)
+#
+#             #Let's acknowledge that higher expansion limits L require slower temperature decay
+#             state["temperature_decay"] = params["temperature_decay"]
+#         end
+#
+#         #run until we have converged with the stepsize (stepsize for largest L must below threshold)
+#         while state["stepsizes"][state["L"]] > minstepsize
+#
+#             #increase overall step counter
+#             state["i"] += 1
+#
+#             #adjust temperature each step with T_new = decay * T_old
+#             state["T"] *= state["temperature_decay"]
+#
+#             #Monte Carlo step
+#             state["step"] = get_MC_step(state["intensity"], d_basis, state["stepsizes"])
+#
+#             #evaluate step
+#             @time evaluate_step(out, params, state, d_basis, c3ref)
+#
+#             #perform regular action such as logging
+#             regular_action(out, state, params)
+#         end
+#     end
+# end
 
 # "MC sampling based on integration of the Hamilton equations stemming from negative log-probability"
 # function rotate_HMC(new, step, out, initial_stepsize, iterations, stepsizecheck, Tstart, L, klow, K, N, E, number)
@@ -475,7 +484,7 @@ function evaluate_step(out, params::Dict, state::Dict, basis::AbstractBasisType,
     sign = 0.0
 
     #Calculate the triple correlation and return difference to reference triple correlation
-    E_new = energy(state["step"], basis, c3ref, params["measure"])
+    E_new = energy(state["step"], basis, c3ref, params["measure"], state["negativity_factor"])
     delta_E = E_new - state["E"]
     ap  = exp(-(delta_E)/state["T"]) #acceptance energy
 

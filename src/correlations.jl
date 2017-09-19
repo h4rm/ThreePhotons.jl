@@ -188,9 +188,12 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
 end
 
 """Central energy calculation function"""
-function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, measure::String="Bayes")
+function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, measure::String="Bayes", negativity_factor::Float64=0.0)
     c3 = FullCorrelation_parallized(intensity, basis, true, true, true)
     c3 = max(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
+
+    average_negativity = negativityCheck(deleteTerms(intensity,basis.K3, basis.L))/basis.K3
+    neg = exp(negativity_factor * average_negativity)
 
     res = 0.0
     if measure == "Bayes"
@@ -208,7 +211,7 @@ function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c
             end
         end
     end
-    return res
+    return neg*res
 end
 
 """Calculates the two photon correlation from spherical harmonics coefficients"""
