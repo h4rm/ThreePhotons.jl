@@ -75,15 +75,15 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
             c1_local = zeros(Float64, K2)
             c2_local = zeros(Float64, N, K2, K2)
             c3_local = zeros(Float64, N, 2*N, K3, K3, K3)
-            for x1 = range
-                for y1 = range
+            for x1 in range
+                for y1 in range
                     @inbounds k1 = distances[x1,y1]
 
                     if k1 > 0 && k1 <= K2
                         @inbounds c1_local[k1] += real(image[x1,y1])*(1/k1)
 
-                        for x2 = range
-                            for y2 = range
+                        for x2 in range
+                            for y2 in range
                                 @inbounds k2 = distances[x2,y2]
 
                                 if k2 <= k1  && k2 > 0 && k2 <= K2
@@ -94,8 +94,8 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                                     @inbounds c2_local[ais,k2,k1] += val2
 
                                     if k1 <= K3 && k2<= K3
-                                        for x3 = range
-                                            for y3 = range
+                                        for x3 in range
+                                            for y3 in range
                                                 @inbounds k3 = distances[x3,y3]
 
                                                 if k3 <= k2 && k3 > 0 && k3 <= K3
