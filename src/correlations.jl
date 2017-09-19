@@ -192,7 +192,7 @@ function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c
     c3 = FullCorrelation_parallized(intensity, basis, true, true, true)
     c3 = max(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
 
-    average_negativity = negativityCheck(deleteTerms(intensity,basis.K3, basis.L))/basis.K3
+    average_negativity = negativityCheck(deleteTerms(intensity,basis.K, basis.L))/basis.K
     neg = exp(negativity_factor * average_negativity)
 
     res = 0.0
