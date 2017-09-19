@@ -81,7 +81,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
     file = h5open(images_path, "r")
     photonConverter = read(file["photonConverter"])
     _,_,images_in_file = Base.size(photonConverter["pnccdBack"]["photonCount"])
-    number_runs = floor(Int64, num_images / images_per_job)
+    number_runs = floor(Int64, images_in_file / images_per_job)
 
     for n in 1:number_runs
         julia_script = """
