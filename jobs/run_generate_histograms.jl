@@ -76,7 +76,7 @@ end
 
 using HDF5
 """Distributes the calculation of correlations among many jobs"""
-function run_calculate_correlation_from_images(particle_name::String, images_path::String, images_per_job::Int64 K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8)
+function run_calculate_correlation_from_images(particle_name::String, images_path::String, images_per_job::Int64, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8)
 
     file = h5open(images_path, "r")
     photonConverter = read(file["photonConverter"])
