@@ -151,7 +151,7 @@ end
 """Main rotation search method
 `params` - rotation search parameters
 `state` - starting state"""
-function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "rmax"=>35.0, "lambda"=>0.0, "include_negativity"=>false), state = Dict{Any,Any}("newRun"=>true) )
+function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "qmax"=>1.0, "lambda"=>0.0, "include_negativity"=>false), state = Dict{Any,Any}("newRun"=>true) )
 
     #Don't start a finished run
     if haskey(state, "state") && state["state"] == "finished_structure"
@@ -174,7 +174,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
         #Retrieve initial structure from 2p-correlation if not provided
         if !haskey(state,"intensity")
-            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["rmax"]), params["lambda"])
+            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], params["qmax"], params["lambda"])
             # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
         end
 
@@ -185,7 +185,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
         #Save reference intensity for later use
         if haskey(params, "reference_pdb_path") && params["reference_pdb_path"] != ""
-            density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], params["KMAX"], params["rmax"])
+            density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["qmax"]))
             state["reference_intensity"] = intensity
         end
 
@@ -200,6 +200,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
     #Let's try and calculate on the GPU
     try
+        include("cuda.jl")
         CUDA_init()
     catch
         println("!!! Init of CUDA failed")

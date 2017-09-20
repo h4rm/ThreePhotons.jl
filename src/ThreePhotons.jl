@@ -1,12 +1,4 @@
 module ThreePhotons
-
-try
-	using CUDArt
-	using CUBLAS
-catch
- 	println("ThreePhotons.jl loaded without CUDA support (failed loading)!")
-end
-
 using Distributions
 using Optim
 using ProgressMeter
@@ -192,12 +184,12 @@ include("spherical_harmonics.jl")
 include("cubic.jl")
 include("structure.jl")
 include("correlations.jl")
-include("cuda.jl")
 include("datagen.jl")
 include("phases.jl")
 include("data_processing.jl")
 include("determination.jl")
 include("exp_data.jl")
+
 """
 A Julia package for the structure determination from single molecule X-ray scattering experiments at very low photon counts.
 """

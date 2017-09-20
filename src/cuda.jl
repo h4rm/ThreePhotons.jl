@@ -20,7 +20,7 @@ type BasisTypeCuda <: AbstractBasisType
     d_indices::CudaArray
     d_PAcombos::CudaArray
     d_B::CudaArray
-    h_P::HostArray
+    h_P::Array{Float32,2}
     d_correlation::CudaArray
 
     basislen::Int64

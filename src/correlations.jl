@@ -32,7 +32,7 @@ type BasisType <: AbstractBasisType
     indices::Array{Int64,2}
     PAcombos::Array{Int64,2}
     B::Array{Float64,2}
-    h_P::HostArray
+    h_P::Array{Float32,2}
     basislen::Int64
     N::Int64
     L::Int64
@@ -44,7 +44,7 @@ type BasisType <: AbstractBasisType
     lambda::Float64
     dq::Float64
 
-    function BasisType( wignerlist::Array{Float64,1}, indices::Array{Int64,2}, PAcombos::Array{Int64,2}, B::Array{Float64,2}, h_P::HostArray, basislen::Int64, N::Int64, L::Int64, LMAX::Int64, lrange::StepRange, ctr::Dict, rtc::Dict, K::Int64, lambda::Float64, dq::Float64)
+    function BasisType( wignerlist::Array{Float64,1}, indices::Array{Int64,2}, PAcombos::Array{Int64,2}, B::Array{Float64,2}, h_P::Array{Float32,2}, basislen::Int64, N::Int64, L::Int64, LMAX::Int64, lrange::StepRange, ctr::Dict, rtc::Dict, K::Int64, lambda::Float64, dq::Float64)
         new(wignerlist, indices, PAcombos, B, h_P, basislen, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
     end
 
@@ -53,7 +53,7 @@ type BasisType <: AbstractBasisType
         ctr = Dict(l => Umat(l) for l=lrange)
         rtc = Dict(l => ctranspose(ctr[l]) for l=lrange)
 
-        new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), HostArray(Float64,2,2), 0, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
+        new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), Array(Float32,2,2), 0, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
     end
 end
 
@@ -134,17 +134,11 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
             P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
         end
     end
-    h_P = HostArray(Float32, Base.size(P'))
-    h_P[:] = transpose(sdata(P))[:]
+    h_P = transpose(sdata(P))
 
     println("Calculation complete ($basislen basislen).")
 
     return BasisType(wignerlist, indiceslist, PAcombos, sdata(B), h_P, basislen, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
-end
-
-"""Precalculated values for calculating the three-photon and two-photon correlation"""
-function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, forIntensity=true)
-    return calculate_basis(L, LMAX, N, K, 0.0, 0.0, forIntensity)
 end
 
 complexBasis_choice = calculate_basis
