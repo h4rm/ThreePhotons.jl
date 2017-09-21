@@ -268,7 +268,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Floa
                 end
             end
             #Diagonalize the matrix
-            F = eigfact(Symmetric(G),K2-(2*l+1)+1:K2)
+            F = eigfact(Symmetric(G),K-(2*l+1)+1:K)
             eigenval, eigenvectors = F[:values], F[:vectors]
 
             #Calculate the vectors
