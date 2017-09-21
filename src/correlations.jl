@@ -216,11 +216,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K2::Int6
         for k2=1:(minimal ? k1 : K2)
             slice = zeros(Float64, basis.N)
             for l = basis.lrange
-                fac = 0
-                for m = -l:l
-                    fac += getc(volume, k1, l, m) * conj(getc(volume, k2, l, m))
-                end
-                # qf = qfac(k1,k2,dq(volume), lambda)
+                fac = dot(cvec_get(volume,k1,l), conj(cvec_get(volume,k2,l)))
                 slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, basis.lambda)) for alpha = alpharange(basis.N)]
             end
             c[:,k2,k1] = real(slice)
@@ -244,63 +240,64 @@ end
 """Retrieves a set of spherical harmonics coefficeints"""
 function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Float64, lambda::Float64)
     N,K,_ = size(c2)
-    #Create empty Spherical Harmonics volume
-    intensity = SphericalHarmonicsVolume(LMAX, KMAX, qmax)
-    println("Extracting solution with K=$K and L=$L.")
-    mdq = dq(intensity)
-    eigenvecs = Dict()
-    eigenvals = Dict()
-    Gmatrices = Dict()
+        #Create empty Spherical Harmonics volume
+        intensity = SphericalHarmonicsVolume(LMAX, KMAX, qmax)
+        println("Extracting solution with K=$K and L=$L.")
+        mdq = dq(intensity)
+        eigenvecs = Dict()
+        eigenvals = Dict()
+        Gmatrices = Dict()
 
-    for l = 0:2:L
-        G = zeros(K, K)
-        for k1 = 1:K
-            for k2 = 1:k1
-                slice = c2[:,k2,k1]
+        for l = 0:2:L
+            G = zeros(K, K)
+            for k1 = 1:K
+                for k2 = 1:k1
+                    slice = c2[:,k2,k1]
 
-                #symmetrize 2 photon correlation if lambda = 0.0
-                if lambda == 0.0
-                    slice = 0.5*(slice + reverse(slice))
+                    #symmetrize 2 photon correlation if lambda = 0.0
+                    if lambda == 0.0
+                        slice = 0.5*(slice + reverse(slice))
+                    end
+
+                    A = Float64[ (1/(4*pi))*Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
+                    fac = A \ slice
+                    val = fac[round(Int64,l/2)+1]
+
+                    G[k2,k1] = val
+                    G[k1,k2] = val
                 end
+            end
+            #Diagonalize the matrix
+            F = eigfact(Symmetric(G),K2-(2*l+1)+1:K2)
+            eigenval, eigenvectors = F[:values], F[:vectors]
 
-                A = Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
-                fac = A \ slice
-                val = fac[round(Int64,l/2)+1]
-                G[k2,k1] = val
-                G[k1,k2] = val
+            #Calculate the vectors
+            eigenvalmatrix = diagm(sqrt(max(0.0, eigenval)))
+            eigenvecs[l] = eigenvectors'
+            eigenvals[l] = eigenvalmatrix
+            Gmatrices[l] = G
+            m = eigenvalmatrix*eigenvectors'
+
+            #For debugging only
+            # begin
+            #     println(l)
+            #     println(sum(m))
+            #     println(eigenval)
+            #     println("-----")
+            # end
+
+            for k = 1:K
+                cvec_set(intensity,k,l,(m[:,k]))
             end
         end
-        #Diagonalize the matrix
-        F = eigfact(Symmetric(-G),1:(2*l+1))#, permute=true, scale=true)
-        eigenval, eigenvectors = F[:values], F[:vectors]
 
-        #Calculate the vectors
-        eigenvalmatrix = diagm(sqrt(complex(eigenval)))
-        eigenvecs[l] = eigenvectors'
-        eigenvals[l] = eigenvalmatrix
-        Gmatrices[l] = G
-        m = eigenvalmatrix*eigenvectors'
+        intensity = real_to_comp(intensity)
 
-        #For debugging only
-        # begin
-        #     println(l)
-        #     println(sum(m))
-        #     println(eigenval)
-        #     println("-----")
-        # end
-
-        for k = 1:K
-            cvec_set(intensity,k,l,imag(m[:,k]))
+        if negativityCheck(intensity) > 0.33
+            for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
         end
-    end
 
-    intensity = real_to_comp(intensity)
-
-    if negativityCheck(intensity) > 0.33
-        for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
-    end
-
-    return intensity#,eigenvecs,eigenvals,Gmatrices
+        return intensity#,eigenvecs,eigenvals,Gmatrices
 end
 
 #------------------------------------------------------------------------
