@@ -1,4 +1,5 @@
 using ThreePhotons
+using Compat
 
 function check_git_status()
     status = readstring(`git ls-files --modified`)

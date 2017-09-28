@@ -134,7 +134,7 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
             P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
         end
     end
-    h_P = convert(Float32, transpose(sdata(P)))
+    h_P = convert(Array{Float32}, transpose(sdata(P)))
 
     println("Calculation complete ($basislen basislen).")
 

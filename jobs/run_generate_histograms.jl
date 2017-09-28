@@ -102,18 +102,18 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
     end
 end
 
-# filelist = String["amo86615_186_PR772_single.h5",
-# "amo86615_188_PR772_single.h5",
-# "amo86615_190_PR772_single.h5",
-# "amo86615_191_PR772_single.h5",
-# "amo86615_192_PR772_single.h5",
-# "amo86615_193_PR772_single.h5",
-# "amo86615_194_PR772_single.h5",
-# "amo86615_196_PR772_single.h5",
-## "amo86615_197_PR772_single.h5"
-# ]
+exp_filelist = String["amo86615_186_PR772_single.h5",
+"amo86615_188_PR772_single.h5",
+"amo86615_190_PR772_single.h5",
+"amo86615_191_PR772_single.h5",
+"amo86615_192_PR772_single.h5",
+"amo86615_193_PR772_single.h5",
+"amo86615_194_PR772_single.h5",
+"amo86615_196_PR772_single.h5",
+# "amo86615_197_PR772_single.h5"
+]
 #
-# for file in filelist
+# for file in exp_filelist
 #     run_calculate_correlation_from_images("coliphage/$file", environment_path("exp_data/Coliphage_PR772/$file"), 24, 38, 26, 32)
 # end
 
@@ -148,6 +148,45 @@ function combine_histograms(dir::String, num::Int64)
     println("Writing to $(finalpath)/histo.dat")
     try mkdir(finalpath) end
     serializeToFile("$(finalpath)/histo.dat", (params, c2_full, c3_full, c1_full))
+end
+
+function combine_histograms(filelist::Array{String}, output_dir::String)
+
+    println("Processing $(filelist[1]).")
+    params,c2_full,c3_full,c1_full = deserializeFromFile(filelist[1])
+    part_images = params["num_pictures"]
+
+    for i = 2:length(filelist)
+        histofile = filelist[i]
+        println("Processing $histofile.")
+        if isfile(histofile)
+            params_part, c2_part, c3_part, c1_part =  deserializeFromFile(histofile)
+            part_triplets = sum(c3_part)
+            if part_triplets < float(1.0e20)
+                params["num_pictures"] += params_part["num_pictures"]
+                c1_full += c1_part
+                c2_full += c2_part
+                c3_full += c3_part
+                println("\tAdded $(part_triplets) triplets and $(params_part["num_pictures"]) images.")
+            else
+                println("\t------ERROR: $histofile.")
+            end
+        end
+    end
+
+    println("Writing to $(output_dir)/histo.dat")
+    try mkdir(output_dir) end
+    serializeToFile("$(output_dir)/histo.dat", (params, c2_full, c3_full, c1_full))
+end
+
+function create_exp_filelist()
+    root = environment_path("exp_data/parts/coliphage")
+    list = readdir(root)
+    map((p)->"$root/$p/histo.dat", list)
+end
+
+function process_exp_data()
+    combine_histograms(create_exp_filelist(), environment_path("exp_data/coliphage"))
 end
 
 function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64}=Float64[0.5, 0.75, 1.125], gammavals::Vector{Float64}=[0.1, 0.2, 0.3, 0.4, 0.5], ppi::Int64=10, K::Int64=38, N::Int64=32)
