@@ -147,35 +147,8 @@ export
 	plotPointCloud,
 	plot_scattering_image,
 	compare_c2_grid,
-	compare_histogram_with_theory,
+	compare_histogram_with_theory
 
-	#utilities
-	images_10p,
-	calculate_expected_triplets,
-	calculate_required_images,
-	calculate_images_ppi,
-	calculate_incident_photons,
-	minutues_to_measure,
-	cor_ISC,
-	cor_FSC,
-	angle_between,
-	angle_between_simple,
-	euler,
-	get_euler_angles,
-	sphericalToCartesian,
-	cartesianToSpherical,
-	gaussian,
-	gaussian_distribution,
-	normal_distribution,
-	replace_NaN!,
-	random_rotation,
-	random_rotation_step,
-	SON_parametrized,
-	SON_parametrized_derivative,
-	random_doublet,
-	random_triplet,
-	serializeToFile,
-	deserializeFromFile
 
 import Base.real, Base.abs, Base.sumabs, Base.+, Base.-, Base.*, Base./, Base.length
 

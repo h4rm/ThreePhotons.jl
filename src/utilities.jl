@@ -1,3 +1,31 @@
+export 	images_10p,
+	calculate_expected_triplets,
+	calculate_required_images,
+	calculate_images_ppi,
+	calculate_incident_photons,
+	minutues_to_measure,
+	cor_ISC,
+	cor_FSC,
+	angle_between,
+	angle_between_simple,
+	euler,
+	get_euler_angles,
+	sphericalToCartesian,
+	cartesianToSpherical,
+	gaussian,
+	gaussian_distribution,
+	normal_distribution,
+	replace_NaN!,
+	random_rotation,
+	random_rotation_step,
+	SON_parametrized,
+	SON_parametrized_derivative,
+	random_doublet,
+	random_triplet,
+	serializeToFile,
+	deserializeFromFile,
+    gaussian_filter_1D
+
 images_10p = Int64[1280000,5120000,20480000,81920000,327680000,3276800000]
 calculate_expected_triplets = (images,ppi::Int64) -> images * (ppi * (ppi+1) * (ppi+2) / 6.0)
 calculate_required_images = (triplets,ppi::Int64) -> triplets / (ppi * (ppi+1) * (ppi+2) /6.0)
@@ -327,4 +355,17 @@ function whisper(str)
     try
         run(`say $str --voice 'whisper'`)
     end
+end
+
+ϕ(x, σ) = e^(-x^2 / (2 * σ^2)) / (σ * sqrt(2 * π))
+function generate_gaussian_kernel(σ::Float64=1.0, kernel_size::Int64=1)
+    center = mod(kernel_size,2) == 0 ? (kernel_size/2)+1.0 : (kernel_size/2)
+    [ϕ(norm(x-center),σ) for x=1:kernel_size]
+end
+
+function gaussian_filter_1D(data::Vector{Float64}, σ::Float64=1.0)
+    kernel = generate_gaussian_kernel(σ, length(data))
+    fkern = fft(ifftshift(kernel))
+    fdata = fft((data))
+    return real((ifft(fkern.*fdata)))
 end

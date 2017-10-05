@@ -58,7 +58,7 @@ Returns a scattering image for one random orientation given a cubic Intensity vo
 @params gamma: contribution of noise as ratio to intensity
 @params sigma: width of noise
 """
-function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Float64, number_incident_photons::Int64; incident_photon_variance::Int64 = 0, rot::Matrix{Float64}=random_rotation(3), lambda::Float64=1.0)
+function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Float64, number_incident_photons::Int64; incident_photon_variance::Int64 = 0, rot::Matrix{Float64}=random_rotation(3), lambda::Float64=1.0, beamstop_width::Float64=0.0)
     maxIntensity = real(getVolumeInterpolated(volume, [0.0,0.0,0.0]))
     if typeof(volume) == SurfaceVolume
         maxIntensity *= 1.3
@@ -75,17 +75,24 @@ function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Flo
     dist = Distributions.Normal(0.0, envelope_sigma)
     incidents = Distributions.rand(dist, 3, photons_per_image)
 
+    #Delete z dimension
+    incidents[3,:] = 0.0
+
+    #Make array of points
+    incidents = Vector{Float64}[ incidents[:,i] for i = 1:photons_per_image]
+
+    #Filter out photons that are in the beamstop
+    filter!((p)-> abs(p[1]) > beamstop_width && abs(p[2]) > beamstop_width, incidents)
+    #e.g. beamstop_width=qcut/20.0
+
     #Define envolpe function g(x)
     dist_3D = Distributions.MvNormal(zeros(3), [envelope_sigma,envelope_sigma,envelope_sigma])
     gx = (x) -> pdf(dist_3D, x)
     max_gauss = gx([0.0, 0.0, 0.0])
 
-    #Delete z dimension
-    incidents[3,:] = 0.0
-
     accepted = Vector{Float64}[]
-    for i = 1:photons_per_image
-        p = incidents[:,i]
+    for i = 1:length(incidents)
+        p = incidents[i]
 
         if norm(p) <= qcut
             rp = rot*detector_to_Ewald_sphere(p, lambda)
@@ -300,7 +307,7 @@ Generates pictures and histograms the triplets in these pictures without reusing
 @params gamma:
 @params sigma:
 """
-function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K3::Int64=26, N::Int64=32, max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0)
+function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K3::Int64=26, N::Int64=32, max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0)
 
     #cutoff parameters
     dq = qcut/K2
@@ -337,10 +344,10 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K
                 photon_list = Vector{Float64}[]
 
                 for n=1:number_particles
-                    single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance, lambda=lambda)
+                    single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance, lambda=lambda, beamstop_width=beamstop_width)
 
                     if noise.gamma > 0.0
-                        noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot, lambda=lambda)
+                        noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot, lambda=lambda, beamstop_width=beamstop_width)
                         append!(single_molecule, noise)
                     end
                     append!(photon_list, single_molecule)
