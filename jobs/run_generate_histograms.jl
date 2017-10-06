@@ -217,8 +217,8 @@ end
 # combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K2_38_K3_26_R38.0_P40960000"), 80)
 
 #With beamstop
-# generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32; setsize=Integer(2*2.048e7), name="Ewald_lambda_0.0_beamstop_", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0)
-# combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K2_38_K3_26_R38.0_P40960000"), 80)
+# generate_histogram_image(Integer(3.2768e8), 10, 38, 26, 32; setsize=Integer(2*2.048e6), name="Ewald_lambda_0.0_beamstop_", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0)
+# combine_histograms(environment_path("data_generation/parts/Ewald_lambda_0.0_beamstop_SH_10p_N32_K2_38_K3_26_R38.0_P4096000"), 80)
 
 
 
