@@ -393,34 +393,41 @@ function absoluteSquare(volume::SphericalHarmonicsVolume)
 end
 
 "Calculates the Intensity Shell Correlation for a set of coefficients"
-function shell_correlation(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64=0, cor_method=cor_FSC)
+function shell_correlation(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K_range::UnitRange{Int64}=1:0, cor_method=cor_FSC)
     surf1 = getSurfaceVolume(volume1)
     surf2 = getSurfaceVolume(volume2)
     @assert length(surf1) == length(surf2)
-    K = (K == 0 ? length(surf1) : K)
+    K_range = (length(K_range) == 0 ? (1:length(surf1)) : K_range)
 
-    return Float64[cor_method(surf1.surf[k], surf2.surf[k]) for k=1:K]
+    return Float64[cor_method(surf1.surf[k], surf2.surf[k]) for k in K_range]
 end
 
-function shell_correlation_ISC(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64=0)
-    shell_correlation(volume1, volume2, K, cor_ISC)
+function shell_correlation_ISC(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K_range::UnitRange{Int64}=1:0)
+    shell_correlation(volume1, volume2, K_range, cor_ISC)
 end
 
-function shell_correlation_FSC(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64=0)
-    shell_correlation(volume1, volume2, K, cor_FSC)
+function shell_correlation_FSC(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K_range::UnitRange{Int64}=1:0)
+    shell_correlation(volume1, volume2, K_range, cor_FSC)
 end
 
-function ISC(density::SphericalHarmonicsVolume, intensity::SphericalHarmonicsVolume, K::Int64=0)
-    return shell_correlation_ISC(intensity, absoluteSquare(forward(density)), K)
+function ISC(density::SphericalHarmonicsVolume, intensity::SphericalHarmonicsVolume, K_range::UnitRange{Int64}=1:0)
+    return shell_correlation_ISC(intensity, absoluteSquare(forward(density)), K_range)
 end
 
-function FSC(density::SphericalHarmonicsVolume, fourier::SphericalHarmonicsVolume, K::Int64=0)
-    return shell_correlation_FSC(fourier, forward(density), K)
+function FSC(density::SphericalHarmonicsVolume, fourier::SphericalHarmonicsVolume, K_range::UnitRange{Int64}=1:0)
+    return shell_correlation_FSC(fourier, forward(density), K_range)
 end
 
 "Calculates the similarity between two sets of coefficients via Fourier Shell Correlation"
 function similarity(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K::Int64)
-    return sum(shell_correlation_ISC(volume1, volume2, K))/K
+    @assert K>0
+    return sum(shell_correlation_ISC(volume1, volume2, 1:K))/K
+end
+
+"Calculates the similarity between two sets of coefficients via Fourier Shell Correlation"
+function similarity(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K_range::UnitRange{Int64}=1:1)
+    @assert length(K_range)>0
+    return sum(shell_correlation_ISC(volume1, volume2, K_range))/length(K_range)
 end
 
 "Calculates the similarity between two sets of coefficients via Fourier Shell Correlation"

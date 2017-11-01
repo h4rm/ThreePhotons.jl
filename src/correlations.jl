@@ -216,7 +216,8 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K2::Int6
         for k2=1:(minimal ? k1 : K2)
             slice = zeros(Float64, basis.N)
             for l = basis.lrange
-                fac = dot(cvec_get(volume,k1,l), conj(cvec_get(volume,k2,l)))
+                #NOTE: No need for conj for complex dot products (it's included in the definition)
+                fac = dot(cvec_get(volume,k1,l), cvec_get(volume,k2,l))
                 slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, basis.lambda)) for alpha = alpharange(basis.N)]
             end
             c[:,k2,k1] = real(slice)
@@ -237,67 +238,70 @@ function alpharange_2pi(N)
     linspace(da/2,2*pi-da/2,N)
 end
 
-"""Retrieves a set of spherical harmonics coefficeints"""
-function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, KMAX::Int64, qmax::Float64, lambda::Float64)
-    N,K,_ = size(c2)
-        #Create empty Spherical Harmonics volume
-        intensity = SphericalHarmonicsVolume(LMAX, KMAX, qmax)
-        println("Extracting solution with K=$K and L=$L.")
-        mdq = dq(intensity)
-        eigenvecs = Dict()
-        eigenvals = Dict()
-        Gmatrices = Dict()
+"""Retrieves a set of spherical harmonics coefficeints
+Modified version to allow for ranges
+"""
+function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int64}, qmax::Float64, lambda::Float64)
+    N,_,_ = size(c2)
+    K2 = length(K2_range)
+    K2_high = maximum(K2_range)
+    K2_low = minimum(K2_range)
+    @assert L < K/2
 
-        for l = 0:2:L
-            G = zeros(K, K)
-            for k1 = 1:K
-                for k2 = 1:k1
-                    slice = c2[:,k2,k1]
+    #Create empty Spherical Harmonics volume
+    intensity = SphericalHarmonicsVolume(LMAX, K2_high, qmax)
+    println("Extracting solution over K2_range=$(K2_range) with K2=$(K2) and L=$L.")
+    mdq = dq(intensity)
+    eigenvecs = Dict()
+    eigenvals = Dict()
+    Gmatrices = Dict()
 
-                    #symmetrize 2 photon correlation if lambda = 0.0
-                    if lambda == 0.0
-                        slice = 0.5*(slice + reverse(slice))
-                    end
+    for l = 0:2:L
+        G = zeros(Float32, K2, K2)
+        for k1 in K2_range
+            for k2 = K2_low:k1
+                slice = c2[:,k2,k1]
 
-                    A = Float64[ (1/(4*pi))*Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
-                    fac = A \ slice
-                    val = fac[round(Int64,l/2)+1]
-
-                    G[k2,k1] = val
-                    G[k1,k2] = val
+                #symmetrize 2 photon correlation if lambda = 0.0
+                if lambda == 0.0
+                    slice = 0.5*(slice + reverse(slice))
                 end
-            end
-            #Diagonalize the matrix
-            F = eigfact(Symmetric(G),K-(2*l+1)+1:K)
-            eigenval, eigenvectors = F[:values], F[:vectors]
+                A = Float64[ (1/(4*pi))*Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
+                fac = A \ slice
+                val = fac[round(Int64,l/2)+1]
 
-            #Calculate the vectors
-            eigenvalmatrix = diagm(sqrt(max(0.0, eigenval)))
-            eigenvecs[l] = eigenvectors'
-            eigenvals[l] = eigenvalmatrix
-            Gmatrices[l] = G
-            m = eigenvalmatrix*eigenvectors'
-
-            #For debugging only
-            # begin
-            #     println(l)
-            #     println(sum(m))
-            #     println(eigenval)
-            #     println("-----")
-            # end
-
-            for k = 1:K
-                cvec_set(intensity,k,l,(m[:,k]))
+                G[k2-K2_low+1,k1-K2_low+1] = val
+                G[k1-K2_low+1,k2-K2_low+1] = val
             end
         end
+        #Diagonalize the matrix
+        F = eigfact(Symmetric(G),K2-(2*l+1)+1:K2)
+        eigenval, eigenvectors = F[:values], F[:vectors]
 
-        intensity = real_to_comp(intensity)
+        #Calculate the vectors
+        eigenvalmatrix = diagm(sqrt(max(0.0, eigenval)))
+        eigenvecs[l] = eigenvectors'
+        eigenvals[l] = eigenvalmatrix
+        Gmatrices[l] = G
+        m = eigenvalmatrix*eigenvectors'
 
-        if negativityCheck(intensity) > 0.33
-            for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
+        for k in K2_range
+            cvec_set(intensity,k,l,(m[:,k-K2_low+1]))
         end
+    end
 
-        return intensity#,eigenvecs,eigenvals,Gmatrices
+    intensity = real_to_comp(intensity)
+
+    if negativityCheck(intensity) > 0.33
+        for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
+    end
+
+    return intensity,eigenvecs,eigenvals,Gmatrices
+end
+
+"""Retrieves a set of spherical harmonics coefficeints"""
+function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2::Int64, qmax::Float64, lambda::Float64)
+    return retrieveSolution(c2, L, LMAX, 1:K2, qmax, lambda)
 end
 
 #------------------------------------------------------------------------

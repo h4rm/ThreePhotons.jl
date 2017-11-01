@@ -27,8 +27,8 @@ export 	images_10p,
     gaussian_filter_1D
 
 images_10p = Int64[1280000,5120000,20480000,81920000,327680000,3276800000]
-calculate_expected_triplets = (images,ppi::Int64) -> images * (ppi * (ppi+1) * (ppi+2) / 6.0)
-calculate_required_images = (triplets,ppi::Int64) -> triplets / (ppi * (ppi+1) * (ppi+2) /6.0)
+calculate_expected_triplets = (images,ppi::Int64) -> images * (ppi * (ppi-1) * (ppi-2) / 6.0)
+calculate_required_images = (triplets,ppi::Int64) -> triplets / (ppi * (ppi-1) * (ppi-2) /6.0)
 calculate_images_ppi = (ppi::Int64) -> map((img)->ceil(Int64,calculate_required_images(calculate_expected_triplets(img, 10), ppi)/8)*8, images_10p)
 calculate_incident_photons = (ppi::Int64, incident_10p::Int64=550) -> round(Int64, (ppi / 10.0) * incident_10p)
 minutues_to_measure = (images, pulses_per_second::Int64=27000, hitrate::Float64=1.0) -> images / (pulses_per_second*60) / hitrate

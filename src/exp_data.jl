@@ -30,7 +30,7 @@ function precompute_distances_and_angles(image_width::Int64, N::Int64)
     angles = zeros(Int64, image_width, image_width, image_width, image_width)
 
     range = 1:image_width
-    center = Float64[image_width/2+0.5,image_width/2+0.5, 0.0]
+    center = ceil(Float64[image_width/2,image_width/2, 0.0])
     da = pi/N
     for x1 = range
         for y1 = range
@@ -54,9 +54,7 @@ end
 function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64=32, filename::String="histo.dat")
 
     (sx,sy) = Base.size(image_list[1])
-    (cx,cy) = (round(Int64, sx/2),round(Int64, sx/2))
     range = 1:sx
-    center = Float64[cx,cy, 0.0]
     da = pi/N
 
     distances,angles = precompute_distances_and_angles(sx, N)

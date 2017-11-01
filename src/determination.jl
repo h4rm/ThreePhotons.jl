@@ -151,7 +151,7 @@ end
 """Main rotation search method
 `params` - rotation search parameters
 `state` - starting state"""
-function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K" => 8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "KMAX"=>35, "qmax"=>1.0, "lambda"=>0.0, "include_negativity"=>false), state = Dict{Any,Any}("newRun"=>true) )
+function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","stepsizefactor"=>1.02, "initial_stepsize" => pi/180.0 * 180.0, "L"=>8, "K3_range" => 1:8, "N"=>32, "histograms"=>"expdata/correlations_N32_K25.dat", "optimizer"=>rotate_all_at_once, "initial_temperature_factor"=>1.0, "measure"=>"Bayes", "temperature_decay"=>0.99, "LMAX"=>25, "K2_range"=>1:35, "qmax"=>1.0, "lambda"=>0.0, "include_negativity"=>false), state = Dict{Any,Any}("newRun"=>true) )
 
     #Don't start a finished run
     if haskey(state, "state") && state["state"] == "finished_structure"
@@ -159,7 +159,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
     end
 
     #load the histogrammed dataset into the global scope
-    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(params["K"], params["K"], params["histograms"], false)
+    c2ref_full, c2ref, c3ref_full, c3ref = loadHistograms(maximum(params["K3_range"]), maximum(params["K3_range"]), params["histograms"], false)
 
     #Open output file for logging
     out = open("det.out", state["newRun"] ? "w+" : "a")
@@ -170,11 +170,11 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
         state["newRun"] = false
 
         #Lets start with the whole range by default (not applied for hierarchical approach)
-        state["K"] = params["K"]
+        state["K"] = maximum(params["K3_range"])
 
         #Retrieve initial structure from 2p-correlation if not provided
         if !haskey(state,"intensity")
-            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["KMAX"], params["qmax"], params["lambda"])
+            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["K2_range"], params["qmax"], params["lambda"])
             # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
         end
 
@@ -185,7 +185,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
         #Save reference intensity for later use
         if haskey(params, "reference_pdb_path") && params["reference_pdb_path"] != ""
-            density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], params["KMAX"], qmax(params["KMAX"], params["qmax"]))
+            density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], maximum(params["K2_range"]), qmax(maximum(params["K2_range"]), params["qmax"]))
             state["reference_intensity"] = intensity
         end
 
@@ -273,13 +273,13 @@ end
 function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
 
     state["L"] = params["L"]
-    d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], params["K"], params["lambda"], dq(state["intensity"]))
+    d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], maximum(params["K3_range"]), params["lambda"], dq(state["intensity"]))
 
     #Check if this is a continuation or a new run by checking stepsizes
     if !haskey(state["stepsizes"], state["L"])
 
         #gradually increase K
-        state["K"] = params["K"]
+        state["K"] = maximum(params["K3_range"])
 
         #set stepsize for this resolution
         #This makes sure that the initial stepsize for L=2 stays as intended and the other L stepsizes are hierarchical higher
@@ -334,13 +334,13 @@ end
 #
 #     for state["L"] = state["L"]:2:params["L"]
 #
-#         d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], params["K"], params["lambda"], dq(state["intensity"]))
+#         d_basis = complexBasis_choice(state["L"], params["LMAX"], params["N"], maximum(params["K3_range"]), params["lambda"], dq(state["intensity"]))
 #
 #         #Check if this is a continuation or a new run by checking stepsizes
 #         if !haskey(state["stepsizes"], state["L"])
 #
 #             #gradually increase K
-#             state["K"] = params["K"] - params["L"] + state["L"]
+#             state["K"] = maximum(params["K3_range"]) - params["L"] + state["L"]
 #
 #             #set stepsize for this resolution
 #             state["stepsizes"] = Dict(l=>params["initial_stepsize"]/(state["L"]-l+1) for l=2:2:state["L"])
@@ -512,12 +512,12 @@ function checkRotationSearch(reference::SphericalHarmonicsVolume, K::Int64, L::I
     c2full,c2,c3full,c3 = loadHistograms(K, K, histogram)
     start = retrieveSolution(c2full, L, reference.LMAX, reference.KMAX, reference.rmax)
     start = randomStartStructure(deleteTerms(start, K, L), K, L)
-    checkRotationSearch(start, deleteTerms(reference, K, L), K, L, basis, save_structures=save_structures)
+    checkRotationSearch(start, deleteTerms(reference, K, L), 1:K, L, basis, save_structures=save_structures)
 end
 
 """Tries out the rotational search scheme by comparing given structures with the known original structure
 This yields convergence within the bounds of the scheme"""
-function checkRotationSearch(start::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K::Int64, L::Int64, basis::AbstractBasisType; iterations=1.0e4, reduce_stepsize=1000, plotting=false, include_negativity=false, energy=(x)->0.0, save_structures::Bool=false)
+function checkRotationSearch(start::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K_range::UnitRange{Int64}, L::Int64, basis::AbstractBasisType; iterations=1.0e4, reduce_stepsize=1000, plotting=false, include_negativity=false, energy=(x)->0.0, save_structures::Bool=false)
 
     new = deepcopy(start)
     step = deepcopy(new)
@@ -525,7 +525,7 @@ function checkRotationSearch(start::SphericalHarmonicsVolume, reference::Spheric
     FSC_list = Float64[]
     E_list = Float64[]
 
-    FSC = similarity(reference, start, K)
+    FSC = similarity(reference, start, K_range)
     stepsizes = Dict(l=>pi*(l-1) for l=2:2:L)
 
     E = energy(new)
@@ -550,7 +550,7 @@ function checkRotationSearch(start::SphericalHarmonicsVolume, reference::Spheric
         step = get_MC_step(new, basis, stepsizes)
 
         #Calculate FSC of this new structure
-        FSC_new = similarity(reference, step, K)
+        FSC_new = similarity(reference, step, K_range)
 
         #Check if we accept this step
         if FSC_new > FSC
