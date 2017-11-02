@@ -95,11 +95,38 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
 
         file = h5open("$(images_path)", "r")
         photonConverter = read(file["photonConverter"])
-        resized_image_list = [ Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K2, 2*K2)).data for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+        resized_image_list = [ Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K2+1, 2*K2+1)).data for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
         calculate_correlations_in_image(resized_image_list, K2, K3, N)
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
+end
+
+"""Distributes the calculation of correlations among many jobs"""
+function run_calculate_beamstop_correlation(jobname::String, images_path::String, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8)
+
+    julia_script = """
+    using HDF5
+    using ThreePhotons
+    using Images
+
+    K2 = $K2
+    K3 = $K3
+    N = $N
+
+    file = h5open("$(images_path)", "r")
+    photonConverter = read(file["photonConverter"])
+
+    sum = 0
+    for i = 1:500
+        sum += convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])
+    end
+    beamstop_map = (convert(Array{Float64},(abs(sum) .< eps())))
+    beamstop_map_resized = Images.imresize(convert(Images.Image,beamstop_map), (2*K2+1, 2*K2+1)).data
+
+    calculate_correlations_in_image([beamstop_map_resized], K2, K3, N)
+    """
+    launch_job("exp_data/$(jobname)", Ncores, false, julia_script, 1)
 end
 
 exp_filelist = String["amo86615_186_PR772_single.h5",
@@ -116,6 +143,9 @@ exp_filelist = String["amo86615_186_PR772_single.h5",
 # for file in exp_filelist
 #     run_calculate_correlation_from_images("coliphage/$file", environment_path("exp_data/Coliphage_PR772/$file"), 24, 38, 26, 32)
 # end
+
+#Calculate beamstop of Coliphage_PR772
+# run_calculate_beamstop_correlation("coliphage_beamstop", environment_path("exp_data/Coliphage_PR772/amo86615_186_PR772_single.h5"), 38, 26, 32)
 
 function combine_histograms(dir::String, num::Int64)
     println("Processing $dir")
