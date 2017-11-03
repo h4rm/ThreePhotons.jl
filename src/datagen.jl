@@ -347,8 +347,8 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K
                     single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance, lambda=lambda, beamstop_width=beamstop_width)
 
                     if noise.gamma > 0.0
-                        noise,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot, lambda=lambda, beamstop_width=beamstop_width)
-                        append!(single_molecule, noise)
+                        noise_photons,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot, lambda=lambda, beamstop_width=beamstop_width)
+                        append!(single_molecule, noise_photons)
                     end
                     append!(photon_list, single_molecule)
                 end

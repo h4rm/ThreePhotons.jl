@@ -183,18 +183,24 @@ end
 
 """Central energy calculation function"""
 function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, measure::String="Bayes", negativity_factor::Float64=0.0)
+    return energy(intensity, basis, c3ref, 1:basis.K, measure, negativity_factor)
+end
+
+"""Central energy calculation function"""
+function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, K3_range::UnitRange{Int64}, measure::String="Bayes", negativity_factor::Float64=0.0)
     c3 = FullCorrelation_parallized(intensity, basis, true, true, true)
     c3 = max(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
 
-    average_negativity = negativityCheck(deleteTerms(intensity,basis.K, basis.L))/basis.K
-    neg = exp(negativity_factor * average_negativity)
+    # average_negativity = negativityCheck(deleteTerms(intensity,basis.K, basis.L))/basis.K
+    # neg = exp(negativity_factor * average_negativity)
+    neg = 1.0
 
     res = 0.0
     if measure == "Bayes"
         i = 1
-        for k1 = 1:basis.K
-            for k2 = 1:k1
-                for k3 = 1:k2
+        for k1 in K3_range
+            for k2 = minimum(K3_range):k1
+                for k3 = minimum(K3_range):k2
                     p = reshape(c3[:, i], basis.N, 2*basis.N)
                     i += 1
                     q = c3ref[:,:,k3,k2,k1]
@@ -246,7 +252,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
     K2 = length(K2_range)
     K2_high = maximum(K2_range)
     K2_low = minimum(K2_range)
-    @assert L < K/2
+    @assert L < K2/2
 
     #Create empty Spherical Harmonics volume
     intensity = SphericalHarmonicsVolume(LMAX, K2_high, qmax)
@@ -296,7 +302,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
         for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
     end
 
-    return intensity,eigenvecs,eigenvals,Gmatrices
+    return intensity#,eigenvecs,eigenvals,Gmatrices
 end
 
 """Retrieves a set of spherical harmonics coefficeints"""

@@ -241,7 +241,7 @@ function calculate_temperature(state::Dict, params::Dict, basis::AbstractBasisTy
 
         for i = 1:iterations
             step = get_MC_step(state["intensity"], basis, state["stepsizes"])
-            e = energy(step, basis, c3ref, params["measure"])
+            e = energy(step, basis, c3ref, params["K3_range"], params["measure"])
             println("Energy calculation step $i: $e")
             push!(energy_sample,e)
         end
@@ -287,10 +287,10 @@ function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
         state["stepsizes"] = Dict(l=>params["initial_stepsize"]*(l-1) for l=2:2:state["L"])
 
         #calculate the initial energy with that resolution
-        state["E"] = energy(state["intensity"], d_basis, c3ref, params["measure"])
+        state["E"] = energy(state["intensity"], d_basis, c3ref, params["K3_range"], params["measure"])
 
         #Calculate reference energy
-        state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, params["measure"]) : 0.0
+        state["reference_energy"] = haskey(state, "reference_intensity") ? energy(state["reference_intensity"], d_basis, c3ref, params["K3_range"], params["measure"]) : 0.0
 
         println("Reference energy: ", state["reference_energy"])
 
@@ -301,7 +301,7 @@ function rotate_all_at_once(out, params::Dict, state::Dict, c3ref::C3)
             state["negativity_factor"] = log((state["E"]+state["T"])/state["E"])/0.3 #0.3 is expected initial negativity
 
             #With new negativity_factor, recalculate energy
-            state["E"] = energy(state["intensity"], d_basis, c3ref, params["measure"], state["negativity_factor"])
+            state["E"] = energy(state["intensity"], d_basis, c3ref, params["K3_range"], params["measure"], state["negativity_factor"])
         else
             state["negativity_factor"] = 0.0
         end
@@ -485,7 +485,7 @@ function evaluate_step(out, params::Dict, state::Dict, basis::AbstractBasisType,
     sign = 0.0
 
     #Calculate the triple correlation and return difference to reference triple correlation
-    E_new = energy(state["step"], basis, c3ref, params["measure"], state["negativity_factor"])
+    E_new = energy(state["step"], basis, c3ref, params["K3_range"], params["measure"], state["negativity_factor"])
     delta_E = E_new - state["E"]
     ap  = exp(-(delta_E)/state["T"]) #acceptance energy
 
