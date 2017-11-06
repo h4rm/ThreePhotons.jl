@@ -90,4 +90,4 @@ end
 
 
 #Coliphage with correct qmax and lmabda, lambda=7.75 A, max_resolution=116 A, qmax= pi / 116
-# run_determination("exp_data/coliphage_determination_beamstopcomp", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_corrected/histo.dat", lambda=7.75, initial_stepsize=pi/4.0, K3_range=5:26, L=18, K2_range=5:38, qmax=pi/116, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+# run_determination("exp_data/coliphage_determination_beamstopcomp", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_corrected/histo.dat", lambda=7.75, initial_stepsize=pi/4.0, K3_range=5:26, L=16, K2_range=5:38, qmax=pi/116, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)

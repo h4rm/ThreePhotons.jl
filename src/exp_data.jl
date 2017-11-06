@@ -30,7 +30,7 @@ function precompute_distances_and_angles(image_width::Int64, N::Int64)
     angles = zeros(Int64, image_width, image_width, image_width, image_width)
 
     range = 1:image_width
-    center = ceil(Float64[image_width/2,image_width/2, 0.0])
+    center = ceil(Float64[image_width/2.0,image_width/2.0, 0.0])
     da = pi/N
     for x1 = range
         for y1 = range
