@@ -147,7 +147,7 @@ function run_calculate_generic_beamstop_correlation(jobname::String, K2::Int64, 
     qm = 3.141592653589793
     delq = 0.08267349088394192
     range = -qm:delq:qm
-    beamstop_width = qmax(K2,K2)/20.0
+    beamstop_width = qmax(K2,float(K2))/20.0
     crambin_beamstop = [beamstop([k1,k2], beamstop_width) == 1.0 ? 0.0 : 1.0 for k1 in range, k2 in range]
 
     calculate_correlations_in_image([crambin_beamstop], K2, K3, N)
