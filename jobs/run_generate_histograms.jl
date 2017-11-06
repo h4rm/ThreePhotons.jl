@@ -147,8 +147,8 @@ function run_calculate_generic_beamstop_correlation(jobname::String, K2::Int64, 
     qm = 3.141592653589793
     delq = 0.08267349088394192
     range = -qm:delq:qm
-    # range = linspace(-qm,qm,2*intensity_K38.KMAX)
-    crambin_beamstop = [beamstop([k1,k2], 0.1) == 1.0 ? 0.0 : 1.0 for k1 in range, k2 in range]
+    beamstop_width = qmax(K2,K2)/20.0
+    crambin_beamstop = [beamstop([k1,k2], beamstop_width) == 1.0 ? 0.0 : 1.0 for k1 in range, k2 in range]
 
     calculate_correlations_in_image([crambin_beamstop], K2, K3, N)
     """
@@ -276,7 +276,7 @@ end
 # combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K2_38_K3_26_R38.0_P40960000"), 80)
 
 #With beamstop
-# generate_histogram_image(Integer(3.2768e8), 10, 38, 26, 32; setsize=Integer(2*2.048e6), name="Ewald_lambda_0.0_beamstop_", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0)
+# generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32; setsize=Integer(2*2.048e7), name="Ewald_lambda_0.0_beamstop_", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0)
 # combine_histograms(environment_path("data_generation/parts/Ewald_lambda_0.0_beamstop_SH_10p_N32_K2_38_K3_26_R38.0_P4096000"), 80)
 
 
