@@ -73,12 +73,17 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
             c1_local = zeros(Float64, K2)
             c2_local = zeros(Float64, N, K2, K2)
             c3_local = zeros(Float64, N, 2*N, K3, K3, K3)
+
+            c1_counts = zeros(Float64, K2)
+            c2_counts = zeros(Float64, N, K2, K2)
+            c3_counts = zeros(Float64, N, 2*N, K3, K3, K3)
             for x1 in range
                 for y1 in range
                     @inbounds k1 = distances[x1,y1]
 
                     if k1 > 0 && k1 <= K2
                         @inbounds c1_local[k1] += real(image[x1,y1])*(1/k1)
+                        @inbounds c1_counts[k1] += 1.0
 
                         for x2 in range
                             for y2 in range
@@ -90,6 +95,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                                     if ai > N ais = 2*N-ais+1 end
                                     @fastmath val2 = real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
                                     @inbounds c2_local[ais,k2,k1] += val2
+                                    @inboudns c2_counts[ais,k2,k1] += 1.0
 
                                     if k1 <= K3 && k2<= K3
                                         for x3 in range
@@ -103,6 +109,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
                                                     @fastmath val3 = real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
                                                     @inbounds c3_local[ais,bis,k3,k2,k1] += val3
+                                                    @inbounds c3_counts[ais,bis,k3,k2,k1] += 1.0
                                                 end
                                             end
                                         end
@@ -114,7 +121,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                 end
             end
             flush(STDOUT)
-            (c1_local, c2_local, c3_local)
+            (c1_local ./ max(c1_counts, 1.0), c2_local ./ max(c2_counts, 1.0), c3_local ./ max(c3_counts, 1.0))
         end
         c1_full += c1_part
         c2_full += c2_part

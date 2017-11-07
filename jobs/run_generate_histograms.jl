@@ -28,14 +28,9 @@ function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, 
 end
 
 function generate_histogram_image(img::Int64, ppi::Int64, K2::Int64, K3::Int64, N::Int64; setsize::Int64=Integer(2*2.048e7), name::String="", lambda::Float64=1.0, beamstop_width::Float64=0.0)
-    if img <= setsize
-        generate_histograms(; max_pictures = img, Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(img/8), successive_jobs=1, prefix="SH_", suffix="", use_cube=false, qcut_ratio=1.0, K2=K2, K3=k3, rmax=float(K2), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=lambda, beamstop_width=beamstop_width)
-
-    else
-        numbersets = ceil(Int64, img / setsize)
-        for i = 1:numbersets
-            generate_histograms(; max_pictures = setsize, Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(setsize/8), successive_jobs=1, prefix="parts/$(name)SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K2=K2, K3=K3, rmax=float(K2), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=lambda, beamstop_width=beamstop_width)
-        end
+    numbersets = ceil(Int64, img / setsize)
+    for i = 1:numbersets
+        generate_histograms(; max_pictures = setsize, Ncores=8, N=N, photons_per_image=ppi, batchsize = Integer(setsize/8), successive_jobs=1, prefix="parts/$(name)SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K2=K2, K3=K3, rmax=float(K2), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=lambda, beamstop_width=beamstop_width)
     end
 end
 
