@@ -3,7 +3,7 @@ function histogram_name(prefix::String, ppi::Int64, N::Int64, K2::Int64, K3::Int
 end
 
 """Starts a cluster job for synthetic correlation generation"""
-function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K2::Int64=38, K3::Int64=26, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0)
+function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, photons_per_image::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K2::Int64=38, K3::Int64=26, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0, beamstop_only::Bool=false)
     name = histogram_name(prefix, photons_per_image, N, K2, K3, rmax, max_pictures, suffix, gamma, sigma)
 
     number_incident_photons = calculate_incident_photons(photons_per_image)
@@ -21,7 +21,7 @@ function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, 
         volume.radial_interp = false
     end
 
-    generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K2=$K2, K3=$K3, N=$N, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles), lambda=$(lambda), beamstop_width=$(beamstop_width))
+    generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K2=$K2, K3=$K3, N=$N, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles), lambda=$(lambda), beamstop_width=$(beamstop_width), beamstop_only=$(beamstop_only))
     """
 
     launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="haswell|broadwell|skylake")
@@ -273,6 +273,10 @@ end
 #With beamstop
 # generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32; setsize=Integer(2*2.048e7), name="Ewald_lambda_0.0_beamstop_", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0)
 # combine_histograms(environment_path("data_generation/parts/Ewald_lambda_0.0_beamstop_SH_10p_N32_K2_38_K3_26_R38.0_P4096000"), 80)
+
+#beamstop only
+# generate_histograms(; max_pictures = Integer(2*2.048e7), Ncores=8, N=32, photons_per_image=160, batchsize = Integer(2*2.048e7), successive_jobs=1, prefix="beamstop_only", suffix="", use_cube=false, qcut_ratio=1.0, K2=38, K3=26, rmax=float(38), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0, beamstop_only=true)
+
 
 
 

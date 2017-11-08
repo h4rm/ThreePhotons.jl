@@ -109,6 +109,25 @@ function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Flo
     return accepted,rot
 end
 
+"""Uniform random points except beamstop"""
+function beamstop_shot(qcut::Float64, photons_per_image::Int64, beamstop_width::Float64=0.0)
+
+    incidents = 2*qcut*(rand(3, photons_per_image) - 0.5)
+
+    #Delete z dimension
+    incidents[3,:] = 0.0
+
+    #Make array of points
+    incidents = Vector{Float64}[ incidents[:,i] for i = 1:photons_per_image]
+
+    #Filter out photons that are in the beamstop
+    filter!((p)-> abs(p[1]) > beamstop_width && abs(p[2]) > beamstop_width, incidents)
+    filter!((p)-> norm(p) <= qcut, incidents)
+
+    return incidents
+end
+
+
 """Calculates, how often a triple of k1,k2,k3 appears in the three photon correlation"""
 function tripletFactor(k1::Int64,k2::Int64,k3::Int64)
     if k1 == k2 == k3
@@ -307,7 +326,7 @@ Generates pictures and histograms the triplets in these pictures without reusing
 @params gamma:
 @params sigma:
 """
-function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K3::Int64=26, N::Int64=32, max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0)
+function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K3::Int64=26, N::Int64=32, max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0, beamstop_only::Bool = false)
 
     #cutoff parameters
     dq = qcut/K2
@@ -343,14 +362,19 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K
             for j=1:batchsize
                 photon_list = Vector{Float64}[]
 
-                for n=1:number_particles
-                    single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance, lambda=lambda, beamstop_width=beamstop_width)
+                if beamstop_only == false
+                    for n=1:number_particles
+                        single_molecule,rot = pointsPerOrientation(intensity, qcut, qcut/3.0, number_incident_photons, incident_photon_variance=incident_photon_variance, lambda=lambda, beamstop_width=beamstop_width)
 
-                    if noise.gamma > 0.0
-                        noise_photons,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot, lambda=lambda, beamstop_width=beamstop_width)
-                        append!(single_molecule, noise_photons)
+                        if noise.gamma > 0.0
+                            noise_photons,_ = pointsPerOrientation(noise_volume,qcut, noise.sigma*1.05, noise.photons, incident_photon_variance=0, rot=rot, lambda=lambda, beamstop_width=beamstop_width)
+                            append!(single_molecule, noise_photons)
+                        end
+                        append!(photon_list, single_molecule)
                     end
-                    append!(photon_list, single_molecule)
+                else
+                    #beamstop only
+                    append!(photon_list, beamstop_shot(qcut, number_incident_photons, beamstop_width)
                 end
 
                 histogramMethod(photon_list, c1, c2, c3, dq, N, K2, K3, lambda)
