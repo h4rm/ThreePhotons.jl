@@ -326,7 +326,7 @@ Generates pictures and histograms the triplets in these pictures without reusing
 @params gamma:
 @params sigma:
 """
-function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K3::Int64=26, N::Int64=32, max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0, beamstop_only::Bool = false)
+function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K3::Int64=26, N::Int64=32, max_pictures::Int64=Int64(0), number_incident_photons::Int64=1000, incident_photon_variance::Int64 = 0, numprocesses::Int64=1, file::String="histo.dat", noise::Noise=GaussianNoise(0.0, 1.0, false), batchsize::Int64 = 1000, histogramMethod=histogramCorrelationsInPicture_alltoall, number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0, beamstop_only::Bool=false)
 
     #cutoff parameters
     dq = qcut/K2
@@ -374,7 +374,7 @@ function generateHistogram(intensity::Volume; qcut::Float64=1.0, K2::Int64=38, K
                     end
                 else
                     #beamstop only
-                    append!(photon_list, beamstop_shot(qcut, number_incident_photons, beamstop_width)
+                    append!(photon_list, beamstop_shot(qcut, number_incident_photons, beamstop_width))
                 end
 
                 histogramMethod(photon_list, c1, c2, c3, dq, N, K2, K3, lambda)
