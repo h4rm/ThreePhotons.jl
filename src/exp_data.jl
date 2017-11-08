@@ -83,7 +83,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
                     if k1 > 0 && k1 <= K2
                         @inbounds c1_local[k1] += real(image[x1,y1])*(1/k1)
-                        @inbounds c1_counts[k1] += 1.0
+                        # @inbounds c1_counts[k1] += 1.0
 
                         for x2 in range
                             for y2 in range
@@ -95,7 +95,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                                     if ai > N ais = 2*N-ais+1 end
                                     @fastmath val2 = real(image[x1,y1]*image[x2,y2]) * doubletFactor(k1,k2) * 1/(k1*k2)
                                     @inbounds c2_local[ais,k2,k1] += val2
-                                    @inbounds c2_counts[ais,k2,k1] += 1.0
+                                    # @inbounds c2_counts[ais,k2,k1] += 1.0
 
                                     if k1 <= K3 && k2<= K3
                                         for x3 in range
@@ -109,7 +109,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
 
                                                     @fastmath val3 = real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
                                                     @inbounds c3_local[ais,bis,k3,k2,k1] += val3
-                                                    @inbounds c3_counts[ais,bis,k3,k2,k1] += 1.0
+                                                    # @inbounds c3_counts[ais,bis,k3,k2,k1] += 1.0
                                                 end
                                             end
                                         end
