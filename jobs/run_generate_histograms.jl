@@ -275,7 +275,7 @@ end
 # combine_histograms(environment_path("data_generation/parts/Ewald_lambda_0.0_beamstop_SH_10p_N32_K2_38_K3_26_R38.0_P4096000"), 80)
 
 #beamstop only
-# generate_histograms(; max_pictures = Integer(2*2.048e7), Ncores=8, N=32, photons_per_image=160, batchsize = Integer(2*2.048e7), successive_jobs=1, prefix="beamstop_only", suffix="", use_cube=false, qcut_ratio=1.0, K2=38, K3=26, rmax=float(38), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0, beamstop_only=true)
+# generate_histograms(; max_pictures = Integer(2*2.048e7), Ncores=8, N=32, photons_per_image=10, batchsize = Integer(2.048e6), successive_jobs=1, prefix="beamstop_only_2", suffix="", use_cube=false, qcut_ratio=1.0, K2=38, K3=26, rmax=float(38), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=0.0, beamstop_width=qmax(38,38.0)/20.0, beamstop_only=true)
 
 
 
