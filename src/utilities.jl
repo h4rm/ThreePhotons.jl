@@ -24,7 +24,8 @@ export 	images_10p,
 	random_triplet,
 	serializeToFile,
 	deserializeFromFile,
-    gaussian_filter_1D
+    gaussian_filter_1D,
+	calculate_ppi
 
 images_10p = Int64[1280000,5120000,20480000,81920000,327680000,3276800000]
 calculate_expected_triplets = (images,ppi::Int64) -> images * (ppi * (ppi-1) * (ppi-2) / 6.0)
