@@ -4,7 +4,7 @@ end
 
 """Starts a cluster job for synthetic correlation generation"""
 function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, number_incident_photons::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K2::Int64=38, K3::Int64=26, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0, beamstop_only::Bool=false)
-    name = histogram_name(prefix, photons_per_image, N, K2, K3, rmax, max_pictures, suffix, gamma, sigma)
+    name = histogram_name(prefix, calculate_ppi(photons_per_image), N, K2, K3, rmax, max_pictures, suffix, gamma, sigma)
 
     julia_script = """
     using ThreePhotons
