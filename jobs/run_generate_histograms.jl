@@ -135,7 +135,7 @@ function run_calculate_generic_beamstop_correlation(jobname::String, K2::Int64, 
     N = $N
 
     function beamstop(K::Vector{Float64}, beamstop_width::Float64)
-        abs(K[1]) > beamstop_width && abs(K[2]) > beamstop_width ? 1.0 : 0.0
+        (abs(K[1]) > beamstop_width && abs(K[2]) > beamstop_width) ? 1.0 : 0.0
     end
 
     qm = 3.141592653589793
