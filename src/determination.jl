@@ -198,9 +198,8 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
         saveState(params, state)
     end
 
-    #Let's try and calculate on the GPU
     try
-        include("$(ENV["THREEPHOTONS_PATH"])/src/cuda.jl")
+        CUDA_init()
     catch x
         println(x)
         println("!!! Init of CUDA failed")

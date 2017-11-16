@@ -163,6 +163,14 @@ include("data_processing.jl")
 include("determination.jl")
 include("exp_data.jl")
 
+# Let's try and calculate on the GPU
+try
+    include("cuda.jl")
+catch x
+    println(x)
+    println("!!! Loading of CUDA module failed. Fallback to CPU.")
+end
+
 """
 A Julia package for the structure determination from single molecule X-ray scattering experiments at very low photon counts.
 """

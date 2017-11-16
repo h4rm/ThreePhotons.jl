@@ -425,7 +425,7 @@ function similarity(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmoni
 end
 
 "Calculates the similarity between two sets of coefficients via Fourier Shell Correlation"
-function similarity(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K_range::UnitRange{Int64}=1:1)
+function similarity(volume1::SphericalHarmonicsVolume, volume2::SphericalHarmonicsVolume, K_range::UnitRange{Int64})
     @assert length(K_range)>0
     return sum(shell_correlation_ISC(volume1, volume2, K_range))/length(K_range)
 end

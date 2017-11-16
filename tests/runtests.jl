@@ -1,5 +1,5 @@
-using Base.Test
 addprocs() #Can be turned on for faster calculations
+using Base.Test
 using ThreePhotons
 
 function test_file(filename)
@@ -17,7 +17,7 @@ LMAX = 25
 test_file("test_structure.jl")
 # test_file("test_cubic.jl")
 # test_file("test_spherical_harmonics.jl")
-# test_file("test_datagen.jl")
+test_file("test_datagen.jl")
 # test_file("test_correlations.jl")
 # test_file("test_cuda.jl")
 test_file("test_determination.jl")

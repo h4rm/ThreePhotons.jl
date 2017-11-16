@@ -1,6 +1,6 @@
 using CUDArt
 using CUBLAS
-global CUDA_enabled = false
+CUDA_enabled = false
 
 #cuda
 export BasisTypeCuda, CUDA_store_basis, CUDA_calculate_basis, complexBasis_choice, CUDA_init, FullCorrelation_parallized
@@ -13,8 +13,6 @@ function CUDA_init()
     global CUDA_enabled = true
     println("Initialization of CUDA complete.")
 end
-
-CUDA_init()
 
 """Datatype for precalculated three photon correlation basis function"""
 type BasisTypeCuda <: AbstractBasisType
@@ -51,6 +49,7 @@ function CUDA_store_basis(basis::BasisType)
 end
 
 function CUDA_calculate_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Float64, dq::Float64, forIntensity=true)
+    println("Intialize basis for CUDA.")
     basis = calculate_basis(L, LMAX, N, K, lambda, dq, forIntensity)
     if CUDA_enabled
         return CUDA_store_basis(basis)
@@ -63,11 +62,11 @@ function CUDA_calculate_basis( L::Int64, LMAX::Int64, N::Int64, K::Int64, forInt
     return CUDA_calculate_basis(L,LMAX,N,K, 0.0, 0.0, forIntensity)
 end
 
-complexBasis_choice = CUDA_calculate_basis
+global complexBasis_choice = CUDA_calculate_basis
 
 """Calculates the full three photon correlation"""
 function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, minimal::Bool=true, normalize::Bool=false, return_raw::Bool=false)
-
+    # println("CUDA correlation.")
     #Prepare all arrays on GPU
     klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
     numcoeff = num_coeff(basis.LMAX)
