@@ -40,7 +40,7 @@ function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::Strin
         write(file,"""#git-SHA: $githead
         $head
 
-        $(Ncores > 1 ? "julia -p$(Ncores)" : "julia") << EOF
+        $(Ncores > 1 ? "julia -p8" : "julia") << EOF
         $julia_script
         flush(STDOUT) #make sure output is flushed to terminal files
         EOF
