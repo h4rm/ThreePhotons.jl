@@ -123,31 +123,31 @@ function run_calculate_beamstop_correlation(jobname::String, images_path::String
     launch_job("exp_data/$(jobname)", Ncores, false, julia_script, 1)
 end
 
-"""Distributes the calculation of correlations among many jobs"""
-function run_calculate_generic_beamstop_correlation(jobname::String, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8)
-
-    julia_script = """
-    using ThreePhotons
-    using Images
-
-    K2 = $K2
-    K3 = $K3
-    N = $N
-
-    function beamstop(K::Vector{Float64}, beamstop_width::Float64)
-        (abs(K[1]) > beamstop_width && abs(K[2]) > beamstop_width) ? 1.0 : 0.0
-    end
-
-    qm = 3.141592653589793
-    delq = 0.08267349088394192
-    range = -qm:delq:qm
-    beamstop_width = qmax(K2,float(K2))/20.0
-    crambin_beamstop = [beamstop([k1,k2], beamstop_width) for k1 in range, k2 in range]
-
-    calculate_correlations_in_image([crambin_beamstop], K2, K3, N)
-    """
-    launch_job("exp_data/$(jobname)", Ncores, false, julia_script, 1)
-end
+# """Distributes the calculation of correlations among many jobs"""
+# function run_calculate_generic_beamstop_correlation(jobname::String, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8)
+#
+#     julia_script = """
+#     using ThreePhotons
+#     using Images
+#
+#     K2 = $K2
+#     K3 = $K3
+#     N = $N
+#
+#     function beamstop(K::Vector{Float64}, beamstop_width::Float64)
+#         (abs(K[1]) > beamstop_width && abs(K[2]) > beamstop_width) ? 1.0 : 0.0
+#     end
+#
+#     qm = 3.141592653589793
+#     delq = 0.08267349088394192
+#     range = -qm:delq:qm
+#     beamstop_width = qmax(K2,float(K2))/20.0
+#     crambin_beamstop = [beamstop([k1,k2], beamstop_width) for k1 in range, k2 in range]
+#
+#     calculate_correlations_in_image([crambin_beamstop], K2, K3, N)
+#     """
+#     launch_job("exp_data/$(jobname)", Ncores, false, julia_script, 1)
+# end
 
 exp_filelist = String["amo86615_186_PR772_single.h5",
 "amo86615_188_PR772_single.h5",
