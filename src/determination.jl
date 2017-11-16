@@ -164,8 +164,9 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
     #Open output file for logging
     out = open("det.out", state["newRun"] ? "w+" : "a")
     write(out,"""
-    #Starting on $(gethostname())
+    #Starting on machine $(gethostname())
     """)
+    flush(out)
 
     if state["newRun"]
 
