@@ -14,6 +14,8 @@ function CUDA_init()
     println("Initialization of CUDA complete.")
 end
 
+CUDA_init()
+
 """Datatype for precalculated three photon correlation basis function"""
 type BasisTypeCuda <: AbstractBasisType
     d_wignerlist::CudaArray

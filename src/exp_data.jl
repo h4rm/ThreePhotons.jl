@@ -105,7 +105,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
                                                 if k3 <= k2 && k3 > 0 && k3 <= K3
                                                     @inbounds bi = angles[x1,y1,x3,y3]
                                                     bis = bi
-                                                    if ai > N bis = 2*N - bis+1 end
+                                                    if ai > N bis = 2*N-bis+1 end
 
                                                     @fastmath val3 = real(image[x1,y1]*image[x2,y2]*image[x3,y3]) * tripletFactor(k1,k2,k3) * 1/(k1*k2*k3)
                                                     @inbounds c3_local[ais,bis,k3,k2,k1] += val3
