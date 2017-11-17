@@ -73,10 +73,6 @@ end
 
   # run_noise_set([0.5, 0.75, 1.125, 2.5], collect(0.1:0.1:0.5), 38, 32, 18, 26, 0.99998, 10)
 
-
-#For coliphage
-# run_determination("exp_data/coliphage_determination_negativity", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=1:26, L=18, K2_range=1:38, qmax=qmax(38, float(38)), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=true)
-
 #For multi particle
 # run_determination("multi_particle", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/data_generation/multi_2_SH_10p_N32_K38_R38.0_P3276800000/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=1:26, L=18, K2_range=1:38, qmax=qmax(38, float(38)), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", force_repostprocess=true, run_denoise=true)
 
@@ -88,6 +84,5 @@ end
 
 # run_determination("Ewald_lambda_4.0_alt_infinity", histograms="$(ENV["DETERMINATION_DATA"])/output/data_generation/correlations_N32_K238_K326_L18_inf.dat", lambda=4.0, initial_stepsize=pi/4.0, K3_range=1:26, L=18, K2_range=1:38, qmax=qmax(38, float(38)), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb")
 
-
 #Coliphage with correct qmax and lmabda, lambda=7.75 A, max_resolution=116 A, qmax= pi / 116
-# run_determination("exp_data/coliphage_determination_beamstopcomp", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_corrected/histo.dat", lambda=7.75, initial_stepsize=pi/4.0, K3_range=5:26, L=16, K2_range=5:38, qmax=pi/116, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+# run_determination("exp_data/coliphage_determination_newhisto", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=5:26, L=12, K2_range=5:38, qmax=pi/116.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
