@@ -90,7 +90,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         file = h5open("$(images_path)", "r")
         photonConverter = read(file["photonConverter"])
         resized_image = Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K2+1, 2*K2+1)).data for i=$((n-1)*images_per_job+1):$(n*images_per_job)
-        calculate_correlations_in_image([1.0 - resized_image], K2, K3, N)
+        calculate_correlations_in_image(resized_image_list, K2, K3, N)
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
@@ -118,7 +118,7 @@ function run_calculate_beamstop_correlation(jobname::String, images_path::String
     beamstop_map = (convert(Array{Float64},(abs(sum) .< eps())))
     beamstop_map_resized = Images.imresize(convert(Images.Image,beamstop_map), (2*K2+1, 2*K2+1)).data
 
-    calculate_correlations_in_image([beamstop_map_resized], K2, K3, N)
+    calculate_correlations_in_image([1.0 - beamstop_map_resized], K2, K3, N)
     """
     launch_job("exp_data/$(jobname)", Ncores, false, julia_script, 1)
 end
