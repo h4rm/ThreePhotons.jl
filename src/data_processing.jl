@@ -21,7 +21,7 @@ function fitStructures_full(volume::SphericalHarmonicsVolume, reference::Spheric
     return (rotateStructure(volume, bestt, bestp, bestg, maximum(K_range), 2:2:L), bestsc, bestt, bestp, bestg)
 end
 
-function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, K::Int64, L::Int64, ta::Float64 = 0.0, tb::Float64 = float(pi)/2, pa::Float64 =0.0, pb::Float64 = float(pi), ga::Float64 = 0.0, gb::Float64 = float(pi)
+function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, K::Int64, L::Int64, ta::Float64 = 0.0, tb::Float64 = float(pi)/2, pa::Float64 =0.0, pb::Float64 = float(pi), ga::Float64 = 0.0, gb::Float64 = float(pi))
     fitStructures_full(volume, reference, num, 1:K, L, ta, tb, pa, pb, ga, gb)
 end
 
