@@ -41,7 +41,7 @@ function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitte
         julia_script = """
         using ThreePhotons
 
-        subdir = $(environment_path("exp_data/coliphage_determination_newhisto"))
+        subdir = "$(environment_path("exp_data/coliphage_determination_newhisto"))"
         intensity_reference = deserializeFromFile("\$subdir/1000/state.dat")["intensity"]
         intensity = deserializeFromFile("\$subdir/$n/state.dat")["intensity"]
 
