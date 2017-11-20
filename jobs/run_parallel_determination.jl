@@ -35,6 +35,23 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
     end
 end
 
+"""Fits all intensites with respect to the first for consecutive averaging"""
+function run_postprocess_coliphage_results(dir::String="coliphage_fitted")
+    for n in 1001:1019
+        julia_script = """
+        using ThreePhotons
+
+        subdir = $(environment_path("exp_data/coliphage_determination_newhisto"))
+        intensity_reference = deserializeFromFile("\$subdir/1000/state.dat")["intensity"]
+        intensity = deserializeFromFile("\$subdir/$n/state.dat")["intensity"]
+
+        bestfit, bestsc, _, _, _ =  fitStructures_full(intensity, intensity_reference, 30, 6:26, 16)
+        saveCube(bestfit, "fitted_intensity.mrc")
+        """
+        launch_job("$dir/$n", 8, false, julia_script, 1)
+    end
+end
+
 function run_set(image_list::Array{Int64}, K2_range::UnitRange{Int64}=1:38, N::Int64=32, L::Int64=18, K3_range::UnitRange{Int64}=1:26, temperature_decay::Float64=0.99998, ppi::Int64=10, include_infinite::Bool=true)
     histograms_finite = Dict( "P$(img)" => histogram_name("parallel/data_generation/SH_", ppi, N, maximum(K2_range), maximum(K3_range), float(maximum(K2_range)), img, "") for img in image_list)
     histograms_infinite = include_infinite ? Dict("L20_inf" => "expdata/correlations_N$(N)_K$(maximum(K2_range))_L20_inf.dat") : Dict()

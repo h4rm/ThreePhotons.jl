@@ -1,10 +1,10 @@
 "Fits structure `volume` to structure `reference` by exploring all possible SO(3) rotations"
-function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, K::Int64, L::Int64, ta::Float64 = 0.0, tb::Float64 = pi/2, pa::Float64 =0.0, pb::Float64 = pi, ga::Float64 = 0.0, gb::Float64 = pi)
+function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, K_range::UnitRange{Int64}, L::Int64, ta::Float64 = 0.0, tb::Float64 = pi/2, pa::Float64 =0.0, pb::Float64 = pi, ga::Float64 = 0.0, gb::Float64 = pi)
     println("Start with fitting")
     #check a single angle combination
     check_angles = function(theta::Float64,phi::Float64, gamma::Float64)
-        rvolume = rotateStructure(volume, theta, phi, gamma, K, 2:2:L)
-        sc = similarity(reference,rvolume, K)
+        rvolume = rotateStructure(volume, theta, phi, gamma, maximum(K_range), 2:2:L)
+        sc = similarity(reference,rvolume, K_range)
         return (sc, theta, phi, gamma)
     end
 
@@ -18,11 +18,15 @@ function fitStructures_full(volume::SphericalHarmonicsVolume, reference::Spheric
     sort!(results, lt=(a,b)->a[1]>b[1])
     bestsc, bestt, bestp, bestg = results[1]
     println("Best intensity correlation: ", bestsc)
-    return (rotateStructure(volume, bestt, bestp, bestg, K, 2:2:L), bestsc, bestt, bestp, bestg)
+    return (rotateStructure(volume, bestt, bestp, bestg, maximum(K_range), 2:2:L), bestsc, bestt, bestp, bestg)
+end
+
+function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, K::Int64, L::Int64, ta::Float64 = 0.0, tb::Float64 = pi/2, pa::Float64 =0.0, pb::Float64 = pi, ga::Float64 = 0.0, gb::Float64 = pi)
+    fitStructures_full(volume, reference, num, 1:K, L, ta, tb, pa, pb, ga, gb)
 end
 
 "Fits structure `volume` to structure `reference` by exploring all possible SO(3) rotations"
-function fitStructures_random(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K::Int64, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
+function fitStructures_random(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K_range::UnitRange{Int64}, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
     stepsize = pi
     # results = []
     results = @parallel vcat for i = 1:repititions
@@ -33,8 +37,8 @@ function fitStructures_random(volume::SphericalHarmonicsVolume, reference::Spher
             new_theta = theta + randn()*stepsize/2
             new_phi = phi + randn()*stepsize
             new_gamma = gamma + randn()*stepsize
-            rvolume = rotateStructure(volume, new_theta, new_phi, new_gamma, K, 2:2:L)
-            sc = similarity(reference,rvolume, K)
+            rvolume = rotateStructure(volume, new_theta, new_phi, new_gamma, maximum(K_range), 2:2:L)
+            sc = similarity(reference,rvolume, K_range)
             if sc > bestsc
                 bestsc,theta,phi,gamma = sc, new_theta, new_phi, new_gamma
             end
@@ -45,7 +49,11 @@ function fitStructures_random(volume::SphericalHarmonicsVolume, reference::Spher
     sort!(results, lt=(a,b)->a[1]>b[1])
     bestsc,theta,phi,gamma = results[1]
     println("Best intensity correlation: ", bestsc)
-    return (rotateStructure(volume, theta, phi, gamma, K, 2:2:L), bestsc, theta, phi, gamma)
+    return (rotateStructure(volume, theta, phi, gamma, maximum(K_range), 2:2:L), bestsc, theta, phi, gamma)
+end
+
+function fitStructures_random(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K::Int64, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
+    fitStructures_random(volume, reference, 1:K, L, stepsizefactor, repititions)
 end
 
 # "Calculates the power spectrum of a set of coefficients"

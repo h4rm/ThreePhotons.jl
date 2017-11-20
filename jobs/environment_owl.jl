@@ -6,7 +6,9 @@ function environment_path(local_path::String)
     return "$(ENV["DETERMINATION_DATA"])/$(ENV_root)/$(local_path)"
 end
 
-function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="")
+#memory=4G
+#gpu_mem=4000M
+function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="", gpu_mem::String="")
     return """
     #!/bin/bash
     #\$ -S /bin/bash
@@ -24,6 +26,7 @@ function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; h
     #\$ -hold_jid $(jobname(name))
     $(memory != "" ? "#\$ -l h_data=$memory" : "")
     $(gpu ? "#\$ -l gpu=1" : "")
+    $(gpu_mem != "" ? "-l gpu_mem=$(gpu_mem)" : "")
     """
 end
 
