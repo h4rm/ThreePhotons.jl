@@ -30,7 +30,7 @@ function fitStructures_random(volume::SphericalHarmonicsVolume, reference::Spher
     stepsize = pi
     # results = []
     results = @parallel vcat for i = 1:repititions
-        phi,theta,gamma = pi*rand(), acos(rand()), pi*rand()
+        phi,theta,gamma = 2*pi*rand(), acos(rand()), 2*pi*rand()
         bestsc = 0.0
 
         while stepsize > pi/180.0
