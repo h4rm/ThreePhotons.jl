@@ -36,7 +36,7 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 end
 
 """Fits all intensites with respect to the first for consecutive averaging"""
-function run_postprocess_coliphage_results(dir::String="coliphage_fitted")
+function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitted")
     for n in 1001:1019
         julia_script = """
         using ThreePhotons
