@@ -45,6 +45,7 @@ function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitte
         intensity = deserializeFromFile("$(environment_path("exp_data/coliphage_determination_newhisto"))/$n/state.dat")["intensity"]
 
         bestfit, bestsc, _, _, _ =  fitStructures_random(deleteTerms(intensity, 26, 16), deleteTerms(intensity_reference, 26, 16), 7:26, 16, 0.995, nworkers()*8)
+        serializeToFile("intensity.dat", bestfit)
         saveCube(bestfit, "fitted_intensity.mrc")
         """
         launch_job("$dir/$n", 8, false, julia_script, 1)
