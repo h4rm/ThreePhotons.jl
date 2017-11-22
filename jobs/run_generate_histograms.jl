@@ -233,14 +233,14 @@ function combine_histograms(filelist::Array{String}, output_dir::String)
     serializeToFile("$(output_dir)/histo.dat", (params, c2_full, c3_full, c1_full))
 end
 
-function create_exp_filelist()
-    root = environment_path("exp_data/parts/coliphage")
+function create_exp_filelist(name::String="coliphage")
+    root = environment_path("exp_data/parts/$(name)")
     list = readdir(root)
     map((p)->"$root/$p/histo.dat", list)
 end
 
-function process_exp_data()
-    combine_histograms(create_exp_filelist(), environment_path("exp_data/coliphage"))
+function process_exp_data(name::String="coliphage")
+    combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
 end
 
 function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64}=Float64[0.5, 0.75, 1.125], gammavals::Vector{Float64}=[0.1, 0.2, 0.3, 0.4, 0.5], ppi::Int64=10, K::Int64=38, N::Int64=32)
