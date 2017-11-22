@@ -161,7 +161,7 @@ exp_filelist = String["amo86615_186_PR772_single.h5",
 ]
 #
 # for file in exp_filelist
-#     run_calculate_correlation_from_images("coliphage_symmetric/$file", environment_path("exp_data/Coliphage_PR772/$file", symmetrize=true), 24, 38, 26, 32)
+#     run_calculate_correlation_from_images("coliphage_symmetric/$file", environment_path("exp_data/Coliphage_PR772/$file"), 24, 38, 26, 32, symmetrize=true)
 # end
 
 #Calculate beamstop of Coliphage_PR772

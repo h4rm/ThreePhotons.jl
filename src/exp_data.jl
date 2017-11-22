@@ -170,7 +170,7 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
         #Processing next batch of nworkers() images
         c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i=((j-1)*nworkers()+1):clamp(j*nworkers()+1, 1, length(image_list))
             image = image_list[i]
-            if symmetrize
+            if symmetrize == true
                 image = symmetrize_image(image)
             end
             println("Processing image #$(i)")
