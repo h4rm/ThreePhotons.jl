@@ -24,7 +24,8 @@ export 	images_10p,
 	random_triplet,
 	serializeToFile,
 	deserializeFromFile,
-    gaussian_filter_1D,
+    gaussian_filter,
+	generate_gaussian_kernel,
 	calculate_ppi
 
 images_10p = Int64[1280000,5120000,20480000,81920000,327680000,3276800000]
@@ -360,14 +361,35 @@ function whisper(str)
     end
 end
 
-ϕ(x, σ) = e^(-x^2 / (2 * σ^2)) / (σ * sqrt(2 * π))
-function generate_gaussian_kernel(σ::Float64=1.0, kernel_size::Int64=1)
-    center = mod(kernel_size,2) == 0 ? (kernel_size/2)+1.0 : (kernel_size/2)
-    [ϕ(norm(x-center),σ) for x=1:kernel_size]
+ϕ(x::Float64, σ::Float64) = exp(-x^2 / (2 * σ^2)) / (σ * sqrt(2 * π))
+ϕ(x::Vector{Float64}, σ::Float64) = exp(-norm(x)^2 / (2 * σ^2)) / (σ * sqrt(2 * π))
+
+function generate_gaussian_kernel(σ::Float64, kernel_size::Vector{Int64})
+    center = map((dim) -> mod(dim,2) == 0 ? (dim/2)+1 : ceil(dim/2), kernel_size)
+	if length(kernel_size) == 1
+    	return Float64[ϕ(x-center[1],σ) for x=1:kernel_size[1]]
+	elseif length(kernel_size) == 2
+		return Float64[ϕ(Float64[x,y]-center,σ) for x=1:kernel_size[1], y=1:kernel_size[2]]
+	end
 end
 
-function gaussian_filter_1D(data::Vector{Float64}, σ::Float64=1.0)
-    kernel = generate_gaussian_kernel(σ, length(data))
+function generate_gaussian_kernel(σ::Float64, kernel_size::Tuple)
+	generate_gaussian_kernel(σ, Int64[t for t in kernel_size])
+end
+
+function generate_gaussian_kernel(σ::Float64, kernel_size::Int64)
+	return generate_gaussian_kernel(σ, [kernel_size])
+end
+
+function gaussian_filter(data::Vector{Float64}, σ::Float64=1.0)
+    kernel = generate_gaussian_kernel(σ, Base.size(data))
+    fkern = fft(ifftshift(kernel))
+    fdata = fft((data))
+    return real((ifft(fkern.*fdata)))
+end
+
+function gaussian_filter(data::Matrix{Float64}, σ::Float64=1.0)
+    kernel = generate_gaussian_kernel(σ, Base.size(data))
     fkern = fft(ifftshift(kernel))
     fdata = fft((data))
     return real((ifft(fkern.*fdata)))

@@ -14,7 +14,9 @@ export
     calculate_triple_products_fast,
     FullC3,
     c3_slice,
-    integrate_c3_shell
+    integrate_c3_shell,
+    renormalize_correlation,
+    symmetrize_correlation
 
 typealias C1 Vector{Float64}
 typealias C1Shared SharedArray{Float64, 1}
@@ -592,4 +594,63 @@ function integrate_c3_shell(intensity::SphericalHarmonicsVolume, k1::Int64, k2::
     end
     #Removing the cout normalization doesn't change anything
     return sdata(c3)./sdata(c3counts)
+end
+
+#----------------------------
+
+function renormalize_correlation(c2::C2)
+    N,K2,_ = Base.size(c2)
+    c2_sym = deepcopy(c2)
+    for k1=1:K2
+        for k2=1:K2
+            c2_sym[:,k2,k1] = sumabs(c2[:,k2,k1]) > eps() ? c2[:,k2,k1]/sumabs(c2[:,k2,k1]) : ones(N)
+        end
+    end
+    return c2_sym
+end
+function renormalize_correlation(c3::C3)
+    _,_,K3,_,_ = Base.size(c3)
+   c3_sym = deepcopy(c3)
+    for k1=1:K3
+        for k2=1:K3
+            for k3=1:K3
+                c3_sym[:,:,k3,k2,k1] = c3[:,:,k3,k2,k1]/sumabs(c3[:,:,k3,k2,k1])# + 1.0
+            end
+        end
+    end
+    return c3_sym
+end
+
+function symmetrize_correlation(c2::C2)
+    _,K2,_ = Base.size(c2)
+    c2_sym = deepcopy(c2)
+    for k1=1:K2
+        for k2=1:K2
+            c2_sym[:,k2,k1] = 0.5*(c2[:,k2,k1] + reverse(c2[:,k2,k1]))
+        end
+    end
+    return c2_sym
+end
+
+function symmetrize_correlation(c3::C3)
+    _,_,K3,_,_ = Base.size(c3)
+    c3_sym = deepcopy(c3)
+    for k1=1:K3
+        for k2=1:K3
+            for k3=1:K3
+                c3_sym[:,:,k3,k2,k1] = 0.5*(c3[:,:,k3,k2,k1] + rot180(c3[:,:,k3,k2,k1]))
+            end
+        end
+    end
+    return c3_sym
+end
+
+function add_Gaussian_filter(c2::C2, sigma::Float64=1.0)
+    filtered_c2 = deepcopy(c2)
+    for k1=1:K2
+        for k2=1:K2
+            filtered_c2[:,k2,k1] = gaussian_filter(c2[:,k2,k1], sigma)
+        end
+    end
+    return filtered_c2
 end

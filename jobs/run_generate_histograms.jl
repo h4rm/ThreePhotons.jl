@@ -70,7 +70,7 @@ end
 
 using HDF5
 """Distributes the calculation of correlations among many jobs"""
-function run_calculate_correlation_from_images(particle_name::String, images_path::String, images_per_job::Int64, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8)
+function run_calculate_correlation_from_images(particle_name::String, images_path::String, images_per_job::Int64, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8, symmetrize::Bool=false)
 
     file = h5open(images_path, "r")
     photonConverter = read(file["photonConverter"])
@@ -90,7 +90,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         file = h5open("$(images_path)", "r")
         photonConverter = read(file["photonConverter"])
         resized_image = Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K2+1, 2*K2+1)).data for i=$((n-1)*images_per_job+1):$(n*images_per_job)
-        calculate_correlations_in_image(resized_image_list, K2, K3, N)
+        calculate_correlations_in_image(resized_image_list, K2, K3, N, "histo.dat", $(symmetrize))
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
@@ -161,7 +161,7 @@ exp_filelist = String["amo86615_186_PR772_single.h5",
 ]
 #
 # for file in exp_filelist
-#     run_calculate_correlation_from_images("coliphage/$file", environment_path("exp_data/Coliphage_PR772/$file"), 24, 38, 26, 32)
+#     run_calculate_correlation_from_images("coliphage_symmetric/$file", environment_path("exp_data/Coliphage_PR772/$file", symmetrize=true), 24, 38, 26, 32)
 # end
 
 #Calculate beamstop of Coliphage_PR772

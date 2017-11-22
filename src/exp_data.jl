@@ -1,5 +1,5 @@
 export image_to_photons
-export precompute_distances_and_angles, calculate_correlations_in_image
+export precompute_distances_and_angles, calculate_correlations_in_image, symmetrize_image
 
 """Transforms a sparse block-image into a list of photons that can be used to calculate correlations"""
 function image_to_photons(img::Matrix{UInt32}, qmax::Float64=1.0)
@@ -135,8 +135,24 @@ function calculate_correlations_in_image_old(image_list::Array{Array{Float64,2},
     end
 end
 
+"""Symmetrizes any image"""
+function symmetrize_image(img::Matrix{Float64})
+    img_sym = deepcopy(img)
+    center = [ceil(Base.size(img)[1]/2.0), ceil(Base.size(img)[2]/2.0)]
+    for x=1:Base.size(img)[1]
+        for y=1:x
+            pos = [x,y]
+            mpos = round(Int64,-1.0*([x,y] - center)+center)
+            m = 0.5*(img_sym[x,y] + img_sym[mpos[1],mpos[2]])
+            img_sym[x,y] = m
+            img_sym[mpos[1],mpos[2]] = m
+        end
+    end
+    return img_sym
+end
+
 """Calculates the two- and three-photon correlation from dense pixelized images"""
-function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64=32, filename::String="histo.dat")
+function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64=32, filename::String="histo.dat", symmetrize::Bool=false)
 
     da = pi/N
     (image_width,sy) = Base.size(image_list[1])
@@ -154,6 +170,9 @@ function calculate_correlations_in_image(image_list::Array{Array{Float64,2},1}, 
         #Processing next batch of nworkers() images
         c1_part,c2_part,c3_part = @sync @parallel ( (a,b) -> (a[1]+b[1], a[2]+b[2], a[3]+b[3])) for i=((j-1)*nworkers()+1):clamp(j*nworkers()+1, 1, length(image_list))
             image = image_list[i]
+            if symmetrize
+                image = symmetrize_image(image)
+            end
             println("Processing image #$(i)")
             c1_local = zeros(Float64, K2)
             c2_local = zeros(Float64, N, K2, K2)
