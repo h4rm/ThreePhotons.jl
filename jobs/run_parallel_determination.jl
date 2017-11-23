@@ -36,15 +36,16 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 end
 
 """Fits all intensites with respect to the first for consecutive averaging"""
-function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitted")
+function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitted", target::String="coliphage_determination_newhisto")
     for n in 1000:1019
         julia_script = """
         using ThreePhotons
+        L=12
+        K3=26
+        intensity_reference = deserializeFromFile("$(environment_path("exp_data/$target"))/1000/state.dat")["intensity"]
+        intensity = deserializeFromFile("$(environment_path("exp_data/$target"))/$n/state.dat")["intensity"]
 
-        intensity_reference = deserializeFromFile("$(environment_path("exp_data/coliphage_determination_newhisto"))/1000/state.dat")["intensity"]
-        intensity = deserializeFromFile("$(environment_path("exp_data/coliphage_determination_newhisto"))/$n/state.dat")["intensity"]
-
-        bestfit, bestsc, _, _, _ =  fitStructures_random(deleteTerms(intensity, 26, 16), deleteTerms(intensity_reference, 26, 16), 7:26, 16, 0.995, nworkers()*8)
+        bestfit, bestsc, _, _, _ =  fitStructures_random(deleteTerms(intensity, K3, L), deleteTerms(intensity_reference, K3, L), 6:K3, L, 0.995, nworkers()*8)
         serializeToFile("intensity.dat", bestfit)
         saveCube(bestfit, "fitted_intensity.mrc")
         """
