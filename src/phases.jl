@@ -17,7 +17,7 @@ end
 function B(density::SurfaceVolume, amplitudes::SurfaceVolume)
 	# Fourier Transformation
 	fourier = forward(density)
-	
+
 	# Extract the phases from the Fourier transformation
 	for k = 1:fourier.KMAX
 		fourier.surf[k] = amplitudes.surf[k] .* exp(1im*angle(fourier.surf[k]))
@@ -28,9 +28,9 @@ function B(density::SurfaceVolume, amplitudes::SurfaceVolume)
 end
 
 "Spherical Harmonics RAAR implementation"
-function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::Float64 = 0.75, beta_max::Float64 = 0.75, tau::Float64 = 100.0, plotting::Bool=false)
+function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::Float64 = 0.75, beta_max::Float64 = 0.75, tau::Float64 = 100.0, plotting::Bool=false; cutoff_factor::Float64=0.5)
 
-	Koff = ceil(Int64, intensity.KMAX / 2)
+	Koff = ceil(Int64, cutoff_factor*intensity.KMAX)
 
 	amplitudes = getSurfaceVolume(intensity)
 	amplitudes.surf = map(sqrt,  map((x)-> max(x, 0.0),  real(amplitudes.surf)) )

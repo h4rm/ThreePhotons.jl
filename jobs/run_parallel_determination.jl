@@ -107,3 +107,6 @@ end
 
 #Coliphage with symmetric and L=12
 # run_determination("exp_data/coliphage_determination_newhisto_symmetric", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric/histo.dat", lambda=0.0, initial_stepsize=pi/3.0, K3_range=6:26, L=12, K2_range=6:38, qmax=pi/116.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+
+#Coliphage with symmetric and L=12, K3=32
+# run_determination("exp_data/coliphage_determination_newhisto_symmetric_K32", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric/histo.dat", lambda=0.0, initial_stepsize=pi/3.0, K3_range=6:32, L=12, K2_range=6:38, qmax=pi/116.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)

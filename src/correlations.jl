@@ -16,7 +16,8 @@ export
     c3_slice,
     integrate_c3_shell,
     renormalize_correlation,
-    symmetrize_correlation
+    symmetrize_correlation,
+    add_Gaussian_filter
 
 typealias C1 Vector{Float64}
 typealias C1Shared SharedArray{Float64, 1}
@@ -647,6 +648,7 @@ end
 
 function add_Gaussian_filter(c2::C2, sigma::Float64=1.0)
     filtered_c2 = deepcopy(c2)
+    _,K2,_ = Base.size(c2)
     for k1=1:K2
         for k2=1:K2
             filtered_c2[:,k2,k1] = gaussian_filter(c2[:,k2,k1], sigma)
