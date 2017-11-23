@@ -155,9 +155,9 @@ exp_filelist = String["amo86615_186_PR772_single.h5",
 "amo86615_190_PR772_single.h5",
 "amo86615_191_PR772_single.h5",
 "amo86615_192_PR772_single.h5",
-"amo86615_193_PR772_single.h5",
-"amo86615_194_PR772_single.h5",
-"amo86615_196_PR772_single.h5",
+# "amo86615_193_PR772_single.h5",
+# "amo86615_194_PR772_single.h5",
+# "amo86615_196_PR772_single.h5",
 # "amo86615_197_PR772_single.h5"
 ]
 #
