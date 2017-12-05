@@ -155,14 +155,14 @@ exp_filelist = String["amo86615_186_PR772_single.h5",
 "amo86615_190_PR772_single.h5",
 "amo86615_191_PR772_single.h5",
 "amo86615_192_PR772_single.h5",
-# "amo86615_193_PR772_single.h5",
-# "amo86615_194_PR772_single.h5",
-# "amo86615_196_PR772_single.h5",
-# "amo86615_197_PR772_single.h5"
+"amo86615_193_PR772_single.h5",
+"amo86615_194_PR772_single.h5",
+"amo86615_196_PR772_single.h5",
+"amo86615_197_PR772_single.h5"
 ]
-#
+
 # for file in exp_filelist
-#     run_calculate_correlation_from_images("coliphage_K2_28_K3_28_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 24, 28, 28, 32, symmetrize=false)
+#     run_calculate_correlation_from_images("coliphage_K2_38_K3_30_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 24, 38, 30, 32, symmetrize=true)
 # end
 
 #Calculate beamstop of Coliphage_PR772

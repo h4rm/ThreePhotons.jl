@@ -137,18 +137,19 @@ end
 
 """Symmetrizes any image"""
 function symmetrize_image(img::Matrix{Float64})
-    img_sym = deepcopy(img)
-    center = [ceil(Base.size(img)[1]/2.0), ceil(Base.size(img)[2]/2.0)]
-    for x=1:Base.size(img)[1]
-        for y=1:x
-            pos = [x,y]
-            mpos = round(Int64,-1.0*([x,y] - center)+center)
-            m = 0.5*(img_sym[x,y] + img_sym[mpos[1],mpos[2]])
-            img_sym[x,y] = m
-            img_sym[mpos[1],mpos[2]] = m
-        end
-    end
-    return img_sym
+    # img_sym = deepcopy(img)
+    # center = [ceil(Base.size(img)[1]/2.0), ceil(Base.size(img)[2]/2.0)]
+    # for x=1:Base.size(img)[1]
+    #     for y=1:x
+    #         pos = [x,y]
+    #         mpos = round(Int64,-1.0*([x,y] - center)+center)
+    #         m = 0.5*(img_sym[x,y] + img_sym[mpos[1],mpos[2]])
+    #         img_sym[x,y] = m
+    #         img_sym[mpos[1],mpos[2]] = m
+    #     end
+    # end
+    # return img_sym
+    return 0.5*(img+rot180(img))
 end
 
 """Calculates the two- and three-photon correlation from dense pixelized images"""
