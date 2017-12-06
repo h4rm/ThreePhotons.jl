@@ -239,10 +239,10 @@ function create_exp_filelist(name::String="coliphage")
     map((p)->"$root/$p/histo.dat", list)
 end
 
-function process_exp_data(name::String="coliphage")
+function process_exp_data(name::String="coliphage", beamstop::String="coliphage_beamstop_K2_38_K3_30_N_32")
     combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
     p,c2,c3,c1 = deserializeFromFile(environment_path("exp_data/$(name)/histo.dat"))
-    _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/coliphage_beamstop/histo.dat"))
+    _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/$(beamstop)/histo.dat"))
     c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop)
     serializeToFile(environment_path("exp_data/$(name)/histo.dat"), (p, c2_filtered, c3_filtered, c1))
 end
