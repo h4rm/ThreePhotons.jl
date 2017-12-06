@@ -17,7 +17,8 @@ export
     integrate_c3_shell,
     renormalize_correlation,
     symmetrize_correlation,
-    add_Gaussian_filter
+    add_Gaussian_filter,
+    postprocess_correlations
 
 typealias C1 Vector{Float64}
 typealias C1Shared SharedArray{Float64, 1}
@@ -655,4 +656,33 @@ function add_Gaussian_filter(c2::C2, sigma::Float64=1.0)
         end
     end
     return filtered_c2
+end
+
+function add_Gaussian_filter(c3::C3, sigma::Float64=1.0)
+    c3_filtered = deepcopy(c3)
+    _,_,K3,_,_ = Base.size(c3)
+    for k1=1:K3
+        for k2=1:k1
+            for k3=1:k2
+                c3_filtered[:,:,k3,k2,k1] = gaussian_filter(c3_filtered[:,:,k3,k2,k1], 1.0)
+            end
+        end
+    end
+    return c3_filtered
+end
+
+"""Corrects the two-photon and three-photon correlation with the beamstop and adds a Gauss filter to compensate for pixel noise"""
+function postprocess_correlations(c2::C2, c3::C3, c2_beamstop::C2, c3_beamstop::C3)
+    #Renormalize c2
+    c2_corrected = c2 ./ renormalize_correlation(c2_beamstop)
+
+    #Renormalize c3
+    c3_corrected = c3 ./ renormalize_correlation(c3_beamstop)
+
+    #Filter c2
+    c2_corrected_filtered = add_Gaussian_filter(symmetrize_correlation(c2_corrected), 1.0)
+
+    #Filter c3
+    c3_corrected_filtered = add_Gaussian_filter(symmetrize_correlation(c3_corrected), 1.0)
+    return c2_corrected_filtered, c3_corrected_filtered
 end

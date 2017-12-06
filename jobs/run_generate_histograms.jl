@@ -162,7 +162,7 @@ exp_filelist = String["amo86615_186_PR772_single.h5",
 ]
 
 # for file in exp_filelist
-#     run_calculate_correlation_from_images("coliphage_K2_38_K3_30_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 24, 38, 30, 32, symmetrize=true)
+#     run_calculate_correlation_from_images("coliphage_K2_38_K3_30_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 100, 38, 30, 32, symmetrize=true)
 # end
 
 #Calculate beamstop of Coliphage_PR772
@@ -241,6 +241,10 @@ end
 
 function process_exp_data(name::String="coliphage")
     combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
+    p,c2,c3,c1 = deserializeFromFile(environment_path("exp_data/$(name)/histo.dat"))
+    _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/coliphage_beamstop/histo.dat"))
+    c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop)
+    serializeToFile(environment_path("exp_data/$(name)/histo.dat"), (p, c2_filtered, c3_filtered, c1))
 end
 
 function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64}=Float64[0.5, 0.75, 1.125], gammavals::Vector{Float64}=[0.1, 0.2, 0.3, 0.4, 0.5], ppi::Int64=10, K::Int64=38, N::Int64=32)
