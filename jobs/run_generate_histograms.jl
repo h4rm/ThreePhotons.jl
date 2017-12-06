@@ -121,7 +121,7 @@ function run_calculate_beamstop_correlation(jobname::String, images_path::String
 
     calculate_correlations_in_image([1.0 - beamstop_map_resized], K2, K3, N)
     """
-    launch_job("exp_data/$(jobname)", Ncores, false, julia_script, 1)
+    launch_job("exp_data/$(jobname)_K2_$(K2)_K3_$(K3)_N_$(N)", Ncores, false, julia_script, 1)
 end
 
 # """Distributes the calculation of correlations among many jobs"""
