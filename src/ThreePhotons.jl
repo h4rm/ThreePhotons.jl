@@ -147,8 +147,8 @@ export
 	plotPointCloud,
 	plot_scattering_image,
 	compare_c2_grid,
-	compare_histogram_with_theory
-
+	compare_histogram_with_theory,
+	initialize_CUDA
 
 import Base.real, Base.abs, Base.sumabs, Base.+, Base.-, Base.*, Base./, Base.length
 
