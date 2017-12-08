@@ -36,14 +36,14 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 end
 
 """Fits all intensites with respect to the first for consecutive averaging"""
-function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitted", target::String="coliphage_determination_newhisto")
+function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitted", target::String="exp_data/coliphage_determination_newhisto")
     for n in 1000:1019
         julia_script = """
         using ThreePhotons
         L=12
         K3=26
-        intensity_reference = deserializeFromFile("$(environment_path("exp_data/$target"))/1000/state.dat")["intensity"]
-        intensity = deserializeFromFile("$(environment_path("exp_data/$target"))/$n/state.dat")["intensity"]
+        intensity_reference = deserializeFromFile("$(environment_path("$target"))/1000/state.dat")["intensity"]
+        intensity = deserializeFromFile("$(environment_path("$target"))/$n/state.dat")["intensity"]
 
         bestfit, bestsc, _, _, _ =  fitStructures_random(deleteTerms(intensity, K3, L), deleteTerms(intensity_reference, K3, L), 6:K3, L, 0.995, nworkers()*8)
         serializeToFile("intensity.dat", bestfit)
@@ -112,4 +112,4 @@ end
 # run_determination("exp_data/coliphage_determination_newhisto_symmetric_K32", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric/histo.dat", lambda=0.0, initial_stepsize=pi/3.0, K3_range=6:32, L=12, K2_range=6:38, qmax=pi/116.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
 
 #Coliphage with symmetric and L=12 and low range
-# run_determination("exp_data/coliphage_determination_paper_lowrange", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=8:26, L=12, K2_range=8:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+# run_determination("exp_data/coliphage_determination_paper_lowrange", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=8:26, L=12, K2_range=8:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
