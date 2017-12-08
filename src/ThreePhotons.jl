@@ -163,12 +163,14 @@ include("data_processing.jl")
 include("determination.jl")
 include("exp_data.jl")
 
-# Let's try and calculate on the GPU
-try
-    include("cuda.jl")
-catch x
-    println(x)
-    println("!!! Loading of CUDA module failed. Fallback to CPU.")
+function initialize_CUDA()
+	# Let's try and calculate on the GPU
+	try
+	    include("cuda.jl")
+	catch x
+	    println(x)
+	    println("!!! Loading of CUDA module failed. Fallback to CPU.")
+	end
 end
 
 """
