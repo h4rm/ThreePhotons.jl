@@ -1,8 +1,8 @@
 function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K3_range::UnitRange{Int64}=1:8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, K2_range::UnitRange{Int64}=1:35, qmax::Float64=1.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="", lambda::Float64=0.0, include_negativity::Bool=false)
 
     julia_script = """
-    global THREE_PHOTON_CUDA = true
     using ThreePhotons
+    include("$(ENV["THREEPHOTONS_PATH"])/src/cuda.jl")
 
     #Let's continue
     if isfile("state.dat") && isfile("params.dat")
