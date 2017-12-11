@@ -3,7 +3,7 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
     julia_script = """
     using ThreePhotons
     initialize_CUDA()
-    
+
     #Let's continue
     if isfile("state.dat") && isfile("params.dat")
 
@@ -113,4 +113,4 @@ end
 # run_determination("exp_data/coliphage_determination_newhisto_symmetric_K32", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_symmetric/histo.dat", lambda=0.0, initial_stepsize=pi/3.0, K3_range=6:32, L=12, K2_range=6:38, qmax=pi/116.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
 
 #Coliphage with symmetric and L=12 and low range
-# run_determination("exp_data/coliphage_determination_paper_lowrange", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=8:26, L=12, K2_range=8:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+# run_determination("exp_data/coliphage_determination_paper_lowrange_2", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=7:26, L=12, K2_range=3:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.25, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
