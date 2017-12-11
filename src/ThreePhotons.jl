@@ -162,7 +162,7 @@ include("phases.jl")
 include("data_processing.jl")
 include("determination.jl")
 include("exp_data.jl")
-# include("cuda.jl")
+if isdefined(:THREE_PHOTON_CUDA) include("cuda.jl") end
 
 """
 A Julia package for the structure determination from single molecule X-ray scattering experiments at very low photon counts.

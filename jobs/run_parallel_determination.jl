@@ -2,7 +2,6 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 
     julia_script = """
     using ThreePhotons
-    include("$(ENV["THREEPHOTONS_PATH"])/src/cuda.jl")
 
     #Let's continue
     if isfile("state.dat") && isfile("params.dat")
