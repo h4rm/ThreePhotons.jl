@@ -162,7 +162,11 @@ include("phases.jl")
 include("data_processing.jl")
 include("determination.jl")
 include("exp_data.jl")
-include("cuda.jl")
+try
+	include("cuda.jl")
+catch
+	println("!!! Init of CUDA failed. Fallback to CPU.")
+end
 # if isdefined(:THREE_PHOTON_CUDA)  end
 
 """
