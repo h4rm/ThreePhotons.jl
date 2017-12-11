@@ -86,10 +86,10 @@ function getAllEvenRotations(volume::CubeVolume)
 end
 
 """Performs a spherical RAAR on the intensity and returns the best fit with the given densityCube (including mirror/rotated images)"""
-function sRAAR_bestfit(referenceDensityCube::CubeVolume, intensity::SphericalHarmonicsVolume, iterations::Int64=1001, beta0::Float64 = 0.75, beta_max::Float64 = 0.90, tau::Float64 = 350.0, outputfile="density.mrc", fourierCube::CubeVolume=CubeVolume())
+function sRAAR_bestfit(referenceDensityCube::CubeVolume, intensity::SphericalHarmonicsVolume, iterations::Int64=1001, beta0::Float64 = 0.75, beta_max::Float64 = 0.90, tau::Float64 = 350.0; outputfile="density.mrc", fourierCube::CubeVolume=CubeVolume(1, 1.0), cutoff_factor::Float64=0.5)
 
     #Do one phasing
-    phased_density = sRAAR(intensity, iterations, beta0, beta_max, tau)
+    phased_density = sRAAR(intensity, iterations, beta0, beta_max, tau, cutoff_factor=cutoff_factor)
 
     #Get result as cube and all mirrored versions
     phased_densityCube = center_cube(getCube(phased_density))
@@ -101,10 +101,14 @@ function sRAAR_bestfit(referenceDensityCube::CubeVolume, intensity::SphericalHar
 
     #Choose best result and return
     best_cube,bestc = cube_cor_list[1]
-    best_resolution = calculate_maximum_resolution(FSC(best_cube, fourierCube), dr(fourierCube))
+
     if outputfile != "" saveCube(best_cube, outputfile) end
     println("Correlation in realspace of fit: $bestc")#($([cube_cor_list[i][2] for i=1:length(cube_cor_list)]))
-    println("Resolution of fit: ", best_resolution)
+
+    if fourierCube.cubesize > 1
+        best_resolution = calculate_maximum_resolution(FSC(best_cube, fourierCube), dr(fourierCube))
+        println("Resolution of fit: ", best_resolution)
+    end
 
     return best_cube
 end
@@ -115,7 +119,7 @@ function calculateSC(volume::SphericalHarmonicsVolume, density::CubeVolume, four
 
     repetitions = nworkers() > 1 ? (nworkers() < num_phases ? num_phases : nworkers()) : num_phases
     #phasing tries on all available cores
-    densities = pmap((vol)->sRAAR_bestfit(density, vol, iterations, beta0, beta1, tau, "", fourier), collect(repeated(volume,repetitions)))
+    densities = pmap((vol)->sRAAR_bestfit(density, vol, iterations, beta0, beta1, tau, outputfile="", fourierCube=fourier), collect(repeated(volume,repetitions)))
 
     #Lets calculate the average density
     average_density = reduce(+, densities)

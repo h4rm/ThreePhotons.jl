@@ -166,7 +166,7 @@ include("exp_data.jl")
 function initialize_CUDA()
 	# Let's try and calculate on the GPU
 	try
-	    include("$(ENV["THREEPHOTONS_PATH"])/src/cuda.jl")
+	    evalfile("$(ENV["THREEPHOTONS_PATH"])/src/cuda.jl")
 	catch x
 	    println(x)
 	    println("!!! Loading of CUDA module failed. Fallback to CPU.")
