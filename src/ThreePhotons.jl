@@ -162,16 +162,7 @@ include("phases.jl")
 include("data_processing.jl")
 include("determination.jl")
 include("exp_data.jl")
-
-function initialize_CUDA()
-	# Let's try and calculate on the GPU
-	try
-	    evalfile("$(ENV["THREEPHOTONS_PATH"])/src/cuda.jl")
-	catch x
-	    println(x)
-	    println("!!! Loading of CUDA module failed. Fallback to CPU.")
-	end
-end
+include("cuda.jl")
 
 """
 A Julia package for the structure determination from single molecule X-ray scattering experiments at very low photon counts.
