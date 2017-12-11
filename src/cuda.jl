@@ -1,4 +1,4 @@
-if THREE_PHOTON_CUDA == true
+if isdefined(:THREE_PHOTON_CUDA) && THREE_PHOTON_CUDA == true
     using CUDArt
     using CUBLAS
     CUDA_enabled = false
