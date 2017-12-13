@@ -1,3 +1,25 @@
+#data processing
+export fitStructures_full, fitStructures_random, getAllEvenRotations,
+    sRAAR_bestfit,
+    calculateSC,
+    postprocess_run,
+    get_qrange,
+    calculate_cutoff,
+    calculate_maximum_resolution,
+    load_runs,
+    analyse_ensemble,
+    load_fitted_intensity,
+    load_density,
+    average_intensities,
+    calculate_optimal,
+    load_parameter_list,
+    get_parameter_entry,
+    get_optimal,
+    load_sc_vs_triplets,
+    substract_gamma,
+    radial_difference_with_intensity,
+    denoise_structure
+
 "Fits structure `volume` to structure `reference` by exploring all possible SO(3) rotations"
 function fitStructures_full(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, num::Int64, K_range::UnitRange{Int64}, L::Int64, ta::Float64 = 0.0, tb::Float64 = float(pi)/2, pa::Float64 =0.0, pb::Float64 = float(pi), ga::Float64 = 0.0, gb::Float64 = float(pi))
     println("Start with fitting")

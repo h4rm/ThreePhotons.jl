@@ -116,30 +116,6 @@ export
 	#phasing
 	sRAAR,
 
-	#data processing
-	fitStructures_full,
-	fitStructures_random,
-	getAllEvenRotations,
-	sRAAR_bestfit,
-	calculateSC,
-	postprocess_run,
-	get_qrange,
-	calculate_cutoff,
-	calculate_maximum_resolution,
-	load_runs,
-	analyse_ensemble,
-	load_fitted_intensity,
-	load_density,
-	average_intensities,
-	calculate_optimal,
-	load_parameter_list,
-	get_parameter_entry,
-	get_optimal,
-	load_sc_vs_triplets,
-	substract_gamma,
-	radial_difference_with_intensity,
-	denoise_structure,
-
 	#plotting
 	plot_random_2photon_slices,
 	plot_random_3photon_slices,
