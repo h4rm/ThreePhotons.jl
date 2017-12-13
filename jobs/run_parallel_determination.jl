@@ -60,7 +60,7 @@ function run_average_core_completion_phasing(name::String)
 
     _,_,_,_,c1 = loadHistograms(1,1,"$(environment_path("exp_data/coliphage_K2_38_K3_30_N32/histo.dat"))")
 
-    extended_corrected_intensity = complete_core("$(environment_path("expdata/$name"))", c1, 1:4,5:26, 10.2)
+    extended_corrected_intensity = complete_core("$(environment_path("exp_data/$name"))", c1, 1:4,5:26, 10.2)
     averaged_density = phase_completed_intensity(extended_corrected_intensity, 8, 0.90)
     """
     launch_job("exp_data/$(name)_phased", 8, true, julia_script, 1)
