@@ -53,6 +53,17 @@ function run_postprocess_coliphage_results( dir::String="exp_data/coliphage_dete
     end
 end
 
+#coliphage_determination_paper_lowrange_2_fitted
+function run_average_core_completion_phasing(name::String)
+    julia_script = """
+    _,_,_,_,c1 = loadHistograms(1,1,"$(environment_path("exp_data/coliphage_K2_38_K3_30_N32/histo.dat"))")
+
+    extended_corrected_intensity = complete_core("$(name)", c1, 1:4,5:26, 10.2)
+    averaged_density = phase_completed_intensity(extended_corrected_intensity, "$(name)", 8, 0.90)
+    """
+    launch_job("exp_data/$(name)_phased", 8, true, julia_script, 1)
+end
+
 function run_set(image_list::Array{Int64}, K2_range::UnitRange{Int64}=1:38, N::Int64=32, L::Int64=18, K3_range::UnitRange{Int64}=1:26, temperature_decay::Float64=0.99998, ppi::Int64=10, include_infinite::Bool=true)
     histograms_finite = Dict( "P$(img)" => histogram_name("parallel/data_generation/SH_", ppi, N, maximum(K2_range), maximum(K3_range), float(maximum(K2_range)), img, "") for img in image_list)
     histograms_infinite = include_infinite ? Dict("L20_inf" => "expdata/correlations_N$(N)_K$(maximum(K2_range))_L20_inf.dat") : Dict()

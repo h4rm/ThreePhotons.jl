@@ -1,3 +1,5 @@
+using CurveFit
+
 #data processing
 export fitStructures_full, fitStructures_random, getAllEvenRotations,
     sRAAR_bestfit,
@@ -430,4 +432,88 @@ function denoise_structure(volume::SphericalHarmonicsVolume, intensity::Spherica
     result = optimize(mydiff, 0.0, 1.0)
     gammamin = Optim.minimizer(result)
     return substract_gamma(volume, intensity, gammamin, sigma, K), gammamin
+end
+
+##################################################################
+## Exp. data
+#################################################################
+
+export complete_core
+
+"""Averages intensities and completes core via fitting"""
+function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, range::UnitRange{Int64}, shift::Float64)
+    intensities = [deserializeFromFile("/Users/ben/Documents/biophysics/projects/reconstruction/data/output_owl/exp_data/$name/$i/intensity.dat") for i = 1000:1019]
+    average_intensity_surf = reduce(+, map(getSurfaceVolume, intensities))
+    average_intensity_surf.surf = map((x)-> max(abs(x), 0.0), average_intensity_surf.surf)
+    average_intensity = getSphericalHarmonicsVolume(average_intensity_surf)
+    # average_intensity = sum( loadCube("/Users/ben/Documents/biophysics/projects/reconstruction/data/output_owl/exp_data/coliphage_fitted/$i/fitted_intensity.mrc") for i = 1000:1019)
+    saveCube(average_intensity, "$(name)_averaged.mrc")
+
+    reference_intensity = deepcopy(average_intensity)
+    reference_surf = getSurfaceVolume(reference_intensity)
+    c1_coliphage = [sumabs(reference_surf.surf[k]) for k in 1:maximum(range)]
+
+    curve = deepcopy(c1_coliphage)
+    range_fit = 3:10
+    curve[1:2] = zeros(2)
+#     range_c1fit=maximum(center_range)+1:maximum(center_range)+6
+    range_c1fit = 3:10
+    a = poly_fit(collect(range_c1fit), log(curve[range_c1fit]), 2)
+    func(x,a) = a[1] + x*a[2]+x^2*a[3]
+    center_fit = [func(k,a) for k=1:10]
+
+    plot(collect(1:10), log(curve)[1:10], lw=5, label="orig")
+    plot(collect(1:10), center_fit, label="fit 1")
+    legend()
+    savefig("fit1.pdf")
+    shift = 0.0
+    center_fit = [func(k,a) - shift for k in 1:10]
+
+
+    corrected_intensity = deepcopy(average_intensity)
+    corrected_surf = getSurfaceVolume(corrected_intensity)
+    for k in center_range
+        corrected_surf.surf[k] = exp(func(k,a) - shift)*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
+    end
+
+    corrected_intensity = getSphericalHarmonicsVolume(corrected_surf)
+    c1_coliphage_corrected = [sumabs(corrected_surf.surf[k]) for k in 1:maximum(range)]
+    saveCube(getSphericalHarmonicsVolume(corrected_surf), "$(name)_averaged_corrected.mrc")
+
+    figure()
+    title("Radial sum of coliphage")
+    plot(collect(1:maximum(range)),log(c1_coliphage), label="Surf coliphage", lw=3)
+    plot(collect(1:10), center_fit[1:10], label="center fit")
+    plot(collect(1:maximum(range)), log(c1_coliphage_corrected), label="surf coliphage corr.")
+    ylabel("Sum of Radial Part")
+    xlim(1,maximum(range))
+    # ylim(1.0e-2, 5.0e3)
+    xlabel("Shell")
+    legend()
+    savefig("fit1.pdf")
+    # yscale("log")
+
+    # Extend and add zeros at the end
+    extended_corrected_intensity = deepcopy(corrected_intensity)
+    for i = 1:10
+        push!(extended_corrected_intensity.coeff, zeros(Complex{Float64}, Base.size(extended_corrected_intensity.coeff[1])))
+    end
+    extended_corrected_intensity.KMAX += 10
+    return extended_corrected_intensity
+end
+
+function phase_completed_intensity(extended_corrected_intensity::SphericalHarmonicsVolume, name::String, num_tries::Int64=8, beta_end::Float64=0.90)
+
+    reference_density_SH = sRAAR(extended_corrected_intensity, 1001, 0.75, beta_end, 350.0, cutoff_factor=0.3)
+    reference_density = center_cube(getCube(reference_density_SH))
+
+#     densities = pmap((vol)->sRAAR_bestfit(getCube(extended_corrected_intensity), vol,  1001, 0.75, 0.95, 350.0, cutoff_factor=0.3), collect(repeated(extended_corrected_intensity,num_tries-1)))
+    densities = pmap((vol)->sRAAR_bestfit(reference_density, vol,  1001, 0.75, beta_end, 350.0, cutoff_factor=0.3), collect(repeated(extended_corrected_intensity,num_tries-1)))
+    push!(densities, reference_density)
+    map!((vol)->center_cube(vol), densities)
+    for i = 1:length(densities) saveCube(densities[i], "density_$(name)_$(i).mrc") end
+
+    averaged_density = reduce(+, densities)
+    saveCube(averaged_density, "density_$(name)_averaged.mrc")
+    return averaged_density
 end
