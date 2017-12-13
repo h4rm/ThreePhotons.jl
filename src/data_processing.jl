@@ -438,7 +438,7 @@ end
 ## Exp. data
 #################################################################
 
-export complete_core
+export complete_core, phase_completed_intensity
 
 """Averages intensities and completes core via fitting"""
 function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, range::UnitRange{Int64}, shift::Float64)
