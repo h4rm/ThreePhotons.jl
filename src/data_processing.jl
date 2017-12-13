@@ -86,7 +86,7 @@ function getAllEvenRotations(volume::CubeVolume)
 end
 
 """Performs a spherical RAAR on the intensity and returns the best fit with the given densityCube (including mirror/rotated images)"""
-function sRAAR_bestfit(referenceDensityCube::CubeVolume, intensity::SphericalHarmonicsVolume, iterations::Int64=1001, beta0::Float64 = 0.75, beta_max::Float64 = 0.90, tau::Float64 = 350.0; outputfile="density.mrc", fourierCube::CubeVolume=CubeVolume(1, 1.0), cutoff_factor::Float64=0.5)
+function sRAAR_bestfit(referenceDensityCube::CubeVolume, intensity::SphericalHarmonicsVolume, iterations::Int64=1001, beta0::Float64 = 0.75, beta_max::Float64 = 0.90, tau::Float64 = 350.0; outputfile="", fourierCube::CubeVolume=CubeVolume(1, 1.0), cutoff_factor::Float64=0.5)
 
     #Do one phasing
     phased_density = sRAAR(intensity, iterations, beta0, beta_max, tau, cutoff_factor=cutoff_factor)

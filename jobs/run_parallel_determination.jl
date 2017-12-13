@@ -36,20 +36,20 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 end
 
 """Fits all intensites with respect to the first for consecutive averaging"""
-function run_postprocess_coliphage_results(dir::String="exp_data/coliphage_fitted", target::String="exp_data/coliphage_determination_newhisto", range::UnitRange{Int64}=6:26)
+function run_postprocess_coliphage_results( dir::String="exp_data/coliphage_determination_newhisto", range::UnitRange{Int64}=6:26)
     for n in 1000:1019
         julia_script = """
         using ThreePhotons
         L=12
         K3=maximum($range)
-        intensity_reference = deserializeFromFile("$(environment_path("$target"))/1000/state.dat")["intensity"]
-        intensity = deserializeFromFile("$(environment_path("$target"))/$n/state.dat")["intensity"]
+        intensity_reference = deserializeFromFile("$(environment_path("$dir"))/1000/state.dat")["intensity"]
+        intensity = deserializeFromFile("$(environment_path("$dir"))/$n/state.dat")["intensity"]
 
         bestfit, bestsc, _, _, _ =  fitStructures_random(deleteTerms(intensity, K3, L), deleteTerms(intensity_reference, K3, L), $range, L, 0.995, nworkers()*8)
         serializeToFile("intensity.dat", bestfit)
         saveCube(bestfit, "fitted_intensity.mrc")
         """
-        launch_job("$dir/$n", 8, false, julia_script, 1)
+        launch_job("$(dir)_fitted/$n", 8, false, julia_script, 1)
     end
 end
 
@@ -113,3 +113,6 @@ end
 
 #Coliphage with symmetric and L=12 and low range
 # run_determination("exp_data/coliphage_determination_paper_lowrange_2", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=7:26, L=12, K2_range=3:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.25, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+
+#Coliphage with symmetric and L=12 and high range
+# run_determination("exp_data/coliphage_determination_paper_K2_5_38_K3_5_30", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=5:30, L=12, K2_range=5:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.2, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
