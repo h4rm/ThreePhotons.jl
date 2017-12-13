@@ -462,10 +462,10 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     func(x,a) = a[1] + x*a[2]+x^2*a[3]
     center_fit = [func(k,a) for k=1:10]
 
-    plot(collect(1:10), log(curve)[1:10], lw=5, label="orig")
-    plot(collect(1:10), center_fit, label="fit 1")
-    legend()
-    savefig("fit1.pdf")
+    # plot(collect(1:10), log(curve)[1:10], lw=5, label="orig")
+    # plot(collect(1:10), center_fit, label="fit 1")
+    # legend()
+    # savefig("fit1.pdf")
     shift = 0.0
     center_fit = [func(k,a) - shift for k in 1:10]
 
@@ -480,18 +480,17 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     c1_coliphage_corrected = [sumabs(corrected_surf.surf[k]) for k in 1:maximum(range)]
     saveCube(getSphericalHarmonicsVolume(corrected_surf), "intensity_averaged_corrected.mrc")
 
-    figure()
-    title("Radial sum of coliphage")
-    plot(collect(1:maximum(range)),log(c1_coliphage), label="Surf coliphage", lw=3)
-    plot(collect(1:10), center_fit[1:10], label="center fit")
-    plot(collect(1:maximum(range)), log(c1_coliphage_corrected), label="surf coliphage corr.")
-    ylabel("Sum of Radial Part")
-    xlim(1,maximum(range))
-    # ylim(1.0e-2, 5.0e3)
-    xlabel("Shell")
-    legend()
-    savefig("fit1.pdf")
-    # yscale("log")
+    # figure()
+    # title("Radial sum of coliphage")
+    # plot(collect(1:maximum(range)),log(c1_coliphage), label="Surf coliphage", lw=3)
+    # plot(collect(1:10), center_fit[1:10], label="center fit")
+    # plot(collect(1:maximum(range)), log(c1_coliphage_corrected), label="surf coliphage corr.")
+    # ylabel("Sum of Radial Part")
+    # xlim(1,maximum(range))
+    # # ylim(1.0e-2, 5.0e3)
+    # xlabel("Shell")
+    # legend()
+    # savefig("fit1.pdf")
 
     # Extend and add zeros at the end
     extended_corrected_intensity = deepcopy(corrected_intensity)

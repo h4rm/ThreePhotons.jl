@@ -57,9 +57,7 @@ end
 function run_average_core_completion_phasing(name::String)
     julia_script = """
     using ThreePhotons
-    using PyPlot
-    using Images
-    
+
     _,_,_,_,c1 = loadHistograms(1,1,"$(environment_path("exp_data/coliphage_K2_38_K3_30_N32/histo.dat"))")
 
     extended_corrected_intensity = complete_core("$(environment_path("exp_data/$name"))", c1, 1:4,5:26, 10.2)
