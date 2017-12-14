@@ -463,7 +463,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fit
     corrected_intensity = deepcopy(average_intensity)
     corrected_surf = getSurfaceVolume(corrected_intensity)
     for k in center_range
-        corrected_surf.surf[k] = exp(func(k,a) - shift)*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
+        corrected_surf.surf[k] = exp(func(k,a))*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
     end
 
     corrected_intensity = getSphericalHarmonicsVolume(corrected_surf)
