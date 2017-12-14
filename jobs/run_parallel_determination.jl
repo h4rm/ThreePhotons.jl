@@ -135,3 +135,6 @@ end
 
 #Coliphage with symmetric and L=12 and high range
 # run_determination("exp_data/coliphage_determination_paper_K2_7_35_K3_7_30", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=7:30, L=12, K2_range=7:35, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.2, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+
+#Coliphage with symmetric and L=12 and high range
+# run_determination("exp_data/coliphage_determination_paper_K2_10_35_K3_10_30", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=10:30, L=12, K2_range=10:35, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)

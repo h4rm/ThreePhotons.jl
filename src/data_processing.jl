@@ -445,9 +445,10 @@ export complete_core, phase_completed_intensity
 function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fitting_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=false)
     intensities = [deserializeFromFile("$name/$i/intensity.dat") for i = 1000:1019]
     average_intensity_surf = reduce(+, map(getSurfaceVolume, intensities))
-    average_intensity_surf.surf = map((x)-> max(abs(x), 0.0), average_intensity_surf.surf)
+
+    #Filter negativity
+    average_intensity_surf.surf = map((x)-> max(real(x), 0.0), average_intensity_surf.surf)
     average_intensity = getSphericalHarmonicsVolume(average_intensity_surf)
-    # average_intensity = sum( loadCube("/Users/ben/Documents/biophysics/projects/reconstruction/data/output_owl/exp_data/coliphage_fitted/$i/fitted_intensity.mrc") for i = 1000:1019)
     saveCube(average_intensity, "intensity_averaged.mrc")
 
     reference_intensity = deepcopy(average_intensity)
