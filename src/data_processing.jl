@@ -1,4 +1,5 @@
 using CurveFit
+using PyPlot
 
 #data processing
 export fitStructures_full, fitStructures_random, getAllEvenRotations,
@@ -441,7 +442,7 @@ end
 export complete_core, phase_completed_intensity
 
 """Averages intensities and completes core via fitting"""
-function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, range::UnitRange{Int64}, shift::Float64)
+function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fitting_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=false)
     intensities = [deserializeFromFile("$name/$i/intensity.dat") for i = 1000:1019]
     average_intensity_surf = reduce(+, map(getSurfaceVolume, intensities))
     average_intensity_surf.surf = map((x)-> max(abs(x), 0.0), average_intensity_surf.surf)
@@ -454,21 +455,10 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     c1_coliphage = [sumabs(reference_surf.surf[k]) for k in 1:maximum(range)]
 
     curve = deepcopy(c1_coliphage)
-    range_fit = 3:10
-    curve[1:2] = zeros(2)
-#     range_c1fit=maximum(center_range)+1:maximum(center_range)+6
-    range_c1fit = 3:10
-    a = poly_fit(collect(range_c1fit), log(curve[range_c1fit]), 2)
+    curve[1:minimum(fitting_range)-1] = zeros(length(1:minimum(fitting_range)-1))
+    a = poly_fit(collect(fitting_range), log(curve[fitting_range]), 2)
     func(x,a) = a[1] + x*a[2]+x^2*a[3]
-    center_fit = [func(k,a) for k=1:10]
-
-    # plot(collect(1:10), log(curve)[1:10], lw=5, label="orig")
-    # plot(collect(1:10), center_fit, label="fit 1")
-    # legend()
-    # savefig("fit1.pdf")
-    shift = 0.0
-    center_fit = [func(k,a) - shift for k in 1:10]
-
+    center_fit = [func(k,a) for k in 1:10]
 
     corrected_intensity = deepcopy(average_intensity)
     corrected_surf = getSurfaceVolume(corrected_intensity)
@@ -480,17 +470,22 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     c1_coliphage_corrected = [sumabs(corrected_surf.surf[k]) for k in 1:maximum(range)]
     saveCube(getSphericalHarmonicsVolume(corrected_surf), "intensity_averaged_corrected.mrc")
 
-    # figure()
-    # title("Radial sum of coliphage")
-    # plot(collect(1:maximum(range)),log(c1_coliphage), label="Surf coliphage", lw=3)
-    # plot(collect(1:10), center_fit[1:10], label="center fit")
-    # plot(collect(1:maximum(range)), log(c1_coliphage_corrected), label="surf coliphage corr.")
-    # ylabel("Sum of Radial Part")
-    # xlim(1,maximum(range))
-    # # ylim(1.0e-2, 5.0e3)
-    # xlabel("Shell")
-    # legend()
-    # savefig("fit1.pdf")
+    if plotting == true
+        plot(collect(1:10), log(curve)[1:10], lw=5, label="orig")
+        plot(collect(1:10), center_fit, label="fit 1")
+        legend()
+
+        figure()
+        title("Radial sum of coliphage")
+        plot(collect(1:maximum(range)),log(c1_coliphage), label="Surf coliphage", lw=3)
+        plot(collect(1:10), center_fit[1:10], label="center fit")
+        plot(collect(1:maximum(range)), log(c1_coliphage_corrected), label="surf coliphage corr.")
+        ylabel("Sum of Radial Part")
+        xlim(1,maximum(range))
+        # ylim(1.0e-2, 5.0e3)
+        xlabel("Shell")
+        legend()
+    end
 
     # Extend and add zeros at the end
     extended_corrected_intensity = deepcopy(corrected_intensity)
