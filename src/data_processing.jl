@@ -442,7 +442,7 @@ end
 export complete_core, phase_completed_intensity
 
 """Averages intensities and completes core via fitting"""
-function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fitting_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=true)
+function complete_core(name::String, c1::C1, shift::Float64, center_range::UnitRange{Int64}, fitting_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=true)
     intensities = [deserializeFromFile("$name/$i/intensity.dat") for i = 1000:1019]
     average_intensity_surf = reduce(+, map(getSurfaceVolume, intensities))
 
@@ -455,16 +455,19 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fit
     reference_surf = getSurfaceVolume(reference_intensity)
     c1_coliphage = [sumabs(reference_surf.surf[k]) for k in 1:maximum(range)]
 
-    curve = deepcopy(c1_coliphage)
+    # curve = deepcopy(c1_coliphage)
+    curve = deepcopy(c1)
     curve[1:minimum(fitting_range)-1] = zeros(length(1:minimum(fitting_range)-1))
     a = poly_fit(collect(fitting_range), log(curve[fitting_range]), 2)
     func(x,a) = a[1] + x*a[2]+x^2*a[3]
     center_fit = [func(k,a) for k in 1:10]
+    # shift = -10.0
 
     corrected_intensity = deepcopy(average_intensity)
     corrected_surf = getSurfaceVolume(corrected_intensity)
     for k in center_range
-        corrected_surf.surf[k] = exp(func(k,a))*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
+        corrected_surf.surf[k] = exp(func(k,a)+shift)*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
+        # corrected_surf.surf[k] = shift*c1[k]*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
     end
 
     corrected_intensity = getSphericalHarmonicsVolume(corrected_surf)
@@ -480,7 +483,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fit
         figure()
         title("Radial sum of coliphage")
         plot(collect(1:maximum(range)),log(c1_coliphage), label="Surf coliphage", lw=3)
-        plot(collect(1:10), center_fit[1:10], label="center fit")
+        plot(collect(1:10), center_fit + shift, label="center fit")
         plot(collect(1:maximum(range)), log(c1_coliphage_corrected), label="surf coliphage corr.")
         ylabel("Sum of Radial Part")
         xlim(1,maximum(range))
