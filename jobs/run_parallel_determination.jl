@@ -54,16 +54,18 @@ function run_postprocess_coliphage_results( dir::String="exp_data/coliphage_dete
 end
 
 #coliphage_determination_paper_lowrange_2_fitted
-function run_average_core_completion_phasing(name::String, center_range::UnitRange{Int64}, fit_range::UnitRange{Int64}, range::UnitRange{Int64}, beta_end::Float64)
-    julia_script = """
-    using ThreePhotons
+function run_average_core_completion_phasing(name::String, center_range::UnitRange{Int64}, fit_range::UnitRange{Int64}, range::UnitRange{Int64})
+    for beta_end in [0.8, 0.85, 0.9, 0.95, 0.99]
+        julia_script = """
+        using ThreePhotons
 
-    _,_,_,_,c1 = loadHistograms(1,1,"$(environment_path("exp_data/coliphage_K2_38_K3_30_N32/histo.dat"))")
+        _,_,_,_,c1 = loadHistograms(1,1,"$(environment_path("exp_data/coliphage_K2_38_K3_30_N32/histo.dat"))")
 
-    extended_corrected_intensity = complete_core("$(environment_path("exp_data/$name"))", c1, $(center_range), $(fit_range), $(range))
-    averaged_density = phase_completed_intensity(extended_corrected_intensity, 8, $(beta_end))
-    """
-    launch_job("exp_data/$(name)_phased_center_$(minimum(center_range))_$(maximum(center_range))_fit_$(minimum(fit_range))_$(maximum(fit_range))_b$(beta_end)", 8, false, julia_script, 1)
+        extended_corrected_intensity = complete_core("$(environment_path("exp_data/$name"))", c1, $(center_range), $(fit_range), $(range))
+        averaged_density = phase_completed_intensity(extended_corrected_intensity, 8, $(beta_end))
+        """
+        launch_job("exp_data/$(name)_phased_center_$(minimum(center_range))_$(maximum(center_range))_fit_$(minimum(fit_range))_$(maximum(fit_range))/b$(beta_end)", 8, false, julia_script, 1)
+    end
 end
 
 function run_set(image_list::Array{Int64}, K2_range::UnitRange{Int64}=1:38, N::Int64=32, L::Int64=18, K3_range::UnitRange{Int64}=1:26, temperature_decay::Float64=0.99998, ppi::Int64=10, include_infinite::Bool=true)
