@@ -442,7 +442,7 @@ end
 export complete_core, phase_completed_intensity
 
 """Averages intensities and completes core via fitting"""
-function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fitting_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=false)
+function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fitting_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=true)
     intensities = [deserializeFromFile("$name/$i/intensity.dat") for i = 1000:1019]
     average_intensity_surf = reduce(+, map(getSurfaceVolume, intensities))
 
@@ -475,6 +475,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fit
         plot(collect(1:10), log(curve)[1:10], lw=5, label="orig")
         plot(collect(1:10), center_fit, label="fit 1")
         legend()
+        savefig("fig1.pdf")
 
         figure()
         title("Radial sum of coliphage")
@@ -486,6 +487,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, fit
         # ylim(1.0e-2, 5.0e3)
         xlabel("Shell")
         legend()
+        savefig("fig2.pdf")
     end
 
     # Extend and add zeros at the end
