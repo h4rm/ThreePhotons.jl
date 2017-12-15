@@ -63,7 +63,7 @@ function run_average_core_completion_phasing(name::String, center_range::UnitRan
     extended_corrected_intensity = complete_core("$(environment_path("exp_data/$name"))", c1, $(center_range), $(fit_range), $(range))
     averaged_density = phase_completed_intensity(extended_corrected_intensity, 8, $(beta_end))
     """
-    launch_job("exp_data/$(name)_phased_b$(beta_end)", 8, false, julia_script, 1)
+    launch_job("exp_data/$(name)_phased_center_$(minimum(center_range))_$(maximum(center_range))_fit_$(minimum(fit_range))_$(maximum(fit_range))_b$(beta_end)", 8, false, julia_script, 1)
 end
 
 function run_set(image_list::Array{Int64}, K2_range::UnitRange{Int64}=1:38, N::Int64=32, L::Int64=18, K3_range::UnitRange{Int64}=1:26, temperature_decay::Float64=0.99998, ppi::Int64=10, include_infinite::Bool=true)
@@ -138,3 +138,5 @@ end
 
 #Coliphage with symmetric and L=12 and high range
 # run_determination("exp_data/coliphage_determination_paper_K2_10_35_K3_10_30", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=10:30, L=12, K2_range=10:35, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+
+# run_determination("exp_data/coliphage_determination_paper_K2_10_36_K3_10_26", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=10:26, L=12, K2_range=10:36, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
