@@ -256,7 +256,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
     K2 = length(K2_range)
     K2_high = maximum(K2_range)
     K2_low = minimum(K2_range)
-    @assert L < K2/2
+    @assert L <= K2/2
 
     #Create empty Spherical Harmonics volume
     intensity = SphericalHarmonicsVolume(LMAX, K2_high, qmax)
