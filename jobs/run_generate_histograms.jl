@@ -272,8 +272,8 @@ end
 
 
 
-# generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32, 2.5; setsize=Integer(2*2.048e7), name="Ewald")
-# generate_histogram_image(Integer(3.2768e8), 10, 38, 26, 32, 2.5; setsize=Integer(2*2.048e7), name="Ewald")
+# generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32, 2.5; setsize=Integer(2*2.048e7), name="Ewald_$(Integer(3.2768e9))_")
+# generate_histogram_image(Integer(3.2768e8), 10, 38, 26, 32, 2.5; setsize=Integer(2*2.048e7), name="Ewald_$(Integer(3.2768e8))_")
 # combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K2_38_K3_26_R38.0_P40960000"), 80)
 
 #With beamstop

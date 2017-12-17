@@ -9,7 +9,7 @@ end
 #memory=4G
 #gpu_mem=4000M
 function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="", gpu_mem::String="")
-    gpu = true #Shortcut gpu setting to not make job engine hickup
+    # gpu = true #Shortcut gpu setting to not make job engine hickup
     return """
     #!/bin/bash
     #\$ -S /bin/bash
