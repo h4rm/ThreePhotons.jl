@@ -1,10 +1,10 @@
-function histogram_name(prefix::String, ppi::Int64, N::Int64, K2::Int64, K3::Int64, rmax::Float64, max_pictures::Int64, suffix::String, gamma::Float64=0.0, sigma::Float64=1.0)
-    return "$(prefix)$(ppi)p_N$(N)_K2_$(K2)_K3_$(K3)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")$(suffix)"
+function histogram_name(prefix::String, ppi::Int64, N::Int64, K2::Int64, K3::Int64, rmax::Float64, max_pictures::Int64, suffix::String, gamma::Float64=0.0, sigma::Float64=1.0, lambda::Float64=0.0)
+    return "$(prefix)$(ppi)p_N$(N)_K2_$(K2)_K3_$(K3)_R$(rmax)_P$(max_pictures)$(gamma > 0.0 ? "_G$(gamma)_S$(sigma)" : "")_lambda$(lambda)_$(suffix)"
 end
 
 """Starts a cluster job for synthetic correlation generation"""
-function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, number_incident_photons::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K2::Int64=38, K3::Int64=26, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=1.0, beamstop_width::Float64=0.0, beamstop_only::Bool=false)
-    name = histogram_name(prefix, calculate_ppi(number_incident_photons), N, K2, K3, rmax, max_pictures, suffix, gamma, sigma)
+function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, number_incident_photons::Integer=500, incident_photon_variance::Integer = 0, gamma::Float64=0.0, sigma::Float64=1.0, noise_photons::Int64=0, Ncores::Integer=8, batchsize::Integer = Integer(1e4), successive_jobs::Integer=1, prefix::String="correlations_", suffix::String="", use_cube::Bool=true, qcut_ratio::Float64=1.0, K2::Int64=38, K3::Int64=26, rmax::Float64=35.0, histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path::String="", number_particles::Int64=1, lambda::Float64=0.0, beamstop_width::Float64=0.0, beamstop_only::Bool=false)
+    name = histogram_name(prefix, calculate_ppi(number_incident_photons), N, K2, K3, rmax, max_pictures, suffix, gamma, sigma, lambda)
 
     julia_script = """
     using ThreePhotons
@@ -26,16 +26,16 @@ function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, 
     launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="haswell|broadwell|skylake")
 end
 
-function generate_histogram_image(img::Int64, ppi::Int64, K2::Int64, K3::Int64, N::Int64; setsize::Int64=Integer(2*2.048e7), name::String="", lambda::Float64=1.0, beamstop_width::Float64=0.0)
+function generate_histogram_image(img::Int64, ppi::Int64, K2::Int64, K3::Int64, N::Int64, lambda::Float64=0.0; setsize::Int64=Integer(2*2.048e7), name::String="", beamstop_width::Float64=0.0)
     numbersets = ceil(Int64, img / setsize)
     for i = 1:numbersets
         generate_histograms(; max_pictures = setsize, Ncores=8, N=N, number_incident_photons=calculate_incident_photons(ppi), batchsize = Integer(setsize/8), successive_jobs=1, prefix="parts/$(name)SH_", suffix="_$(i)", use_cube=false, qcut_ratio=1.0, K2=K2, K3=K3, rmax=float(K2), histogram_method="histogramCorrelationsInPicture_alltoall", structure_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", lambda=lambda, beamstop_width=beamstop_width)
     end
 end
 
-function generate_histogram_set_ppi(ppi::Int64=10; K2::Int64=38, K3::Int64=26, N::Int64=32)
+function generate_histogram_set_ppi(ppi::Int64=10; K2::Int64=38, K3::Int64=26, N::Int64=32, lambda::Float64=0.0)
     for img in calculate_images_ppi(ppi)
-        generate_histogram_image(img, ppi, K2, K3, N)
+        generate_histogram_image(img, ppi, K2, K3, N, lambda)
     end
 end
 
@@ -248,10 +248,10 @@ function process_exp_data(name::String="coliphage", beamstop::String="coliphage_
     serializeToFile(environment_path("exp_data/$(name)_processed/histo.dat"), (p, c2_filtered, c3_filtered, c1))
 end
 
-function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64}=Float64[0.5, 0.75, 1.125], gammavals::Vector{Float64}=[0.1, 0.2, 0.3, 0.4, 0.5], ppi::Int64=10, K::Int64=38, N::Int64=32)
+function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64}=Float64[0.5, 0.75, 1.125], gammavals::Vector{Float64}=[0.1, 0.2, 0.3, 0.4, 0.5], ppi::Int64=10, K::Int64=38, N::Int64=32, lambda::Float64=0.0)
     for sigma in sigmavals
         for gamma in gammavals
-            name = histogram_name("parallel/data_generation/parts/SH_", ppi, N, K, float(K), setsize, "", gamma, sigma)
+            name = histogram_name("parallel/data_generation/parts/SH_", ppi, N, K, float(K), setsize, "", gamma, sigma, lambda)
             combine_histograms(name, img, K, N, setsize)
         end
     end
@@ -260,9 +260,9 @@ end
 #Combine noisy histograms
 # combine_set_noise(Integer(3.2768e9), Integer(2*2.048e7), [2.5], [0.4, 0.5], 10, 38, 32)
 
-function combine_set(images::Array{Int64}, setsize::Int64, ppi::Int64=10, K::Int64=38, N::Int64=32, prefix::String="$(ENV["DETERMINATION_DATA"])/data_generation/parts/SH_")
+function combine_set(images::Array{Int64}, setsize::Int64, ppi::Int64=10, K::Int64=38, N::Int64=32, lambda::Float64=0.0, prefix::String="$(ENV["DETERMINATION_DATA"])/data_generation/parts/SH_")
     for pic in images
-        name = histogram_name(prefix, ppi, N, K, float(K), setsize, "")
+        name = histogram_name(prefix, ppi, N, K, float(K), setsize, "", 0.0, 0.0, lambda)
         combine_histograms(name, pic, K, N, setsize)
     end
 end
@@ -272,7 +272,7 @@ end
 
 
 
-# generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32; setsize=Integer(2*2.048e7), name="Ewald_lambda_2.0_", lambda=2.0)
+# generate_histogram_image(Integer(3.2768e9), 10, 38, 26, 32, 2.0; setsize=Integer(2*2.048e7), name="Ewald")
 # combine_histograms(environment_path("data_generation/parts/Ewald_lambda_2.0_SH_10p_N32_K2_38_K3_26_R38.0_P40960000"), 80)
 
 #With beamstop
