@@ -36,11 +36,11 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
 end
 
 """Fits all intensites with respect to the first for consecutive averaging"""
-function run_postprocess_coliphage_results( dir::String="exp_data/coliphage_determination_newhisto", range::UnitRange{Int64}=6:26)
+function run_postprocess_coliphage_results( dir::String, range::UnitRange{Int64}, L::Int64)
     for n in 1000:1019
         julia_script = """
         using ThreePhotons
-        L=12
+        L=$L
         K3=maximum($range)
         intensity_reference = deserializeFromFile("$(environment_path("$dir"))/1000/state.dat")["intensity"]
         intensity = deserializeFromFile("$(environment_path("$dir"))/$n/state.dat")["intensity"]
