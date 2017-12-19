@@ -1,5 +1,5 @@
 using CUDArt
-using CUBLAS
+include("CUBLAS.jl-0.0.2/src/CUBLAS.jl")
 CUDA_enabled = false
 
 #cuda
@@ -11,6 +11,7 @@ function CUDA_init()
     global md = CUDArt.CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
     global calculate_coefficient_matrix_cuda = CUDArt.CuFunction(md, "calculate_coefficient_matrix")
     global CUDA_enabled = true
+    CUBLAS_init()
     println("Initialization of CUDA complete.")
 end
 
@@ -77,7 +78,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
     launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
 
-    CUBLAS.gemm!('N','N',Float32(1.0), basis.d_B, d_PA, Float32(0.0), basis.d_correlation)
+    gemm!('N','N',Float32(1.0), basis.d_B, d_PA, Float32(0.0), basis.d_correlation)
 
     #Wait for computation to finish and transfer result to host
     res = to_host(basis.d_correlation)

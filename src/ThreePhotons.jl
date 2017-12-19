@@ -143,7 +143,6 @@ try
 catch
 	println("!!! Init of CUDA failed. Fallback to CPU.")
 end
-# if isdefined(:THREE_PHOTON_CUDA)  end
 
 """
 A Julia package for the structure determination from single molecule X-ray scattering experiments at very low photon counts.
