@@ -143,7 +143,7 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
             #     @everywhere gc()
             # end
         end
-    end
+    # end
     h_P = transpose(sdata(P))
 
     println("Calculation complete ($basislen basislen).")
