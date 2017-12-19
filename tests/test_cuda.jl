@@ -1,5 +1,5 @@
 CUDA_init()
-basis = calculate_basis(L,LMAX,N,K)
+basis = calculate_basis(L,LMAX,N,K, 2.5, dq(intensity))
 d_basis = CUDA_store_basis(basis)
 c3ref = ones(N,N,K,K,K)
 

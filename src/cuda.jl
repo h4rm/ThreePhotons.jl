@@ -7,12 +7,12 @@ CUDA_enabled = false
 export BasisTypeCuda, CUDA_store_basis, CUDA_calculate_basis, complexBasis_choice, CUDA_init, FullCorrelation_parallized
 
 function CUDA_init()
+    CUBLAS_init()
     CUDArt.init(0)
     CUDArt.device(0)
     global md = CUDArt.CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
     global calculate_coefficient_matrix_cuda = CUDArt.CuFunction(md, "calculate_coefficient_matrix")
     global CUDA_enabled = true
-    CUBLAS_init()
     println("Initialization of CUDA complete.")
 end
 
