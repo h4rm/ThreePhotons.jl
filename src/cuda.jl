@@ -1,5 +1,7 @@
 using CUDArt
-using CUBLAS
+if myid() == 1
+    using CUBLAS
+end
 CUDA_enabled = false
 
 #cuda
@@ -8,8 +10,8 @@ export BasisTypeCuda, CUDA_store_basis, CUDA_calculate_basis, complexBasis_choic
 function CUDA_init()
     CUDArt.init(0)
     CUDArt.device(0)
-    global md = CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
-    global calculate_coefficient_matrix_cuda = CuFunction(md, "calculate_coefficient_matrix")
+    global md = CUDArt.CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
+    global calculate_coefficient_matrix_cuda = CUDArt.CuFunction(md, "calculate_coefficient_matrix")
     global CUDA_enabled = true
     println("Initialization of CUDA complete.")
 end
