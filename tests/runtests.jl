@@ -8,9 +8,9 @@ function test_file(filename)
 end
 
 #General test parameters
-K = 26
+K = 15
 L = 12
-N = 32
+N = 16
 KMAX = 38
 LMAX = 25
 

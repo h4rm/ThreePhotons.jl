@@ -13,6 +13,7 @@ function CUDA_init()
     global md = CUDArt.CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
     global calculate_coefficient_matrix_cuda = CUDArt.CuFunction(md, "calculate_coefficient_matrix")
     global CUDA_enabled = true
+    CUDArt.gc()
     println("Initialization of CUDA complete.")
 end
 
@@ -88,6 +89,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     CUDArt.free(d_PA)
     CUDArt.free(d_coeff)
     # CUDArt.gc()
+
     if return_raw return res end
 
     #Translate matrix into 5dimensional correlation format
