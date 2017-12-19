@@ -35,7 +35,7 @@ type BasisType <: AbstractBasisType
     wignerlist::Array{Float64,1}
     indices::Array{Int64,2}
     PAcombos::Array{Int64,2}
-    B::Array{Float64,2}
+    B::Array{Float32,2}
     h_P::Array{Float32,2}
     basislen::Int64
     N::Int64
@@ -94,10 +94,10 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
 
     wignerlist = Array(Float64, basislen)
     indiceslist = Array(Int64, 9, basislen)
-    B = SharedArray(Float64, 2*N^2, basislen)
-    P = SharedArray(Float64, klength, basislen)
-    # B = zeros(Float64, 2*N^2, basislen)
-    # P = zeros(Float64, klength, basislen)
+    # B = SharedArray(Float32, 2*N^2, basislen)
+    # P = SharedArray(Float32, klength, basislen)
+    B = zeros(Float32, 2*N^2, basislen)
+    P = zeros(Float32, klength, basislen)
     mcombolist = Vector{Int64}[]
 
     ctr = Dict(l => Umat(l) for l=lrange)
@@ -131,20 +131,20 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
 
     #Commented out parallelism below because of BUS error on cluster, has to to with SharedArrays, may go away with Julia 0.6 upgrade
     #Maybe try @everywhere gc() every 100 iterations later
-    @time begin
-        @sync @parallel for i=1:basislen
-        # for i=1:basislen
+    # @time begin
+        # @sync @parallel for i=1:basislen
+        for i=1:basislen
             l1,m1,l2,m2,l3,m3 = indiceslist[4:9,i]
             w = wignerlist[i]
             #Here, only the real part of the complex exponential plays a role
             B[:,i] = reshape(Float64[cos(m2*a + m3*b) for a in alpharange(N), b in alpharange_2pi(2*N)], 2*N^2)
             P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
-            if mod(i,1000) == 0
-                @everywhere gc()
-            end
+            # if mod(i,1000) == 0
+            #     @everywhere gc()
+            # end
         end
     end
-    h_P = convert(Array{Float32}, transpose(sdata(P)))
+    h_P = transpose(sdata(P))
 
     println("Calculation complete ($basislen basislen).")
 
