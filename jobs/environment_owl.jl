@@ -8,7 +8,7 @@ end
 
 #memory=4G
 #gpu_mem=4000M
-function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="", gpu_mem::String="4000M")
+function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="", gpu_mem::String="5000M")
     # gpu = true #Shortcut gpu setting to not make job engine hickup
     return """
     #!/bin/bash
@@ -32,7 +32,7 @@ function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; h
 end
 
 """Launches the script via qsub, in case dir doesnt exist, create it"""
-function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::String, successive_jobs::Integer=1; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="", fresh::Bool=false, gpu_mem::String="4000M")
+function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::String, successive_jobs::Integer=1; hours::Int64=48, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", memory::String="", fresh::Bool=false, gpu_mem::String="5000M")
     githead = check_git_status()
     full_dir = environment_path(dir)
     head = jobengine_head(dir, full_dir, Ncores, gpu; hours=hours, architecture=architecture, memory=memory, gpu_mem=gpu_mem)
