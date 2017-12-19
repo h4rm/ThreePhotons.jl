@@ -1,7 +1,5 @@
 using CUDArt
-if myid() == 1
-    using CUBLAS
-end
+using CUBLAS
 CUDA_enabled = false
 
 #cuda
