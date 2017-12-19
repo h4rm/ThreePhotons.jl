@@ -129,6 +129,8 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
 
     PAcombos = calculate_combolist(K,mcombolist)
 
+    #Commented out parallelism below because of BUS error on cluster, has to to with SharedArrays, may go away with Julia 0.6 upgrade
+    #Maybe try @everywhere gc() every 100 iterations later
     # @time begin
         # @sync @parallel for i=1:basislen
         for i=1:basislen

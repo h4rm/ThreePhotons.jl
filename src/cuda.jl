@@ -87,7 +87,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     #Enforce GC to avoid crashes
     CUDArt.free(d_PA)
     CUDArt.free(d_coeff)
-    CUDArt.gc()
+    # CUDArt.gc()
     if return_raw return res end
 
     #Translate matrix into 5dimensional correlation format
