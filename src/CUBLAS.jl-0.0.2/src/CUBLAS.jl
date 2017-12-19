@@ -18,7 +18,7 @@ typealias BlasChar Char #import Base.LinAlg.BlasChar
 import Base.one
 import Base.zero
 
-export band, unband, bandex, CUBLAS_init, gemm!
+export band, unband, bandex, CUBLAS_init#, gemm!
 
 include("util.jl")
 include("libcublas_types.jl")

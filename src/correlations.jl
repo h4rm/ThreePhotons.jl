@@ -129,7 +129,8 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
 
     PAcombos = calculate_combolist(K,mcombolist)
 
-    @time begin
+    # @time begin
+    tic()
         @sync @parallel for i=1:basislen
             l1,m1,l2,m2,l3,m3 = indiceslist[4:9,i]
             w = wignerlist[i]
@@ -137,7 +138,8 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
             B[:,i] = reshape(Float64[cos(m2*a + m3*b) for a in alpharange(N), b in alpharange_2pi(2*N)], 2*N^2)
             P[:,i] = reshape(Float64[w*sphPlm(l1,m1,qlist[k1]) * sphPlm(l2,m2,qlist[k2]) * sphPlm(l3,m3,qlist[k3]) for k1=1:K for k2=1:k1 for k3=1:k2], klength)
         end
-    end
+    # end
+    toc()
     h_P = convert(Array{Float32}, transpose(sdata(P)))
 
     println("Calculation complete ($basislen basislen).")

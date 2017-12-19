@@ -1,5 +1,6 @@
 using CUDArt
 include("CUBLAS.jl-0.0.2/src/CUBLAS.jl")
+# using "CUBLAS.jl-0.0.2/src/CUBLAS"
 CUDA_enabled = false
 
 #cuda
