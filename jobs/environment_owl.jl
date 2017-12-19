@@ -27,7 +27,7 @@ function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; h
     #\$ -hold_jid $(jobname(name))
     $(memory != "" ? "#\$ -l h_data=$memory" : "")
     $(gpu ? "#\$ -l gpu=1" : "")
-    $(gpu_mem != "" ? "-l gpu_mem=$(gpu_mem)" : "")
+    $(gpu_mem != "" ? "#\$ -l gpu_mem=$(gpu_mem)" : "")
     """
 end
 
