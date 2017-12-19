@@ -94,8 +94,8 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
 
     wignerlist = Array(Float64, basislen)
     indiceslist = Array(Int64, 9, basislen)
-    B = SharedArray(Float64, 2*N^2, basislen)
-    P = SharedArray(Float64, klength, basislen)
+    B = Array(Float64, 2*N^2, basislen)
+    P = Array(Float64, klength, basislen)
     # B = zeros(Float64, 2*N^2, basislen)
     # P = zeros(Float64, klength, basislen)
     mcombolist = Vector{Int64}[]
