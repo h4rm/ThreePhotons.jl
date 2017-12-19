@@ -1,4 +1,4 @@
-function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K3_range::UnitRange{Int64}=1:8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, K2_range::UnitRange{Int64}=1:35, qmax::Float64=1.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="", lambda::Float64=0.0, include_negativity::Bool=false)
+function run_determination(dir::String; histograms::String="", initial_stepsize::Float64=Float64(pi), K3_range::UnitRange{Int64}=1:8, L::Integer=8, optimizer::String="rotate_hierarchical", initial_temperature_factor::Float64=1.0, temperature_decay::Float64=0.99, N::Integer=32, range=1000:1019, fresh::Bool=false, gpu::Bool=true, Ncores::Integer=8, successive_jobs::Integer=1, measure="Bayes", postprocess::Bool=true, stepsizefactor::Float64=1.02, K2_range::UnitRange{Int64}=1:35, qmax::Float64=1.0, force_repostprocess::Bool=false, run_denoise::Bool=false, architecture::String="ivy-bridge|sandy-bridge|haswell|broadwell|skylake", hours::Int64=48, sigma::Float64=0.0, reference_pdb_path::String="", lambda::Float64=0.0, include_negativity::Bool=false, gpu_mem::String="4000M")
 
     julia_script = """
     using ThreePhotons
@@ -31,7 +31,7 @@ function run_determination(dir::String; histograms::String="", initial_stepsize:
     """
 
     for n in range
-        launch_job("$dir/$n", Ncores, gpu, julia_script, successive_jobs; architecture=architecture, hours=hours, fresh=fresh)
+        launch_job("$dir/$n", Ncores, gpu, julia_script, successive_jobs; architecture=architecture, hours=hours, fresh=fresh, gpu_mem=gpu_mem)
     end
 end
 
@@ -74,7 +74,7 @@ function run_set(image_list::Array{Int64}, K2_range::UnitRange{Int64}=1:38, N::I
     histogram_list = merge(histograms_finite, histograms_infinite)
 
     for img in keys(histogram_list)
-        run_determination("paper_res_vs_pictures_$(ppi)p_KMAX$(maximum(K2_range))_N$(N)_K$(maximum(K3_range))_L$(L)_$(temperature_decay)/$img", histograms=histogram_list[img], initial_stepsize=pi/4.0, K3_range=K3_range, L=L, K2_range=K2_range, qmax=qmax(maximum(K2_range), float(maximum(K2_range))), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01)
+        run_determination("paper_res_vs_pictures_$(ppi)p_KMAX$(maximum(K2_range))_N$(N)_K$(maximum(K3_range))_L$(L)_$(temperature_decay)/$img", histograms=histogram_list[img], initial_stepsize=pi/4.0, K3_range=K3_range, L=L, K2_range=K2_range, qmax=qmax(maximum(K2_range), float(maximum(K2_range))), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["THREEPHOTONS_PATH"])/data/structures/crambin.pdb", lambda=0.0, include_negativity=false)
     end
 end
 
@@ -88,7 +88,7 @@ function run_set_vs_L(image_list::Array{Int64}, K2_range::UnitRange{Int64}=1:38,
     "P$(img)" => histogram_name("parallel/data_generation/SH_", ppi, N, maximum(K2_range), maximum(K3_range), float(maximum(K2_range)), img, "") for img in images)
     for img in keys(histogram_list)
         for L=2:2:LMAX
-            run_determination("paper_res_vs_L_$(ppi)p_KMAX$(maximum(K2_range))_N$(N)_K$(maximum(K3_range))_$(temperature_decay)/$(img)_L$(L)", histograms=histogram_list[img], initial_stepsize=pi/4.0, K3_range=K3_range, L=L, K2_range=K2_range, qmax=qmax(maximum(K2_range), float(maximum(K2_range))), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["THREEPHOTONS_PATH"])/data/structures/crambin.pdb")
+            run_determination("paper_res_vs_L_$(ppi)p_KMAX$(maximum(K2_range))_N$(N)_K$(maximum(K3_range))_$(temperature_decay)/$(img)_L$(L)", histograms=histogram_list[img], initial_stepsize=pi/4.0, K3_range=K3_range, L=L, K2_range=K2_range, qmax=qmax(maximum(K2_range), float(maximum(K2_range))), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=temperature_decay, N=N, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=20, stepsizefactor=1.01, reference_pdb_path="$(ENV["THREEPHOTONS_PATH"])/data/structures/crambin.pdb", lambda=0.0)
         end
     end
 end
@@ -142,3 +142,9 @@ end
 # run_determination("exp_data/coliphage_determination_paper_K2_10_35_K3_10_30", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=10:30, L=12, K2_range=10:35, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
 
 # run_determination("exp_data/coliphage_determination_paper_K2_10_36_K3_10_26", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=10:26, L=12, K2_range=10:36, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+
+#Coliphage with L=12, K=12
+# run_determination("exp_data/coliphage_determination_paper_K2_12_38_K3_12_26_L12", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=12:26, L=12, K2_range=12:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
+
+#Rerun Ewald stuff
+# run_determination("Ewald_P327680000_lambda_2.5", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/data_generation/Ewald_large_SH_10p_N32_K2_38_K3_26_R38.0_P327680000_lambda_2.5/histo.dat", lambda=2.5, initial_stepsize=pi/4.0, K3_range=1:26, L=18, K2_range=1:38, qmax=qmax(38, float(38)), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=8, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", include_negativity=false, gpu_mem="4000M")
