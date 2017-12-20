@@ -23,7 +23,7 @@ function generate_histograms(; max_pictures::Integer=Integer(0), N::Integer=32, 
     generateHistogram(volume; qcut=$(qcut_ratio)*volume.rmax, K2=$K2, K3=$K3, N=$N, max_pictures=$max_pictures, number_incident_photons=$number_incident_photons, incident_photon_variance=$incident_photon_variance, numprocesses=$(Ncores), file="histo.dat", noise=GaussianNoise($gamma, $sigma, $(noise_photons)), batchsize = $batchsize, histogramMethod=$histogram_method, number_particles=$(number_particles), lambda=$(lambda), beamstop_width=$(beamstop_width), beamstop_only=$(beamstop_only))
     """
 
-    launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="haswell|broadwell|skylake")
+    launch_job("data_generation/$name", Ncores, false, julia_script, successive_jobs, architecture="")
 end
 
 function generate_histogram_image(img::Int64, ppi::Int64, K2::Int64, K3::Int64, N::Int64, lambda::Float64=0.0; setsize::Int64=Integer(2*2.048e7), name::String="", beamstop_width::Float64=0.0)

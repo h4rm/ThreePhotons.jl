@@ -104,6 +104,9 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     return normalize ? t / sumabs(t) : t
 end
 
+"""Calculate the energy on the GPU to avoid data transfer of large correlation Matrix
+However, this function is not much faster than the original.
+Bottlenck is still the large matrix operation."""
 function new_energy(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, c3ref::C3, K3_range::UnitRange{Int64}, measure::String="Bayes", negativity_factor::Float64=0.0)
     # println("CUDA correlation.")
     #Prepare all arrays on GPU
