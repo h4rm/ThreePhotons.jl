@@ -4,7 +4,7 @@ include("CUBLAS.jl-0.0.2/src/CUBLAS.jl")
 CUDA_enabled = false
 
 #cuda
-export BasisTypeCuda, CUDA_store_basis, CUDA_calculate_basis, complexBasis_choice, CUDA_init, FullCorrelation_parallized
+export BasisTypeCuda, CUDA_store_basis, CUDA_calculate_basis, complexBasis_choice, CUDA_init, FullCorrelation_parallized, new_energy
 
 function CUDA_init()
     CUBLAS_init()
@@ -12,6 +12,8 @@ function CUDA_init()
     CUDArt.device(0)
     global md = CUDArt.CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
     global calculate_coefficient_matrix_cuda = CUDArt.CuFunction(md, "calculate_coefficient_matrix")
+    global energy_cuda = CUDArt.CuFunction(md, "energy")
+
     global CUDA_enabled = true
     CUDArt.gc()
     println("Initialization of CUDA complete.")
@@ -102,59 +104,39 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     return normalize ? t / sumabs(t) : t
 end
 
-# "Calculates the three photon correlation from spherical harmonics coefficients in a paralllized way."
-# function FullCorrelation_parallized_combined(intensity::SphericalHarmonicsVolume, basis_cpu::BasisType, basis_gpu::BasisTypeCuda, K::Int64=8, minimal::Bool=true, normalize::Bool=false)
-#     kcombinations = Tuple{Int64,Int64,Int64}[(k1,k2,k3) for k1 = 1:K for k2 = 1:(minimal ? k1 : K) for k3 = 1:(minimal ? k2 : K)]
-#
-#     #Prepare CPU arrays
-#     c = SharedArray(Float64,(basis_cpu.N,basis_cpu.N,K,K,K))
-#
-#     #Prepare all arrays on GPU
-#     numcoeff = num_coeff(intensity.LMAX)
-#     KMAX = intensity.KMAX
-#     d_coeff = CudaArray(convert(Array{Complex{Float32}}, Complex{Float32}[intensity.coeff[k][i] for k = 1:KMAX, i=1:numcoeff]'))
-#     d_faclist = CudaArray(zeros(Float32,basis_gpu.basislen))
-#     d_correlation = CudaArray(zeros(Float32, K^3*basis_gpu.N^2))
-#     stream = Stream()
-#
-#     np = nprocs()  # determine the number of processes available
-#     n = length(kcombinations)
-#
-#     i = 1
-#     # function to produce the next work item from the queue.
-#     nextidx() = (idx=i; i+=1; idx)
-#
-#     @sync begin
-#       #Go over all CPUs + GPU
-#       for p=2:np+1
-#         #Start infinite scheduling for CPU + GPU
-#         @async begin
-#           while true
-#             #Fetch next available combination
-#             idx = nextidx()
-#             if idx > n
-#               break
-#             end
-#             combo = kcombinations[idx]
-#             k1,k2,k3 = combo[1], combo[2], combo[3]
-#             #feed cpu job
-#             if p >= 2 && p <= np
-#               # println("Launching cpu job on $p ($k1,$k2,$k3)")
-#               remotecall_wait(calculateCorrelationSlices!, p, c, intensity.coeff, basis_cpu, k1,k2,k3)
-#             #feed gpu job
-#             else
-#               # println("Launching gpu job ($k1,$k2,$k3)")
-#               wait(stream)
-#               calculateCorrelationSlices(d_correlation, d_faclist, d_coeff, basis_gpu, numcoeff, K, KMAX, k1,k2,k3)
-#             end
-#           end
-#         end
-#       end
-#     end
-#
-#     #Combine CPU and GPU results
-#     res_cpu = sdata(c)
-#     res_gpu = Array{Float64}(reshape(to_host(d_correlation), basis_gpu.N, basis_gpu.N, K, K, K))
-#     res = res_cpu + res_gpu
-#     return normalize ? res / sumabs(res) : res
-# end
+function new_energy(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, c3ref::C3, K3_range::UnitRange{Int64}, measure::String="Bayes", negativity_factor::Float64=0.0)
+    # println("CUDA correlation.")
+    #Prepare all arrays on GPU
+    klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
+    numcoeff = num_coeff(basis.LMAX)
+    d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
+    d_PA = CudaArray(basis.h_P)
+
+    threadsperblock = 1024
+    blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
+    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
+
+    gemm!('N','N',Float32(1.0), basis.d_B, d_PA, Float32(0.0), basis.d_correlation)
+
+    Kcombos = [(k1,k2,k3) for k1 in K3_range for k2=minimum(K3_range):k1 for k3=minimum(K3_range):k2]
+    Kcombos_length = length(Kcombos)
+    Kcombos_matrix = Int32[Kcombos[i][j] for i = 1:length(Kcombos), j=1:3]
+
+    d_Kcombos = CudaArray(Kcombos_matrix')
+    d_result = CudaArray(Float32, Kcombos_length)
+    c3ref_compressed = Array(Float32, 2*basis.N^2, Kcombos_length)
+
+    for i=1:Kcombos_length
+        k1,k2,k3 = Kcombos[i]
+        c3ref_compressed[:,i] = reshape(c3ref[:,:, k3,k2,k1], 2*basis.N^2)
+    end
+    d_c3ref = CudaArray(c3ref_compressed')
+
+    #  __global__ void energy(const float *c3, const float *c3ref, const int* Kcombos, const int combolength, const int slab_size, float *result)
+    threadsperblock = 1024
+    blockspergrid = ceil(Int32, Kcombos_length/threadsperblock)
+
+    launch(energy_cuda, blockspergrid, threadsperblock, (basis.d_correlation, d_c3ref, d_Kcombos, Kcombos_length, 2*basis.N^2, d_result))
+
+    return sumabs(to_host(d_result))
+end

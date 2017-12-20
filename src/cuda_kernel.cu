@@ -13,7 +13,7 @@ extern "C"
   //Multiplies the coefficients according to indices list
   __global__ void calculate_coefficient_matrix(const cuFloatComplex* coeff, const int numcoeff, const float* wignerlist, const int* indices, const int indiceslength, const int* PAcombos, const int combolength, float *PA, const int klength)
   {
-    int i = threadIdx.x + blockIdx.x * blockDim.x + 1;
+    const int i = threadIdx.x + blockIdx.x * blockDim.x + 1;
     if(i<=combolength)
     {
       const int k1 = PAcombos[IDX2F(1, i, 9)];
@@ -39,6 +39,48 @@ extern "C"
       for(int n=0; n <mcombos; n++){
         PA[IDX2F(jstart+n,ki, indiceslength)] *= As;
       }
+    }
+  }
+
+  __device__ float tripletFactor(const int k1, const int k2, const int k3){
+    if(k1 == k2 && k2 == k3){
+      return 1.0;
+    }
+    else if ( (k1 == k2 != k3) || (k1 == k3 != k2) || (k2 == k3 != k1) ){
+      return 3.0;
+    }
+    else if ( (k1 != k2) && (k1 != k3) &&  (k2 != k3) ){
+      return 6.0;
+    }
+    return 0.0;
+  }
+
+  //Multiplies the coefficients according to indices list
+  __global__ void energy(const float *c3, const float *c3ref, const int* Kcombos, const int combolength, const int slab_size, float *result)
+  {
+    const int i = threadIdx.x + blockIdx.x * blockDim.x + 1;
+
+    if(i<=combolength)
+    {
+      const int k1 = Kcombos[IDX2F(1, i, 3)];
+      const int k2 = Kcombos[IDX2F(2, i, 3)];
+      const int k3 = Kcombos[IDX2F(3, i, 3)];
+
+      float sum_c3 = 0.0;
+      float sum_c3ref = 0.0;
+
+      for(int j=1; j <= slab_size; j++){
+        sum_c3 += abs(c3[IDX2F(j,i, slab_size)]);
+        sum_c3ref += abs(c3ref[IDX2F(j,i, slab_size)]);
+      }
+      // printf("%d\t%d\t%d\t%f\t%f\n", k1,k2,k3,sum_c3, sum_c3ref);
+
+      float res = 0.0;
+      for(int j=1; j <= slab_size; j++){
+        res += abs(c3ref[IDX2F(j,i, slab_size)])/sum_c3ref * (logf(c3[IDX2F(j,i, slab_size)])-logf(sum_c3));
+      }
+
+      result[i-1] = tripletFactor(k1,k2,k3)*res;
     }
   }
 }
