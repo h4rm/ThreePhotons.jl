@@ -233,7 +233,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K2::Int6
             slice = zeros(Float64, basis.N)
             for l = basis.lrange
                 #NOTE: No need for conj for complex dot products (it's included in the definition)
-                fac = dot(cvec_get(volume,k1,l), cvec_get(volume,k2,l))
+                fac = Base.dot(cvec_get(volume,k1,l), cvec_get(volume,k2,l))
                 slice += fac * Float64[ Plm(l,0,alpha_star(alpha, k1, k2, mdq, basis.lambda)) for alpha = alpharange(basis.N)]
             end
             c[:,k2,k1] = real(slice)

@@ -14,6 +14,10 @@ function jobname(directory, number::Int64=0)
     return "$main$suffix"
 end
 
+function environment_path(local_path::String)
+    return "$(ENV["DETERMINATION_DATA"])/$(ENV_root)/$(local_path)"
+end
+
 if contains(readstring(`hostname`), "owl")
     include("environment_owl.jl")
 elseif contains(readstring(`hostname`), "hydra")

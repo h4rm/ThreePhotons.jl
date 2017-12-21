@@ -8,7 +8,6 @@ function launch_job(dir::String, Ncores::Integer, gpu::Bool, julia_script::Strin
   run(`mkdir -p $(full_dir)`)
   open("$(full_dir)/job.jl", "w+") do file
     write(file,"""
-    addprocs($(Ncores > 1 ? Ncores : 0)) #Let's go into parallel mode if necessary
     $julia_script
     flush(STDOUT) #make sure output is flushed to terminal files
     """)

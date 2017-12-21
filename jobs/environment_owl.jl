@@ -2,10 +2,6 @@ ENV_name = "owl"
 ENV_root = "output_owl"
 println("Environment: OWL")
 
-function environment_path(local_path::String)
-    return "$(ENV["DETERMINATION_DATA"])/$(ENV_root)/$(local_path)"
-end
-
 #memory=4G
 #gpu_mem=4000M
 function jobengine_head(name::String, dir::String, Ncores::Integer, gpu::Bool; hours::Int64=48, architecture::String="", memory::String="", gpu_mem::String="")
