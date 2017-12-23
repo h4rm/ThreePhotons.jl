@@ -162,16 +162,16 @@ end
 function postprocess_run(params, state, reference_pdb_path::String, saving=false, num_points_sphere::Int64=35, sigma::Float64=0.0)
 
     #Load reference structures as spherical harmonics
-    density,fourier,intensity = createSphericalHarmonicsStructure(reference_pdb_path, params["LMAX"], params["KMAX"], params["rmax"])
+    density,fourier,intensity = createSphericalHarmonicsStructure(reference_pdb_path, params["LMAX"], maximum(params["K2_range"]), params["rmax"])
     #Load reference structures as cube
-    densCube,fourierCube,intensityCube = createCubicStructure(reference_pdb_path, 2*params["KMAX"]+1, params["rmax"])
+    densCube,fourierCube,intensityCube = createCubicStructure(reference_pdb_path, 2*maximum(params["K2_range"])+1, params["rmax"])
 
     #intensity from runs
-    input_intensity = deleteTerms(state["intensity"],params["K"],params["L"])
+    input_intensity = deleteTerms(state["intensity"],maximum(params["K2_range"]),params["L"])
 
     #First check if we denoise?
     if sigma > 0.0
-        input_intensity = denoise_structure(input_intensity, intensity, params["K"], sigma)[1]
+        input_intensity = denoise_structure(input_intensity, intensity, maximum(params["K2_range"]), sigma)[1]
     end
 
     if saving saveCube(input_intensity, "unfitted_intensity.mrc") end
@@ -179,7 +179,7 @@ function postprocess_run(params, state, reference_pdb_path::String, saving=false
     #Rotational fit in Fourier space
     # state["fittedIntensity"], bestsc, bestt, bestp, bestg = fitStructures(input_intensity, intensity, num_points_sphere, params["K"],params["L"], 0.0, float(pi), 0.0, 2.0*pi, 0.0, 2.0*pi)
 
-    state["fittedIntensity"], bestsc, bestt, bestp, bestg = fitStructures_random(input_intensity, intensity, params["K"],params["L"] , 0.99)
+    state["fittedIntensity"], bestsc, bestt, bestp, bestg = fitStructures_random(input_intensity, intensity, maximum(params["K2_range"]),params["L"] , 0.99)
 
     @everywhere gc()
 

@@ -146,8 +146,11 @@ end
 #Coliphage with L=12, K=12
 # run_determination("exp_data/coliphage_determination_paper_K2_12_38_K3_12_26_L12", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_38_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=12:26, L=12, K2_range=12:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=20, stepsizefactor=1.01, include_negativity=false)
 
-#Coliphage smaller dq
+#Coliphage smaller dq for L=14 and L=12
 # run_determination("exp_data/coliphage_determination_paper2_K2_12_40_K3_12_30_L14", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_50_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=12:30, L=14, K2_range=12:40, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=8, stepsizefactor=1.01, include_negativity=false, gpu_mem="4000M")
+
+#Coliphage best bet
+# run_determination("exp_data/coliphage_determination_paper2_K2_10_38_K3_10_30_L12", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/exp_data/coliphage_K2_50_K3_30_N32/histo.dat", lambda=0.0, initial_stepsize=pi/4.0, K3_range=10:30, L=12, K2_range=10:38, qmax=pi/90.0, optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=false, gpu=true, Ncores=8, stepsizefactor=1.01, include_negativity=false, gpu_mem="4000M")
 
 #Rerun Ewald stuff
 # run_determination("Ewald_P327680000_lambda_2.5", histograms="$(ENV["DETERMINATION_DATA"])/output_owl/data_generation/Ewald_large_SH_10p_N32_K2_38_K3_26_R38.0_P327680000_lambda_2.5/histo.dat", lambda=2.5, initial_stepsize=pi/4.0, K3_range=1:26, L=18, K2_range=1:38, qmax=qmax(38, float(38)), optimizer="rotate_all_at_once", initial_temperature_factor=0.1, temperature_decay=0.99998, N=32, successive_jobs=3, measure="Bayes", range=1000:1019, postprocess=true, gpu=true, Ncores=8, stepsizefactor=1.01, reference_pdb_path="$(ENV["DETERMINATION_DATA"])/structures/crambin.pdb", include_negativity=false, gpu_mem="4000M")
