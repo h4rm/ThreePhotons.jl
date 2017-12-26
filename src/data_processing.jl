@@ -162,9 +162,9 @@ end
 function postprocess_run(params, state, reference_pdb_path::String, saving=false, num_points_sphere::Int64=35, sigma::Float64=0.0)
 
     #Load reference structures as spherical harmonics
-    density,fourier,intensity = createSphericalHarmonicsStructure(reference_pdb_path, params["LMAX"], maximum(params["K2_range"]), params["rmax"])
+    density,fourier,intensity = createSphericalHarmonicsStructure(reference_pdb_path, params["LMAX"], maximum(params["K2_range"]), qmax(maximum(params["K2_range"]), params["qmax"]))
     #Load reference structures as cube
-    densCube,fourierCube,intensityCube = createCubicStructure(reference_pdb_path, 2*maximum(params["K2_range"])+1, params["rmax"])
+    densCube,fourierCube,intensityCube = createCubicStructure(reference_pdb_path, 2*maximum(params["K2_range"])+1, qmax(maximum(params["K2_range"]), params["qmax"]))
 
     #intensity from runs
     input_intensity = deleteTerms(state["intensity"],maximum(params["K2_range"]),params["L"])
