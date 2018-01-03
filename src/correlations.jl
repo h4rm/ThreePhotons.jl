@@ -18,7 +18,8 @@ export
     renormalize_correlation,
     symmetrize_correlation,
     add_Gaussian_filter,
-    postprocess_correlations
+    postprocess_correlations,
+    c2_difference
 
 typealias C1 Vector{Float64}
 typealias C1Shared SharedArray{Float64, 1}
@@ -262,18 +263,18 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
     K2 = length(K2_range)
     K2_high = maximum(K2_range)
     K2_low = minimum(K2_range)
-    @assert L <= K2/2
+    @assert L < K2/2 #2*L+1 = K2
 
     #Create empty Spherical Harmonics volume
     intensity = SphericalHarmonicsVolume(LMAX, K2_high, qmax)
-    println("Extracting solution over K2_range=$(K2_range) with K2=$(K2) and L=$L.")
+    println("Extracting solution over K2_range=$(K2_range) with K2=$(K2) and L=$L and qmax=$qmax.")
     mdq = dq(intensity)
     eigenvecs = Dict()
     eigenvals = Dict()
     Gmatrices = Dict()
 
     for l = 0:2:L
-        G = zeros(Float32, K2, K2)
+        G = zeros(Float64, K2, K2)
         for k1 in K2_range
             for k2 = K2_low:k1
                 slice = c2[:,k2,k1]
@@ -283,7 +284,13 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
                     slice = 0.5*(slice + reverse(slice))
                 end
                 A = Float64[ (1/(4*pi))*Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
+
+                # tol = 1e6*sqrt(eps(real(float(one(eltype(A))))))
+                # AI = pinv(A, tol)
+                # fac = AI*slice
+
                 fac = A \ slice
+
                 val = fac[round(Int64,l/2)+1]
 
                 G[k2-K2_low+1,k1-K2_low+1] = val
@@ -292,6 +299,8 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
         end
         #Diagonalize the matrix
         F = eigfact(Symmetric(G),K2-(2*l+1)+1:K2)
+        # F = eigfact(G, permute=true, scale=false)
+
         eigenval, eigenvectors = F[:values], F[:vectors]
 
         #Calculate the vectors
@@ -303,6 +312,8 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
 
         for k in K2_range
             cvec_set(intensity,k,l,(m[:,k-K2_low+1]))
+            # vec = m[K2-(2*l):K2,k]
+            # cvec_set(intensity,k,l, vec)
         end
     end
 
@@ -605,6 +616,10 @@ function integrate_c3_shell(intensity::SphericalHarmonicsVolume, k1::Int64, k2::
 end
 
 #----------------------------
+
+function c2_difference(a::C2, b::C2, K_range::UnitRange{Int64})
+    sumabs(sum(a[:,k2,k1]/sumabs(a[:,k2,k1]) - b[:,k2,k1]/sumabs(b[:,k2,k1]) for k1=K_range for k2=minimum(K_range):k1))/length(K_range)
+end
 
 function renormalize_correlation(c2::C2)
     N,K2,_ = Base.size(c2)

@@ -174,22 +174,29 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
         #Lets start with the whole range by default (not applied for hierarchical approach)
         state["K"] = maximum(params["K3_range"])
 
+        #Save reference intensity for later use
+        if haskey(params, "reference_pdb_path") && params["reference_pdb_path"] != ""
+            density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], maximum(params["K2_range"]), qmax(maximum(params["K2_range"]), params["qmax"]))
+            state["reference_intensity"] = intensity
+        end
+
         #Retrieve initial structure from 2p-correlation if not provided
         if !haskey(state,"intensity")
-            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full),params["L"], params["LMAX"], params["K2_range"], params["qmax"], params["lambda"])
-            # state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
+            # state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full), params["L"], params["LMAX"], params["K2_range"], params["qmax"], params["lambda"])
+
+
+            #TODO: added this to check determination run, becaus retrieveSolution was unstable
+            c2_theo = twoPhotons(state["reference_intensity"], BasisType(params["N"], params["L"], params["LMAX"], maximum(params["K3_range"]), params["lambda"], dq(state["reference_intensity"])), maximum(params["K2_range"]), true, false)
+
+            state["intensity"] = retrieveSolution(c2_theo, params["L"], params["LMAX"], params["K2_range"],  params["qmax"], params["lambda"])
+
+            state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
         end
 
         state["stepsizes"] = Dict()
         state["L"] = 2
         state["i"] = 0
         state["state"] = "running"
-
-        #Save reference intensity for later use
-        if haskey(params, "reference_pdb_path") && params["reference_pdb_path"] != ""
-            density,fourier,intensity = createSphericalHarmonicsStructure(params["reference_pdb_path"], params["LMAX"], maximum(params["K2_range"]), qmax(maximum(params["K2_range"]), params["qmax"]))
-            state["reference_intensity"] = intensity
-        end
 
         #Make some logging things
         write(out,"""

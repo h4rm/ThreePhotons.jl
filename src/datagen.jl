@@ -410,6 +410,7 @@ function loadHistograms(K2::Int64, K3::Int64, file::String, load_c1::Bool=true)
     #Doubling old histograms
     NA,NB,K3,_,_ = Base.size(c3_full)
     if NA == NB
+        println("Doubling old histograms.")
         new_c3 = zeros(NA, 2*NB,K3,K3,K3)
         for k1=1:K3
             for k2=1:k1
