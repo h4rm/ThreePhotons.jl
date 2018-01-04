@@ -283,18 +283,18 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
                 if lambda == 0.0
                     slice = 0.5*(slice + reverse(slice))
                 end
-                A = Float64[ (1/(4*pi))*Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:L]
-
-                # tol = 1e6*sqrt(eps(real(float(one(eltype(A))))))
-                # AI = pinv(A, tol)
-                # fac = AI*slice
-
+                #TODO: This might change in the future, with other scaling depending on the structure
+                #Only takes low l orders into account for lower shells, otherwise fitting is unstable
+                upperL = min(L, min(k1,k2)*2-2)
+                A = Float64[ (1/(4*pi))*Plm(l,0,alpha_star(alpha, k1, k2, mdq, lambda)) for alpha = alpharange(N), l = 0:2:upperL]
+                #This inversion is stable
                 fac = A \ slice
 
-                val = fac[round(Int64,l/2)+1]
-
-                G[k2-K2_low+1,k1-K2_low+1] = val
-                G[k1-K2_low+1,k2-K2_low+1] = val
+                if l <= upperL
+                    val = fac[round(Int64,l/2)+1]
+                    G[k2-K2_low+1,k1-K2_low+1] = val
+                    G[k1-K2_low+1,k2-K2_low+1] = val
+                end
             end
         end
         #Diagonalize the matrix

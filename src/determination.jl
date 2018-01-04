@@ -182,13 +182,13 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
         #Retrieve initial structure from 2p-correlation if not provided
         if !haskey(state,"intensity")
-            # state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full), params["L"], params["LMAX"], params["K2_range"], params["qmax"], params["lambda"])
+            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full), params["L"], params["LMAX"], params["K2_range"], params["qmax"], params["lambda"])
 
 
-            #TODO: added this to check determination run, becaus retrieveSolution was unstable
-            c2_theo = twoPhotons(state["reference_intensity"], BasisType(params["N"], params["L"], params["LMAX"], maximum(params["K3_range"]), params["lambda"], dq(state["reference_intensity"])), maximum(params["K2_range"]), true, false)
-
-            state["intensity"] = retrieveSolution(c2_theo, params["L"], params["LMAX"], params["K2_range"],  params["qmax"], params["lambda"])
+            #added this to check determination run, becaus retrieveSolution was unstable
+            # c2_theo = twoPhotons(state["reference_intensity"], BasisType(params["N"], params["L"], params["LMAX"], maximum(params["K3_range"]), params["lambda"], dq(state["reference_intensity"])), maximum(params["K2_range"]), true, false)
+            #
+            # state["intensity"] = retrieveSolution(c2_theo, params["L"], params["LMAX"], params["K2_range"],  params["qmax"], params["lambda"])
 
             state["intensity"] = randomStartStructure(state["intensity"], state["intensity"].KMAX, state["intensity"].LMAX)
         end
