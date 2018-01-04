@@ -54,12 +54,12 @@ function run_postprocess_coliphage_results( dir::String, range::UnitRange{Int64}
 end
 
 #coliphage_determination_paper_lowrange_2_fitted
-function run_average_core_completion_phasing(name::String, shift::Float64, center_range::UnitRange{Int64}, range::UnitRange{Int64})
+function run_average_core_completion_phasing(name::String, shift::Float64, center_range::UnitRange{Int64}, range::UnitRange{Int64}, coliphage_correlation_path::String)
     for beta_end in [0.8, 0.85, 0.9, 0.95, 0.99]
         julia_script = """
         using ThreePhotons
 
-        _,_,_,_,c1 = loadHistograms(1,1,"$(environment_path("exp_data/coliphage_K2_38_K3_30_N32/histo.dat"))")
+        _,_,_,_,c1 = loadHistograms(1,1,"$(environment_path("exp_data/$(coliphage_correlation_path)/histo.dat"))")
 
         extended_corrected_intensity = complete_core("$(environment_path("exp_data/$name"))", c1, $(shift), $(center_range), $(range))
         averaged_density = phase_completed_intensity(extended_corrected_intensity, 8, $(beta_end))
