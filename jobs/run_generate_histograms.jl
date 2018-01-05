@@ -121,7 +121,7 @@ function run_calculate_beamstop_correlation(jobname::String, images_path::String
 
     calculate_correlations_in_image([1.0 - beamstop_map_resized], K2, K3, N)
     """
-    launch_job("exp_data/$(jobname)_K2_$(K2)_K3_$(K3)_N_$(N)", Ncores, false, julia_script, 1)
+    launch_job("exp_data/$(jobname)_K2_$(K2)_K3_$(K3)_N$(N)", Ncores, false, julia_script, 1)
 end
 
 # """Distributes the calculation of correlations among many jobs"""
@@ -162,11 +162,11 @@ exp_filelist = String["amo86615_186_PR772_single.h5",
 ]
 
 # for file in exp_filelist
-#     run_calculate_correlation_from_images("coliphage_K2_38_K3_30_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 100, 38, 30, 32, symmetrize=true)
+#     run_calculate_correlation_from_images("coliphage_K2_40_K3_30_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 100, 40, 30, 32, symmetrize=false)
 # end
 
 #Calculate beamstop of Coliphage_PR772
-# run_calculate_beamstop_correlation("coliphage_beamstop", environment_path("exp_data/Coliphage_PR772/amo86615_186_PR772_single.h5"), 38, 26, 32)
+# run_calculate_beamstop_correlation("coliphage_beamstop", environment_path("exp_data/Coliphage_PR772/amo86615_186_PR772_single.h5"), 40, 30, 32)
 
 #Calculate beamstop of crambin
 # run_calculate_generic_beamstop_correlation("crambin_beamstop", 38, 26, 32)
@@ -244,7 +244,7 @@ function process_exp_data(name::String="coliphage", beamstop::String="coliphage_
     p,c2,c3,c1 = deserializeFromFile(environment_path("exp_data/$(name)/histo.dat"))
     _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/$(beamstop)/histo.dat"))
     c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop)
-    mkdir("exp_data/$(name)_processed")
+    mkdir(environment_path("exp_data/$(name)_processed"))
     serializeToFile(environment_path("exp_data/$(name)_processed/histo.dat"), (p, c2_filtered, c3_filtered, c1))
 end
 
