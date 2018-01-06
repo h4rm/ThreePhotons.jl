@@ -693,17 +693,19 @@ function add_Gaussian_filter(c3::C3, sigma::Float64=1.0)
 end
 
 """Corrects the two-photon and three-photon correlation with the beamstop and adds a Gauss filter to compensate for pixel noise"""
-function postprocess_correlations(c2::C2, c3::C3, c2_beamstop::C2, c3_beamstop::C3)
+function postprocess_correlations(c2::C2, c3::C3, c2_beamstop::C2, c3_beamstop::C3, Gauss_filter::Bool=true)
     #Renormalize c2
     c2_corrected = c2 ./ renormalize_correlation(c2_beamstop)
 
     #Renormalize c3
     c3_corrected = c3 ./ renormalize_correlation(c3_beamstop)
 
-    #Filter c2
-    c2_corrected_filtered = add_Gaussian_filter(symmetrize_correlation(c2_corrected), 1.0)
+    if Gauss_filter
+        #Filter c2
+        c2_corrected = add_Gaussian_filter(symmetrize_correlation(c2_corrected), 1.0)
 
-    #Filter c3
-    c3_corrected_filtered = add_Gaussian_filter(symmetrize_correlation(c3_corrected), 1.0)
-    return c2_corrected_filtered, c3_corrected_filtered
+        #Filter c3
+        c3_corrected = add_Gaussian_filter(symmetrize_correlation(c3_corrected), 1.0)
+    end
+    return c2_corrected, c3_corrected
 end

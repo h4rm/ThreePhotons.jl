@@ -240,12 +240,13 @@ function create_exp_filelist(name::String="coliphage")
 end
 
 function process_exp_data(name::String="coliphage", beamstop::String="coliphage_beamstop_K2_38_K3_30_N_32")
-    combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
+    # combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
     p,c2,c3,c1 = deserializeFromFile(environment_path("exp_data/$(name)/histo.dat"))
     _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/$(beamstop)/histo.dat"))
-    c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop)
-    mkdir(environment_path("exp_data/$(name)_processed"))
-    serializeToFile(environment_path("exp_data/$(name)_processed/histo.dat"), (p, c2_filtered, c3_filtered, c1))
+    c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop, false)
+    newname = "$(name)_processed_notsmoothed"
+    mkdir(environment_path("exp_data/$(newname)"))
+    serializeToFile(environment_path("exp_data/$(newname)/histo.dat"), (p, c2_filtered, c3_filtered, c1))
 end
 
 function combine_set_noise(img::Int64, setsize::Int64, sigmavals::Vector{Float64}=Float64[0.5, 0.75, 1.125], gammavals::Vector{Float64}=[0.1, 0.2, 0.3, 0.4, 0.5], ppi::Int64=10, K::Int64=38, N::Int64=32, lambda::Float64=0.0)
