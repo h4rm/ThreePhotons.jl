@@ -239,12 +239,12 @@ function create_exp_filelist(name::String="coliphage")
     map((p)->"$root/$p/histo.dat", list)
 end
 
-function process_exp_data(name::String="coliphage", beamstop::String="coliphage_beamstop_K2_38_K3_30_N_32")
-    # combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
+function process_exp_data(name::String="coliphage", beamstop::String="coliphage_beamstop_K2_38_K3_30_N_32", Gauss_filter::Bool=false)
+    combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
     p,c2,c3,c1 = deserializeFromFile(environment_path("exp_data/$(name)/histo.dat"))
     _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/$(beamstop)/histo.dat"))
-    c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop, false)
-    newname = "$(name)_processed_notsmoothed"
+    c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop, Gauss_filter)
+    newname = "$(name)_processed$(Gauss_filter ? "_smoothed" : "_notsmoothed")"
     mkdir(environment_path("exp_data/$(newname)"))
     serializeToFile(environment_path("exp_data/$(newname)/histo.dat"), (p, c2_filtered, c3_filtered, c1))
 end
