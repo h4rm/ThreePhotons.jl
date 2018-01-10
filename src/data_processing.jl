@@ -442,7 +442,7 @@ end
 export complete_core, phase_completed_intensity
 
 """Averages intensities and completes core via fitting"""
-function complete_core(name::String, c1::C1, shift::Float64, center_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=true)
+function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, range::UnitRange{Int64}; plotting::Bool=true)
     intensities = [deserializeFromFile("$name/$i/intensity.dat") for i = 1000:1019]
     average_intensity_surf = reduce(+, map(getSurfaceVolume, intensities))
 
@@ -462,10 +462,13 @@ function complete_core(name::String, c1::C1, shift::Float64, center_range::UnitR
     a = poly_fit(collect(fitting_range), curve[fitting_range], 2)
     func(x,a) = a[1] + x*a[2]+x^2*a[3]
     center_fit = [func(k,a) for k in 1:10]
-    curve[1:2] = center_fit[1:2]
+    curve[1:10] = center_fit[1:10]
+
 
     corrected_intensity = deepcopy(average_intensity)
     corrected_surf = getSurfaceVolume(corrected_intensity)
+    shift = log(sumabs(corrected_surf.surf[minimum(range)]))-curve[minimum(range)]
+    println("shfit = $shift")
     for k in center_range
         corrected_surf.surf[k] = exp(curve[k]+shift)*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
         # corrected_surf.surf[k] = shift*c1[k]*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
@@ -476,10 +479,10 @@ function complete_core(name::String, c1::C1, shift::Float64, center_range::UnitR
     saveCube(getSphericalHarmonicsVolume(corrected_surf), "intensity_averaged_corrected.mrc")
 
     if plotting == true
-        # plot(collect(1:10), log(curve)[1:10], lw=5, label="orig")
-        # plot(collect(1:10), center_fit, label="fit 1")
-        # legend()
-        # savefig("fig1.pdf")
+        plot(collect(1:10), curve[1:10], lw=5, label="orig")
+        plot(collect(1:10), center_fit, label="fit 1")
+        legend()
+        savefig("fig1.pdf")
 
         figure()
         title("Radial sum of coliphage")
