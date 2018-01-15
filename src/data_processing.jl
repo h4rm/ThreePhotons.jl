@@ -1,6 +1,3 @@
-using CurveFit
-using PyPlot
-
 #data processing
 export fitStructures_full, fitStructures_random, getAllEvenRotations,
     sRAAR_bestfit,

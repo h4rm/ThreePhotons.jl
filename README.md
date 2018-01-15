@@ -34,9 +34,11 @@ Starting from a fresh Julia installation, you may run:
 ```julia
   Pkg.init()
   Pkg.add("CUDArt")
-  Pkg.add("CUBLAS")
   Pkg.add("Distributions")
+  Pkd.add("ProgressMeter")
   Pkg.add("Optim")
+  Pkg.add("CurveFit")
+  Pkg.add("PyPlot")
 ```
 
 to initialize Julia with all required packages.
@@ -151,8 +153,10 @@ Libraries
 Julia Packages
 ------
 * [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) (CUDA 8.0)
-* [CUBLAS.jl](https://github.com/JuliaGPU/CUBLAS.jl)
 * [Distributions.jl](https://github.com/JuliaStats/Distributions.jl)
 * [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)
+* [ProgressMeter.jl](https://github.com/timholy/ProgressMeter.jl)
+* [CurveFit.jl](https://github.com/pjabardo/CurveFit.jl)
+* [PyPlot.jl](https://github.com/JuliaPy/PyPlot.jl)
 
-[Copyright (c) 2017 Benjamin von Ardenne](https://github.com/h4rm/ThreePhotons.jl/blob/master/LICENSE.md)
+[Copyright (c) 2018 Benjamin von Ardenne](https://github.com/h4rm/ThreePhotons.jl/blob/master/LICENSE.md)
