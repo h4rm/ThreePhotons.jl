@@ -2,6 +2,8 @@ module ThreePhotons
 using Distributions
 using Optim
 using ProgressMeter
+using CurveFit
+using PyPlot
 
 export
 	#structures
