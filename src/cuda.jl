@@ -1,3 +1,4 @@
+using CUDAdrv
 using CUDArt
 include("CUBLAS.jl-0.0.2/src/CUBLAS.jl")
 # using "CUBLAS.jl-0.0.2/src/CUBLAS"
@@ -10,12 +11,12 @@ function CUDA_init()
     CUBLAS_init()
     CUDArt.init(0)
     CUDArt.device(0)
-    global md = CUDArt.CuModule("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx", false)
-    global calculate_coefficient_matrix_cuda = CUDArt.CuFunction(md, "calculate_coefficient_matrix")
-    global energy_cuda = CUDArt.CuFunction(md, "energy")
+    global md = CUDAdrv.CuModuleFile("$(ENV["THREEPHOTONS_PATH"])/src/cuda_kernel.ptx")
+    global calculate_coefficient_matrix_cuda = CUDAdrv.CuFunction(md, "calculate_coefficient_matrix")
+    global energy_cuda = CUDAdrv.CuFunction(md, "energy")
 
     global CUDA_enabled = true
-    CUDArt.gc()
+    CUDAdrv.gc()
     println("Initialization of CUDA complete.")
 end
 
@@ -80,7 +81,9 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
 
     threadsperblock = 1024
     blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
-    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
+    CUDAdrv.cudacall(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock,
+    (Ptr{Cfloat}, Cint, Ptr{Cfloat}, Ptr{Cint}, Cint, Ptr{Cint}, Cint, Ptr{Cfloat}, Cint),
+    d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength)
 
     gemm!('N','N',Float32(1.0), basis.d_B, d_PA, Float32(0.0), basis.d_correlation)
 
@@ -90,7 +93,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     #Enforce GC to avoid crashes
     CUDArt.free(d_PA)
     CUDArt.free(d_coeff)
-    # CUDArt.gc()
+    # CUDAdrv.gc()
 
     if return_raw return res end
 
@@ -104,42 +107,42 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
     return normalize ? t / sumabs(t) : t
 end
 
-"""Calculate the energy on the GPU to avoid data transfer of large correlation Matrix
-However, this function is not much faster than the original.
-Bottlenck is still the large matrix operation."""
-function new_energy(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, c3ref::C3, K3_range::UnitRange{Int64}, measure::String="Bayes", negativity_factor::Float64=0.0)
-    # println("CUDA correlation.")
-    #Prepare all arrays on GPU
-    klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
-    numcoeff = num_coeff(basis.LMAX)
-    d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
-    d_PA = CudaArray(basis.h_P)
-
-    threadsperblock = 1024
-    blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
-    launch(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
-
-    gemm!('N','N',Float32(1.0), basis.d_B, d_PA, Float32(0.0), basis.d_correlation)
-
-    Kcombos = [(k1,k2,k3) for k1 in K3_range for k2=minimum(K3_range):k1 for k3=minimum(K3_range):k2]
-    Kcombos_length = length(Kcombos)
-    Kcombos_matrix = Int32[Kcombos[i][j] for i = 1:length(Kcombos), j=1:3]
-
-    d_Kcombos = CudaArray(Kcombos_matrix')
-    d_result = CudaArray(Float32, Kcombos_length)
-    c3ref_compressed = Array(Float32, 2*basis.N^2, Kcombos_length)
-
-    for i=1:Kcombos_length
-        k1,k2,k3 = Kcombos[i]
-        c3ref_compressed[:,i] = reshape(c3ref[:,:, k3,k2,k1], 2*basis.N^2)
-    end
-    d_c3ref = CudaArray(c3ref_compressed')
-
-    #  __global__ void energy(const float *c3, const float *c3ref, const int* Kcombos, const int combolength, const int slab_size, float *result)
-    threadsperblock = 1024
-    blockspergrid = ceil(Int32, Kcombos_length/threadsperblock)
-
-    launch(energy_cuda, blockspergrid, threadsperblock, (basis.d_correlation, d_c3ref, d_Kcombos, Kcombos_length, 2*basis.N^2, d_result))
-
-    return sumabs(to_host(d_result))
-end
+# """Calculate the energy on the GPU to avoid data transfer of large correlation Matrix
+# However, this function is not much faster than the original.
+# Bottlenck is still the large matrix operation."""
+# function new_energy(intensity::SphericalHarmonicsVolume, basis::BasisTypeCuda, c3ref::C3, K3_range::UnitRange{Int64}, measure::String="Bayes", negativity_factor::Float64=0.0)
+#     # println("CUDA correlation.")
+#     #Prepare all arrays on GPU
+#     klength = Integer(basis.K*(basis.K+1)*(basis.K+2)/6)
+#     numcoeff = num_coeff(basis.LMAX)
+#     d_coeff = CudaArray(Complex{Float32}[intensity.coeff[k][i] for k = 1:basis.K, i=1:numcoeff]')
+#     d_PA = CudaArray(basis.h_P)
+#
+#     threadsperblock = 1024
+#     blockspergrid = ceil(Int32, Base.size(basis.d_PAcombos)[2] / threadsperblock)
+#     CUDAdrv.cudacall(calculate_coefficient_matrix_cuda, blockspergrid, threadsperblock, (d_coeff, numcoeff, basis.d_wignerlist, basis.d_indices, Base.size(basis.d_indices)[2], basis.d_PAcombos, Base.size(basis.d_PAcombos)[2], d_PA, klength))
+#
+#     gemm!('N','N',Float32(1.0), basis.d_B, d_PA, Float32(0.0), basis.d_correlation)
+#
+#     Kcombos = [(k1,k2,k3) for k1 in K3_range for k2=minimum(K3_range):k1 for k3=minimum(K3_range):k2]
+#     Kcombos_length = length(Kcombos)
+#     Kcombos_matrix = Int32[Kcombos[i][j] for i = 1:length(Kcombos), j=1:3]
+#
+#     d_Kcombos = CudaArray(Kcombos_matrix')
+#     d_result = CudaArray(Float32, Kcombos_length)
+#     c3ref_compressed = Array(Float32, 2*basis.N^2, Kcombos_length)
+#
+#     for i=1:Kcombos_length
+#         k1,k2,k3 = Kcombos[i]
+#         c3ref_compressed[:,i] = reshape(c3ref[:,:, k3,k2,k1], 2*basis.N^2)
+#     end
+#     d_c3ref = CudaArray(c3ref_compressed')
+#
+#     #  __global__ void energy(const float *c3, const float *c3ref, const int* Kcombos, const int combolength, const int slab_size, float *result)
+#     threadsperblock = 1024
+#     blockspergrid = ceil(Int32, Kcombos_length/threadsperblock)
+#
+#     launch(energy_cuda, blockspergrid, threadsperblock, (basis.d_correlation, d_c3ref, d_Kcombos, Kcombos_length, 2*basis.N^2, d_result))
+#
+#     return sumabs(to_host(d_result))
+# end

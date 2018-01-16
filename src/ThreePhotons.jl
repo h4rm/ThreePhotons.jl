@@ -1,4 +1,5 @@
 module ThreePhotons
+using SpecialFunctions
 using Distributions
 using Optim
 using ProgressMeter
@@ -140,11 +141,12 @@ include("phases.jl")
 include("data_processing.jl")
 include("determination.jl")
 include("exp_data.jl")
-try
+# try
 	include("cuda.jl")
-catch
-	println("!!! Init of CUDA failed. Fallback to CPU.")
-end
+# catch e
+# 	println(e)
+# 	println("!!! Init of CUDA failed. Fallback to CPU.")
+# end
 
 """
 A Julia package for the structure determination from single molecule X-ray scattering experiments at very low photon counts.

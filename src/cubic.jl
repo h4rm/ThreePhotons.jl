@@ -1,5 +1,5 @@
 #Abstract volume description
-abstract Volume
+abstract type Volume end
 
 """Describing a volume with cubic voxels"""
 type CubeVolume <: Volume
@@ -84,7 +84,7 @@ end
 
 """Calculates the aboslute square of volume"""
 function absoluteSquare(volume::CubeVolume)
-    return CubeVolume(abs(volume.cube).^2, volume.cubesize, volume.rmax)
+    return CubeVolume(abs.(volume.cube).^2, volume.cubesize, volume.rmax)
 end
 
 """Mirrors the cube along one axis"""

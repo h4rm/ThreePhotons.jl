@@ -18,7 +18,7 @@ export
     alpha_star
 
 """Abstract noise type, to be extended in the future"""
-abstract Noise
+abstract type Noise end
 
 """Radially symmetric Gaussian noise with sigma(width) and gamma(height)"""
 type GaussianNoise <: Noise

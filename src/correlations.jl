@@ -21,14 +21,14 @@ export
     postprocess_correlations,
     c2_difference
 
-typealias C1 Vector{Float64}
-typealias C1Shared SharedArray{Float64, 1}
-typealias C2 Array{Float64, 3}
-typealias C2Shared SharedArray{Float64, 3}
-typealias C3 Array{Float64, 5}
-typealias C3Shared SharedArray{Float64, 5}
+const C1        = Vector{Float64}
+const C1Shared  = SharedArray{Float64, 1}
+const C2        = Array{Float64, 3}
+const C2Shared  = SharedArray{Float64, 3}
+const C3        = Array{Float64, 5}
+const C3Shared  = SharedArray{Float64, 5}
 
-abstract AbstractBasisType
+abstract type AbstractBasisType end
 
 
 """Datatype for precalculated three photon correlation basis function"""
@@ -93,8 +93,8 @@ function calculate_basis(L::Int64, LMAX::Int64, N::Int64, K::Int64, lambda::Floa
     klength = Integer(K*(K+1)*(K+2)/6)
     qlist = Float64[acos(k*lambda*dq/(4*pi)) for k=1:K]
 
-    wignerlist = Array(Float64, basislen)
-    indiceslist = Array(Int64, 9, basislen)
+    wignerlist = Array{Float64}(basislen)
+    indiceslist = Array{Int64}(9, basislen)
     # B = SharedArray(Float32, 2*N^2, basislen)
     # P = SharedArray(Float32, klength, basislen)
     B = zeros(Float32, 2*N^2, basislen)
@@ -160,7 +160,7 @@ function calculate_triple_products_fast(intensity::SphericalHarmonicsVolume, bas
     indices = basis.indices
     wignerlist = basis.wignerlist
     P = basis.h_P
-    PA = SharedArray(Float64, Base.size(P))
+    PA = SharedArray{Float64}(Base.size(P))
 
     @sync @parallel for i = 1:Base.size(PAcombos)[2]
         k1,k2,k3,ki,l1,l2,l3,jstart,mcombos = PAcombos[:,i]
@@ -200,7 +200,7 @@ end
 """Central energy calculation function"""
 function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c3ref::C3, K3_range::UnitRange{Int64}, measure::String="Bayes", negativity_factor::Float64=0.0)
     c3 = FullCorrelation_parallized(intensity, basis, true, true, true)
-    c3 = max(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
+    c3 = max.(c3, 1e-30) #Filter out results where a negative c3 value is expected. This happens in particular when starting structures are derived from sparse (histogrammed) photon correlations.
 
     # average_negativity = negativityCheck(deleteTerms(intensity,basis.K, basis.L))/basis.K
     # neg = exp(negativity_factor * average_negativity)
@@ -215,9 +215,9 @@ function energy(intensity::SphericalHarmonicsVolume, basis::AbstractBasisType, c
                     p = reshape(c3[:, i], basis.N, 2*basis.N)
                     i += 1
                     q = c3ref[:,:,k3,k2,k1]
-                    p = p / sumabs(p)
-                    q = q / sumabs(q)
-                    @fastmath res += -1.0*sum(q.*log(p))*tripletFactor(k1,k2,k3)
+                    p = p / sum(abs,p)
+                    q = q / sum(abs,q)
+                    @fastmath res += -1.0*sum(q.*log.(p))*tripletFactor(k1,k2,k3)
                 end
             end
         end

@@ -28,7 +28,7 @@ function loadPDB(filename)
     list = atomType[]
     #print(readstring(file))
     for line in readlines(file)
-        if line[1:4] == "ATOM"
+        if length(line) > 4 && line[1:4] == "ATOM"
             x = float(line[31:38])
             y = float(line[39:46])
             z = float(line[47:54])

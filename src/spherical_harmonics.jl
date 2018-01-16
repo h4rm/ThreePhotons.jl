@@ -1,7 +1,9 @@
-abstract Volume
+using SpecialFunctions
+
+abstract type Volume end
 
 #General type of a volume decomposed into spherical shells
-abstract SphericalVolume <: Volume
+abstract type SphericalVolume <: Volume end
 
 """A volume described by shell-wise spherical harmonics expansions"""
 type SphericalHarmonicsVolume <: SphericalVolume
@@ -128,7 +130,7 @@ function transform(surface::Vector{Complex{Float64}}, LMAX::Int64)
     (Ptr{Float64},Ptr{Float64},Ptr{Float64},Ptr{Float64}, Int32, Int32),
     real(surface), imag(surface), rcoeff, icoeff, LMAX, 1)
 
-    return complex(rcoeff,icoeff)
+    return complex.(rcoeff,icoeff)
 end
 
 """Calculates surface from coefficients"""
@@ -140,7 +142,7 @@ function backtransform(coeff::Vector{Complex{Float64}}, LMAX::Int64)
     (Ptr{Float64},Ptr{Float64},Ptr{Float64},Ptr{Float64,}, Int32, Int32),
     real(coeff), imag(coeff), rdata, idata, LMAX, 0)
 
-    return complex(rdata, idata)
+    return complex.(rdata, idata)
 end
 
 """SphericalHarmonicsVolume to SurfaceVolume"""
@@ -218,7 +220,7 @@ end
 
 """From a surface function, calculate the spherical harmonics coefficients up to LMAX"""
 function getSurface(func, LMAX::Int64)
-    surface = Array(Complex{Float64}, num_val(LMAX))
+    surface = Array{Complex{Float64}}(num_val(LMAX))
     for i = 1:num_val(LMAX)
         phi,theta = i_to_ang(i,LMAX)
         surface[i] = func(phi,theta)
@@ -291,7 +293,7 @@ end
 """Numerical integration of \$f \\cdot r dr\$ """
 function frdr(f::Vector{Float64}, r::Vector{Float64})
     l = length(r)
-    res = Array(Float64,l)
+    res = Array{Float64}(l)
 
     @inbounds res[1] = sqrt(0.5) * (r[1] + r[2])^2
     for j = 2:l-1
@@ -323,7 +325,7 @@ function precalcImatrices(LMAX::Int64, KMAX::Int64)
     Imatrix = function(len, n)
         r = Float64[1:len;]
         k = pi/len * Float64[1:len;]
-        return besselj(n, k*transpose(r))
+        return SpecialFunctions.besselj.(n, k*transpose(r))
     end
 
     #Calculate the matrices, if not already available
@@ -388,7 +390,7 @@ end
 """Indirectly calculate intensity coefficients by squaring on surface"""
 function absoluteSquare(volume::SphericalHarmonicsVolume)
     newvol = deepcopy(volume)
-    newvol.coeff = map((x) -> transform( complex(abs(backtransform(x, volume.LMAX)).^2), volume.LMAX), volume.coeff)
+    newvol.coeff = map((x) -> transform( complex(abs.(backtransform(x, volume.LMAX)).^2), volume.LMAX), volume.coeff)
     return newvol
 end
 

@@ -1,5 +1,8 @@
-julia 0.5
+julia 0.6
+SpecialFunctions
 Distributions
 CUDArt
-CUBLAS
 Optim
+CurveFit
+ProgressMeter
+PyPlot

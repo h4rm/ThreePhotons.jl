@@ -14,7 +14,10 @@ importall Base.LinAlg.BLAS
 using CUDArt
 #using CUDArt.CudaPtr
 
-typealias BlasChar Char #import Base.LinAlg.BlasChar
+# Typedef needed by libcublas
+const cudaStream_t = Ptr{Void}
+const None = Union{}
+const BlasChar = Char #import Base.LinAlg.BlasChar
 import Base.one
 import Base.zero
 

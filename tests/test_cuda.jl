@@ -27,20 +27,16 @@ println("CUDA energy:")
 e_cuda = energy(intensity, d_basis, c3ref, "Bayes")
 println(e_cuda)
 
-println("New CUDA energy:")
-e_cpu = new_energy(intensity, d_basis, c3ref, 1:basis.K)
+println("CPU energy:")
+e_cpu = energy(intensity, basis, c3ref, "Bayes")
 println(e_cpu)
 
-# println("CPU energy:")
-# e_cpu = energy(intensity, basis, c3ref, "Bayes")
-# println(e_cpu)
-
-# @test abs(e_cuda - e_cpu)/abs(e_cuda) < 1e-6
+@test abs(e_cuda - e_cpu)/abs(e_cuda) < 1e-6
 
 for i=1:5
     println("CUDA energy:")
     @time e_cuda = energy(intensity, d_basis, c3ref, "Bayes")
 
-    println("New CUDA energy:")
-    @time e_cpu = new_energy(intensity, d_basis, c3ref, 1:basis.K)
+    println("CPU CUDA energy:")
+    @time e_cpu = energy(intensity, basis, c3ref, "Bayes")
 end
