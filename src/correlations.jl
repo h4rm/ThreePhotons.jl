@@ -189,7 +189,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
         t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, 2*basis.N)
         i += 1
     end end end
-    return normalize ? t / sumabs(t) : t
+    return normalize ? t / sum(abs,t) : t
 end
 
 """Central energy calculation function"""
@@ -240,7 +240,7 @@ function twoPhotons(volume::SphericalHarmonicsVolume, basis::BasisType, K2::Int6
             c[:,k2,k1] = real(slice)
         end
     end
-    return normalize ? c/sumabs(c) : 1/(4*pi)*c
+    return normalize ? c/sum(abs,c) : 1/(4*pi)*c
 end
 
 """Alpharange of theory"""
@@ -407,7 +407,7 @@ function FullC3(volume::SphericalHarmonicsVolume, L::Int64, K::Int64, N::Int64, 
             end
         end
     end
-    return c3 #/ sumabs(c3)
+    return c3 #/ sum(abs, c3)
 end
 
 # """From a two-photon correlation with k1>k2 restriction, calculates the full version."""
@@ -569,7 +569,7 @@ function integrateShell_3pc_alt(intensity::SphericalHarmonicsVolume, N::Int64, K
             end
         end
     end
-    return c3 / sumabs(c3)
+    return c3 / sum(abs,c3)
 end
 
 """Integrate out a single shell for comparison with theory"""
@@ -618,7 +618,7 @@ end
 #----------------------------
 
 function c2_difference(a::C2, b::C2, K_range::UnitRange{Int64})
-    sumabs(sum(a[:,k2,k1]/sumabs(a[:,k2,k1]) - b[:,k2,k1]/sumabs(b[:,k2,k1]) for k1=K_range for k2=minimum(K_range):k1))/length(K_range)
+    sum(abs, sum(a[:,k2,k1]/sum(abs, a[:,k2,k1]) - b[:,k2,k1]/sum(abs, b[:,k2,k1]) for k1=K_range for k2=minimum(K_range):k1))/length(K_range)
 end
 
 function renormalize_correlation(c2::C2)
@@ -626,7 +626,7 @@ function renormalize_correlation(c2::C2)
     c2_sym = deepcopy(c2)
     for k1=1:K2
         for k2=1:K2
-            c2_sym[:,k2,k1] = sumabs(c2[:,k2,k1]) > eps() ? c2[:,k2,k1]/sumabs(c2[:,k2,k1]) : ones(N)
+            c2_sym[:,k2,k1] = sum(abs, c2[:,k2,k1]) > eps() ? c2[:,k2,k1]/sum(abs, c2[:,k2,k1]) : ones(N)
         end
     end
     return c2_sym
@@ -637,7 +637,7 @@ function renormalize_correlation(c3::C3)
     for k1=1:K3
         for k2=1:K3
             for k3=1:K3
-                c3_sym[:,:,k3,k2,k1] = c3[:,:,k3,k2,k1]/sumabs(c3[:,:,k3,k2,k1])# + 1.0
+                c3_sym[:,:,k3,k2,k1] = c3[:,:,k3,k2,k1]/sum(abs, c3[:,:,k3,k2,k1])# + 1.0
             end
         end
     end

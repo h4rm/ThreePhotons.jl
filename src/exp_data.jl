@@ -8,11 +8,11 @@ function image_to_photons(img::Matrix{UInt32}, qmax::Float64=1.0)
     xhalf = floor(xsize/2.0)
     yhalf = floor(ysize/2.0)
     dq = qmax / xhalf
-    #     println("Sorting $(sumabs(img)) photons.")
+    #     println("Sorting $(sum(abs, img)) photons.")
     for x=1:xsize
         for y=1:ysize
             if img[x,y] > 0 && (x-xhalf,y-yhalf) != (0,0)
-                for p in repeated(dq*[x-xhalf,y-yhalf,0], 1)#Int64(img[x,y])
+                for p in Base.Iterators.repeated(dq*[x-xhalf,y-yhalf,0], 1)#Int64(img[x,y])
                     push!(photons, p)
                 end
             end

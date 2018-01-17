@@ -21,7 +21,7 @@ function test_Dlms(l, m, mb)
       end
     end
 
-    @test_approx_eq_eps real(sum) 8*pi^2/(2*l+1) 2e-2
+    @test real(sum) ≈ (8 * pi ^ 2) / (2l + 1) atol=0.02
 end
 
 test_Dlms(4,2,2)

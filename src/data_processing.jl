@@ -141,7 +141,7 @@ function calculateSC(volume::SphericalHarmonicsVolume, density::CubeVolume, four
 
     repetitions = nworkers() > 1 ? (nworkers() < num_phases ? num_phases : nworkers()) : num_phases
     #phasing tries on all available cores
-    densities = pmap((vol)->sRAAR_bestfit(density, vol, iterations, beta0, beta1, tau, outputfile="", fourierCube=fourier), collect(repeated(volume,repetitions)))
+    densities = pmap((vol)->sRAAR_bestfit(density, vol, iterations, beta0, beta1, tau, outputfile="", fourierCube=fourier), collect(Base.Iterators.repeated(volume,repetitions)))
 
     #Lets calculate the average density
     average_density = reduce(+, densities)
@@ -450,7 +450,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
 
     reference_intensity = deepcopy(average_intensity)
     reference_surf = getSurfaceVolume(reference_intensity)
-    c1_coliphage = [sumabs(reference_surf.surf[k]) for k in 1:maximum(range)]
+    c1_coliphage = [sum(abs, reference_surf.surf[k]) for k in 1:maximum(range)]
 
     # curve = deepcopy(c1_coliphage)
     fitting_range=3:10
@@ -464,7 +464,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
 
     corrected_intensity = deepcopy(average_intensity)
     corrected_surf = getSurfaceVolume(corrected_intensity)
-    shift = log(sumabs(corrected_surf.surf[minimum(range)]))-curve[minimum(range)]
+    shift = log(sum(abs, corrected_surf.surf[minimum(range)]))-curve[minimum(range)]
     println("shfit = $shift")
     for k in center_range
         corrected_surf.surf[k] = exp(curve[k]+shift)*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
@@ -472,7 +472,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     end
 
     corrected_intensity = getSphericalHarmonicsVolume(corrected_surf)
-    c1_coliphage_corrected = [sumabs(corrected_surf.surf[k]) for k in 1:maximum(range)]
+    c1_coliphage_corrected = [sum(abs, corrected_surf.surf[k]) for k in 1:maximum(range)]
     saveCube(getSphericalHarmonicsVolume(corrected_surf), "intensity_averaged_corrected.mrc")
 
     if plotting == true
@@ -508,8 +508,8 @@ function phase_completed_intensity(extended_corrected_intensity::SphericalHarmon
     reference_density_SH = sRAAR(extended_corrected_intensity, 1001, 0.75, beta_end, 350.0, cutoff_factor=0.3)
     reference_density = center_cube(getCube(reference_density_SH))
 
-#     densities = pmap((vol)->sRAAR_bestfit(getCube(extended_corrected_intensity), vol,  1001, 0.75, 0.95, 350.0, cutoff_factor=0.3), collect(repeated(extended_corrected_intensity,num_tries-1)))
-    densities = pmap((vol)->sRAAR_bestfit(reference_density, vol,  1001, 0.75, beta_end, 350.0, cutoff_factor=0.3), collect(repeated(extended_corrected_intensity,num_tries-1)))
+#     densities = pmap((vol)->sRAAR_bestfit(getCube(extended_corrected_intensity), vol,  1001, 0.75, 0.95, 350.0, cutoff_factor=0.3), collect(Base.Iterators.repeated(extended_corrected_intensity,num_tries-1)))
+    densities = pmap((vol)->sRAAR_bestfit(reference_density, vol,  1001, 0.75, beta_end, 350.0, cutoff_factor=0.3), collect(Base.Iterators.repeated(extended_corrected_intensity,num_tries-1)))
     push!(densities, reference_density)
     map!((vol)->center_cube(vol), densities)
     for i = 1:length(densities) saveCube(densities[i], "density_$(i).mrc") end

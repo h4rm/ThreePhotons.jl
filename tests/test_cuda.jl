@@ -12,7 +12,7 @@ c_cuda = FullCorrelation_parallized(intensity, d_basis)
 # c_normal = FullCorrelation_parallized(intensity, basis)
 #
 # #Are they the same?
-# @test sumabs(c_normal-c_cuda)/sumabs(c_normal) < 1e-5
+# @test sum(abs, c_normal-c_cuda)/sum(abs, c_normal) < 1e-5
 
 # #For performance tests
 # for i=1:5

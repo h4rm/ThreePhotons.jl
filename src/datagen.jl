@@ -253,7 +253,7 @@ function get_noise_volume(intensity::CubeVolume, sigma::Float64)
     #Let's create a normalized noise volume
     r = linspace(-volume.rmax, volume.rmax, volume.cubesize)
     noise_volume = Float64[ gaussian_distribution([x,y,z], [0.0, 0.0, 0.0], [sigma,sigma,sigma]) for x=r, y=r, z=r]
-    noise_volume /= sumabs(noise_volume)
+    noise_volume /= sum(abs, noise_volume)
     volume.cube = noise_volume
     return volume
 end
@@ -307,7 +307,7 @@ function get_compton_noise_volume(intensity::CubeVolume)
     #Let's create a normalized noise volume
     r = linspace(-volume.rmax, volume.rmax, volume.cubesize)
     noise_volume = Float64[ compton_scattering_q(norm([x,y,z])) for x=r, y=r, z=r]
-    noise_volume /= sumabs(noise_volume)
+    noise_volume /= sum(abs, noise_volume)
     volume.cube = noise_volume
     return volume
 end
@@ -423,15 +423,15 @@ function loadHistograms(K2::Int64, K3::Int64, file::String, load_c1::Bool=true)
         c3_full = new_c3
     end
 
-    c1_full = max(c1_full, 1e-30)
-    c2_full = max(c2_full, 1e-30)
-    c3_full = max(c3_full, 1e-30)
+    c1_full = max.(c1_full, 1e-30)
+    c2_full = max.(c2_full, 1e-30)
+    c3_full = max.(c3_full, 1e-30)
 
     #Cut down to designated K
     c2 = c2_full[:,1:K2,1:K2]
-    c2 = c2 / sumabs(c2)
+    c2 = c2 / sum(abs, c2)
     c3 = c3_full[:,:,1:K3,1:K3,1:K3]
-    c3 = c3 / sumabs(c3)
+    c3 = c3 / sum(abs, c3)
 
     if load_c1
         return c2_full, c2, c3_full, c3, c1_full
@@ -443,11 +443,11 @@ end
 """Calculates the total number of triplets in a histogram"""
 function countTriplets(c3::C3)
     s = size(c3)
-    return sumabs(c3[a,b,k3,k2,k1]*Float64(tripletFactor(k1,k2,k3)*k1*k2*k3) for a=1:s[1],b=1:s[2],k3=1:s[3],k2=1:s[4],k1=1:s[5])
+    return sum(abs, c3[a,b,k3,k2,k1]*Float64(tripletFactor(k1,k2,k3)*k1*k2*k3) for a=1:s[1],b=1:s[2],k3=1:s[3],k2=1:s[4],k1=1:s[5])
 end
 
 """Calculates the total number of doublets in a histogram"""
 function countDoublets(c2::C2)
     s = size(c2)
-    return sumabs(c2[a,k2,k1]*doubletFactor(k1,k2)*k1*k2 for a=1:s[1],k2=1:s[2],k1=1:s[3])
+    return sum(abs, c2[a,k2,k1]*doubletFactor(k1,k2)*k1*k2 for a=1:s[1],k2=1:s[2],k1=1:s[3])
 end

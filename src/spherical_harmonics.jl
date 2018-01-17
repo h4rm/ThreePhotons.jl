@@ -108,7 +108,8 @@ function -(a::SurfaceVolume, b::SurfaceVolume) return SurfaceVolume(a.surf - b.s
 function *(a::SurfaceVolume, b::Number) return SurfaceVolume(a.surf * b, a.LMAX, a.KMAX, a.rmax) end
 function *(a::Number, b::SurfaceVolume) return SurfaceVolume(b.surf * a, b.LMAX, b.KMAX, b.rmax) end
 function /(a::SurfaceVolume, b::Number) return SurfaceVolume(a.surf / b, a.LMAX, a.KMAX, a.rmax) end
-function sumabs(a::SurfaceVolume) return sumabs(map(sumabs, a.surf)) end
+function sum(a::SurfaceVolume) return Base.sum(map(sum,a.surf)) end
+function sum(f::Union{Function, Type}, a::SurfaceVolume) return Base.sum(f, map((x)->Base.sum(f,x),a.surf)) end
 function length(a::SurfaceVolume) return length(a.surf) end
 
 """Averages the structure of a range of results for a given run."""
@@ -183,7 +184,7 @@ end
 
 """Gets the whole 2*l+1 dimensional coefficients vector"""
 function cvec_get(volume::SphericalHarmonicsVolume,k,l)
-    v = Array(Complex{Float64},2*l+1)
+    v = Array{Complex{Float64}}(2*l+1)
     for m=-l:l
         v[m+l+1] = getc(volume,k,l,m)
     end
@@ -622,5 +623,5 @@ end
 
 function negativityCheck(volume::SphericalHarmonicsVolume)
     volume = getSurfaceVolume(volume)
-    mapreduce((x) -> max(sumabs(min(real(x),0))/sumabs(x),0), +, volume.surf)
+    mapreduce((x) -> max.(sum(abs, min.(real(x),0))/sum(abs,x),0), +, volume.surf)
 end

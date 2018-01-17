@@ -27,7 +27,7 @@ function -(a::CubeVolume, b::CubeVolume) return CubeVolume(a.cube - b.cube, a.cu
 function *(a::CubeVolume, b::Number) return CubeVolume(a.cube * b, a.cubesize, a.rmax) end
 function *(a::Number, b::CubeVolume) return CubeVolume(b.cube * a, b.cubesize, b.rmax) end
 function /(a::CubeVolume, b::Number) return CubeVolume(a.cube / b, a.cubesize, a.rmax) end
-function sumabs(a::CubeVolume) return sumabs(a.cube) end
+function sum(abs,a::CubeVolume) return sum(abs, a.cube) end
 function abs(a::CubeVolume) return CubeVolume(abs(a.cube), a.cubesize, a.rmax) end
 function real(a::CubeVolume) return Cubevolume(real(a.cube), a.cubesize, a.rmax) end
 
@@ -114,7 +114,7 @@ function saveCube(volume::CubeVolume, filename::String)
     cubesize = volume.cubesize
     rmax = volume.rmax
     cube = convert(Array{Float32}, real(volume.cube))
-    cube = cube / sumabs(cube)
+    cube = cube / sum(abs,cube)
     offset = floor(cubesize/2)
 
     println("Saving cube to $filename with cubesize=$cubesize")
@@ -200,8 +200,8 @@ function shell_correlation(volume1::CubeVolume, volume2::CubeVolume, K::Int64=0,
     #let's sample the sphere evenly
     for k = 1:K
         r = k*dr(volume1)
-        surfA = Complex{Float64}[ getVolumeInterpolated(volume1, sphericalToCartesian(r, phi, theta)) for phi=linspace(0,2.0*pi,N), theta=acos(linspace(-1.0,1.0,N)) ]
-        surfB = Complex{Float64}[ getVolumeInterpolated(volume2, sphericalToCartesian(r, phi, theta)) for phi=linspace(0,2.0*pi,N), theta=acos(linspace(-1.0,1.0,N)) ]
+        surfA = Complex{Float64}[ getVolumeInterpolated(volume1, sphericalToCartesian(r, phi, theta)) for phi=linspace(0,2.0*pi,N), theta=acos.(linspace(-1.0,1.0,N)) ]
+        surfB = Complex{Float64}[ getVolumeInterpolated(volume2, sphericalToCartesian(r, phi, theta)) for phi=linspace(0,2.0*pi,N), theta=acos.(linspace(-1.0,1.0,N)) ]
 
         surfA = reshape(surfA,N^2)
         surfB = reshape(surfB,N^2)

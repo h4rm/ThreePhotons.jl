@@ -59,7 +59,7 @@ end
 
 "Angle between two vectors ranging from 0 to 2.0*pi"
 function angle_between(p1::Vector{Float64}, p2::Vector{Float64})
-    val = clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0)
+    val = clamp(Base.dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0)
     if abs(val) > 0.0
         angle = acos(val)
         if cross(p1, p2)[3] > 0
@@ -73,7 +73,7 @@ end
 
 "Angle between two vectors ranging from 0 to pi"
 function angle_between_simple(p1::Vector{Float64}, p2::Vector{Float64})
-    angle = acos( clamp(dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0))
+    angle = acos( clamp(Base.dot(p1,p2)/ (norm(p1) * norm(p2)), -1.0, 1.0))
     return angle
 end
 
@@ -155,7 +155,7 @@ Source: http://home.lu.lv/~sd20008/papers/essays/Random%20unitary%20[paper].pdf"
 function random_rotation(dim::Int64)
     Q,R = qr(randn(dim, dim))
     r = diag(R)
-    r = r ./ abs(r)
+    r = r ./ abs.(r)
     L = diagm(r)
     res = Q*L
     if(det(res) > 0)

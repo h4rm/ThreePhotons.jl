@@ -131,7 +131,7 @@ end
 #       	# for k = 1:length(d)
 #       	# 	diffa[k] = d[k] - tmp_u[k]
 #       	# end
-#       	# diff = sumabs(map(sumabs,diffa))/sumabs(map(sumabs,d))
+#       	# diff = sum(abs, map(sum(abs, ,diffa))/sum(abs, map(sum(abs, ,d))
 #         diff = 0.0
 #
 #     		d = deepcopy(tmp_u)
@@ -182,7 +182,7 @@ function rotation_search(params = Dict("reference_pdb_path"=>"crambin.pdb","step
 
         #Retrieve initial structure from 2p-correlation if not provided
         if !haskey(state,"intensity")
-            state["intensity"] = retrieveSolution(c2ref_full/sumabs(c2ref_full), params["L"], params["LMAX"], params["K2_range"], params["qmax"], params["lambda"])
+            state["intensity"] = retrieveSolution(c2ref_full/sum(abs, c2ref_full), params["L"], params["LMAX"], params["K2_range"], params["qmax"], params["lambda"])
 
 
             #added this to check determination run, becaus retrieveSolution was unstable

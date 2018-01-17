@@ -8,7 +8,7 @@ function A(density::SurfaceVolume, Koff::Integer)
 
 	#enforce support and positivity
 	for k = 1:density.KMAX
-		newdensity.surf[k] = k > Koff ?  zeros(num_val(density.LMAX)) : max(real(density.surf[k]), 0.0)
+		newdensity.surf[k] = k > Koff ?  zeros(num_val(density.LMAX)) : max.(real(density.surf[k]), 0.0)
 	end
 	return newdensity
 end
@@ -20,7 +20,7 @@ function B(density::SurfaceVolume, amplitudes::SurfaceVolume)
 
 	# Extract the phases from the Fourier transformation
 	for k = 1:fourier.KMAX
-		fourier.surf[k] = amplitudes.surf[k] .* exp(1im*angle(fourier.surf[k]))
+		fourier.surf[k] = amplitudes.surf[k] .* exp.(1im*angle.(fourier.surf[k]))
 	end
 
 	# Inverse Fourier Transform
@@ -33,7 +33,7 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 	Koff = ceil(Int64, cutoff_factor*intensity.KMAX)
 
 	amplitudes = getSurfaceVolume(intensity)
-	amplitudes.surf = map(sqrt,  map((x)-> max(x, 0.0),  real(amplitudes.surf)) )
+	amplitudes.surf = map(sqrt.,  map((x)-> max.(x, 0.0),  real(amplitudes.surf)) )
 
 	# #Calculating the phases of a ball
 	# ball = deepcopy(intensity)
@@ -48,7 +48,7 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 	for k = 1:fourier.KMAX
 		phases = pi * 2 * rand(num_val(fourier.LMAX))
 		# phases = angle(ball_phases.surf[k])
-		fourier.surf[k] = amplitudes.surf[k] .* exp(1im * phases)
+		fourier.surf[k] = amplitudes.surf[k] .* exp.(1im * phases)
 	end
 
 	density = backward(fourier)
@@ -68,13 +68,13 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 		tmp2 = B(tmp_u, amplitudes)
 
 		#Difference tracking in real space
-		diff_dens = sumabs(density - tmp_u)/sumabs(density)
+		diff_dens = sum(abs, density - tmp_u)/sum(abs, density)
 		push!(diff_dens_list, diff_dens)
 
 		diff_amp = 0.0
 		#Difference tracking in Fourier space
 		# d_fourier = forward(tmp_u)
-		# diff_amp = sumabs([sumabs(amplitudes.surf[k]) > 1e-16 ? sumabs( abs(d_fourier.surf[k]) - amplitudes.surf[k])/sumabs(amplitudes.surf[k]) : 0.0 for k = 1:density.KMAX])
+		# diff_amp = sum(abs, [sum(abs, amplitudes.surf[k]) > 1e-16 ? sum(abs,  abs(d_fourier.surf[k]) - amplitudes.surf[k])/sum(abs, amplitudes.surf[k]) : 0.0 for k = 1:density.KMAX])
 		# push!(diff_amp_list, diff_amp)
 
 		#Last step

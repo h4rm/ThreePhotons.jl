@@ -104,7 +104,7 @@ function FullCorrelation_parallized(intensity::SphericalHarmonicsVolume, basis::
         t[:,:, k3, k2, k1] = reshape(res[:, i], basis.N, 2*basis.N)
         i += 1
     end end end
-    return normalize ? t / sumabs(t) : t
+    return normalize ? t / sum(abs, t) : t
 end
 
 # """Calculate the energy on the GPU to avoid data transfer of large correlation Matrix
@@ -144,5 +144,5 @@ end
 #
 #     launch(energy_cuda, blockspergrid, threadsperblock, (basis.d_correlation, d_c3ref, d_Kcombos, Kcombos_length, 2*basis.N^2, d_result))
 #
-#     return sumabs(to_host(d_result))
+#     return sum(abs, to_host(d_result))
 # end
