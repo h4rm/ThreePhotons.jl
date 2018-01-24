@@ -187,7 +187,7 @@ function calculate_correlations_in_image_using_single_photons(image_list::Array{
             integral = sum(abs,image)
             ppi = integral/overall_maximum * photons_per_image
 
-            photon_list,_ = pointsPerOrientation(image, K2, float(K2), photons_per_image, rot=eye(3),  incident_photon_variance=incident_photon_variance, lambda=lambda, beamstop_width=beamstop_width, print_warning=false)
+            photon_list,_ = pointsPerOrientation(image, K2, float(K2), photons_per_image, rot=eye(3), lambda=0.0, beamstop_width=0.0, print_warning=false)
 
             histogramMethod(photon_list, c1, c2, c3, 1.0, N, K2, K3, lambda)
 
