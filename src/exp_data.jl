@@ -189,7 +189,7 @@ function calculate_correlations_in_image_using_single_photons(image_list::Array{
 
             image_volume = ImageVolume(image, float(Base.size(image)[1]))
 
-            photon_list,_ = pointsPerOrientation(image, K2, float(K2), photons_per_image, rot=eye(3), lambda=0.0, beamstop_width=0.0, print_warning=false)
+            photon_list,_ = pointsPerOrientation(image_volume, K2, float(K2), photons_per_image, rot=eye(3), lambda=0.0, beamstop_width=0.0, print_warning=false)
 
             histogramMethod(photon_list, c1, c2, c3, 1.0, N, K2, K3, lambda)
 
