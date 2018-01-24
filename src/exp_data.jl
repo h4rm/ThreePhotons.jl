@@ -191,7 +191,7 @@ function calculate_correlations_in_image_using_single_photons(image_list::Array{
 
             photon_list,_ = pointsPerOrientation(image_volume, float(K2), float(K2), photons_per_image, rot=eye(3), lambda=0.0, beamstop_width=0.0, print_warning=false)
 
-            histogramCorrelationsInPicture_alltoall(photon_list, c1_local, c2_local, c3_local, 1.0, N, K2, K3, lambda)
+            histogramCorrelationsInPicture_alltoall(photon_list, c1_local, c2_local, c3_local, 1.0, N, K2, K3, 0.0)
 
             (c1_local, c2_local, c3_local)
         end
