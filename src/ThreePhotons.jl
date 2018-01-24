@@ -129,7 +129,7 @@ export
 	compare_histogram_with_theory,
 	initialize_CUDA
 
-import Base.real, Base.sum, Base.abs, Base.+, Base.-, Base.*, Base./, Base.length
+import Base.real, Base.sum, Base.abs, Base.+, Base.-, Base.*, Base./, Base.length, Base.maximum
 
 include("utilities.jl")
 include("spherical_harmonics.jl")

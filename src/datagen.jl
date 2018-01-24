@@ -15,7 +15,10 @@ export
     countDoublets,
     detector_to_Ewald_sphere,
     alpha_star_inverse,
-    alpha_star
+    alpha_star,
+    ImageVolume,
+    getVolumeInterpolated
+
 
 """Abstract noise type, to be extended in the future"""
 abstract type Noise end
@@ -49,6 +52,28 @@ function alpha_star(alpha::Float64, k1::Int64, k2::Int64, dq::Float64, lambda::F
     return acos(sin(theta1)*sin(theta2)*cos(alpha) + cos(theta1)*cos(theta2))
 end
 
+
+type ImageVolume <: Volume
+    img::Array{Float64,2}
+    size::Tuple{Int64,Int64}
+    rmax::Float64
+
+    function ImageVolume(img::Array{Float64,2}, rmax::Float64)
+        new(img, Base.size(img), rmax)
+    end
+
+end
+
+function getVolumeInterpolated(img::ImageVolume, pos::Vector{Float64})
+    center = ceil.(Float64[img.size[1]/2.0, img.size[2]/2.0])
+    pixel_pos = clamp.(round.(Int64, pos[1:2] + center), 1, minimum(img.size))
+    return img.img[pixel_pos[1], pixel_pos[2]]
+end
+
+function maximum(img::ImageVolume)
+    return Base.maximum(img.img)
+end
+
 """
 Returns a scattering image for one random orientation given a cubic Intensity volume
 @param volume:
@@ -58,8 +83,8 @@ Returns a scattering image for one random orientation given a cubic Intensity vo
 @params gamma: contribution of noise as ratio to intensity
 @params sigma: width of noise
 """
-function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Float64, number_incident_photons::Int64; incident_photon_variance::Int64 = 0, rot::Matrix{Float64}=random_rotation(3), lambda::Float64=1.0, beamstop_width::Float64=0.0)
-    maxIntensity = real(getVolumeInterpolated(volume, [0.0,0.0,0.0]))
+function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Float64, number_incident_photons::Int64; incident_photon_variance::Int64 = 0, rot::Matrix{Float64}=random_rotation(3), lambda::Float64=1.0, beamstop_width::Float64=0.0, print_warning::Bool=true)
+    maxIntensity = real(maximum(volume))
     if typeof(volume) == SurfaceVolume
         maxIntensity *= 1.3
     end
@@ -90,22 +115,29 @@ function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Flo
     gx = (x) -> pdf(dist_3D, x)
     max_gauss = gx([0.0, 0.0, 0.0])
 
+    #counts how many photons were above the envelope Gaussian
+    overflow_count = 0
+
     accepted = Vector{Float64}[]
     for i = 1:length(incidents)
         p = incidents[i]
 
         if norm(p) <= qcut
             rp = rot*detector_to_Ewald_sphere(p, lambda)
-            ratio = real(getVolumeInterpolated(volume, rp))/(maxIntensity/max_gauss*gx(rp))
+            intensity_value = real(getVolumeInterpolated(volume, rp))
+            ratio = intensity_value/(maxIntensity/max_gauss*gx(rp))
             if ratio > 1.0
-                println(STDERR, "Probability ratio is larger than 1.0: ratio:$ratio, norm:$(norm(rp)), incident_photons:$(number_incident_photons), sigma:$(envelope_sigma), qcut:$(qcut).")
+                overflow_count += 1
+                if print_warning
+                    println(STDERR, "Probability ratio is larger than 1.0: ratio:$ratio, norm:$(norm(rp)), incident_photons:$(number_incident_photons), sigma:$(envelope_sigma), qcut:$(qcut).")
+                end
             end
             if rand() < ratio
                 push!(accepted, p)
             end
         end
     end
-
+    println("Overflow percentage: $(overflow_count/number_incident_photons*100.0)%")
     return accepted,rot
 end
 

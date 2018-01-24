@@ -33,7 +33,7 @@ function sRAAR(intensity::SphericalHarmonicsVolume, iterations::Integer, beta0::
 	Koff = ceil(Int64, cutoff_factor*intensity.KMAX)
 
 	amplitudes = getSurfaceVolume(intensity)
-	amplitudes.surf = map(sqrt.,  map((x)-> max.(x, 0.0),  real(amplitudes.surf)) )
+	amplitudes.surf = map((y)->sqrt.(y),  map((x)-> max.(x, 0.0),  real(amplitudes.surf)) )
 
 	# #Calculating the phases of a ball
 	# ball = deepcopy(intensity)

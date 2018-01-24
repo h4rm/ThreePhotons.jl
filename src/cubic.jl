@@ -30,6 +30,7 @@ function /(a::CubeVolume, b::Number) return CubeVolume(a.cube / b, a.cubesize, a
 function sum(abs,a::CubeVolume) return sum(abs, a.cube) end
 function abs(a::CubeVolume) return CubeVolume(abs(a.cube), a.cubesize, a.rmax) end
 function real(a::CubeVolume) return Cubevolume(real(a.cube), a.cubesize, a.rmax) end
+function maximum(a::CubeVolume) return Base.maximum(real(a.cube)) end
 
 """Calculates the density cube from atomlist coordinates"""
 function getDensityCube(atomlist, cubesize::Int64, rmax::Float64)

@@ -111,6 +111,7 @@ function /(a::SurfaceVolume, b::Number) return SurfaceVolume(a.surf / b, a.LMAX,
 function sum(a::SurfaceVolume) return Base.sum(map(sum,a.surf)) end
 function sum(f::Union{Function, Type}, a::SurfaceVolume) return Base.sum(f, map((x)->Base.sum(f,x),a.surf)) end
 function length(a::SurfaceVolume) return length(a.surf) end
+function maximum(a::SurfaceVolume) return Base.maximum(Base.map(maximum, real(a.surf))) end 
 
 """Averages the structure of a range of results for a given run."""
 function average(list::Array{SphericalHarmonicsVolume})

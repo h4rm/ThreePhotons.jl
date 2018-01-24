@@ -58,7 +58,7 @@ type BasisType <: AbstractBasisType
         ctr = Dict(l => Umat(l) for l=lrange)
         rtc = Dict(l => ctranspose(ctr[l]) for l=lrange)
 
-        new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), Array(Float32,2,2), 0, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
+        new(zeros(Float64,1), zeros(Int64,2,2), zeros(Int64,2,2), zeros(Float64,2,2), Array{Float32}(2,2), 0, N, L, LMAX, lrange, ctr, rtc, K, lambda, dq)
     end
 end
 

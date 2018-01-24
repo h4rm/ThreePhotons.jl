@@ -90,8 +90,12 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         photonConverter = h5open("$(images_path)", "r") do file
             read(file["photonConverter"])
         end
+
+        #Calculate maximum intensity for scaling
+        overall_intensity_maximum = maximum(Float64[maximum(photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i = 1:500])
+
         resized_image_list = [ Images.imresize(convert(Images.Image,convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])), (2*K2+1, 2*K2+1)).data for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
-        calculate_correlations_in_image(resized_image_list, K2, K3, N, "histo.dat", $(symmetrize))
+        calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_intensity_maximum, 10000, $(symmetrize))
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
@@ -151,18 +155,18 @@ end
 # end
 
 exp_filelist = String["amo86615_186_PR772_single.h5",
-"amo86615_188_PR772_single.h5",
-"amo86615_190_PR772_single.h5",
-"amo86615_191_PR772_single.h5",
-"amo86615_192_PR772_single.h5",
-"amo86615_193_PR772_single.h5",
-"amo86615_194_PR772_single.h5",
-"amo86615_196_PR772_single.h5",
-"amo86615_197_PR772_single.h5"
+# "amo86615_188_PR772_single.h5",
+# "amo86615_190_PR772_single.h5",
+# "amo86615_191_PR772_single.h5",
+# "amo86615_192_PR772_single.h5",
+# "amo86615_193_PR772_single.h5",
+# "amo86615_194_PR772_single.h5",
+# "amo86615_196_PR772_single.h5",
+# "amo86615_197_PR772_single.h5"
 ]
 
 # for file in exp_filelist
-#     run_calculate_correlation_from_images("coliphage_K2_40_K3_30_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 100, 40, 30, 32, symmetrize=false)
+#     run_calculate_correlation_from_images("coliphage_single_photons_K2_40_K3_30_N32/$file", environment_path("exp_data/Coliphage_PR772/$file"), 100, 40, 30, 32, symmetrize=false)
 # end
 
 #Calculate beamstop of Coliphage_PR772
