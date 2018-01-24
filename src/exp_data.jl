@@ -1,5 +1,5 @@
 export image_to_photons
-export precompute_distances_and_angles, calculate_correlations_in_image, symmetrize_image
+export precompute_distances_and_angles, calculate_correlations_in_image_integral, symmetrize_image, calculate_correlations_in_image_using_single_photons
 
 """Transforms a sparse block-image into a list of photons that can be used to calculate correlations"""
 function image_to_photons(img::Matrix{UInt32}, qmax::Float64=1.0)
