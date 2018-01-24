@@ -157,7 +157,7 @@ function calculate_correlations_in_image_integral(image_list::Array{Array{Float6
 end
 
 """Calculates the two- and three-photon correlation from dense pixelized images"""
-function calculate_correlations_in_image_using_single_photons(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64, filename::String, overall_intensity_maximum::Float64, photons_per_image::Int64, symmetrize::Bool=false)
+function calculate_correlations_in_image_using_single_photons(image_list::Array{Array{Float64,2},1}, K2::Int64, K3::Int64, N::Int64, filename::String, overall_maximum::Float64, photons_per_image::Int64, symmetrize::Bool=false)
 
     da = pi/N
     (image_width,sy) = Base.size(image_list[1])
@@ -184,8 +184,8 @@ function calculate_correlations_in_image_using_single_photons(image_list::Array{
             c3_local = zeros(Float64, N, 2*N, K3, K3, K3)
 
             #Calculating maximum intensity and expected photon counts
-            intensity_maximum = Base.maximum(image)
-            ppi = intensity_maximum/overall_intensity_maximum * photons_per_image
+            integral = sum(abs,image)
+            ppi = integral/overall_maximum * photons_per_image
 
             photon_list,_ = pointsPerOrientation(image, K2, float(K2), photons_per_image, rot=eye(3),  incident_photon_variance=incident_photon_variance, lambda=lambda, beamstop_width=beamstop_width, print_warning=false)
 
