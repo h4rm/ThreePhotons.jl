@@ -94,7 +94,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         #Calculate maximum intensity for scaling
         overall_intensity_maximum = maximum(Float64[maximum(photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i = 1:500])
 
-        resized_image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)).data for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+        resized_image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
         calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_intensity_maximum, 10000, $(symmetrize))
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
