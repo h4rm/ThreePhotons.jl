@@ -5,6 +5,7 @@ using Optim
 using ProgressMeter
 using CurveFit
 using PyPlot
+using JLD
 
 export
 	#structures

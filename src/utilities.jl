@@ -265,13 +265,31 @@ end
 
 """Serializes the data to a file"""
 function serializeToFile(filename::String, data)
-    out = open(filename, "w+")
-    serialize(out, data)
-    close(out)
+    # out = open(filename, "w+")
+    # serialize(out, data)
+    # close(out)
+	save(filename, "data", data)
 end
 
 """Deserializes a julia data object from a file"""
 function deserializeFromFile(filename::String)
+	try
+    	data = load(filename)
+	catch err
+		if isa(err, FileIO.File{FileIO.DataFormat{:UNKNOWN}})
+			println("Trying to rewrite the file and reload")
+			run(`julia5 using ThreePhotons5; using JDL; data = deserializeFromFile("$(filename)"); save("$(filename).jld", "data", data)`)
+			try
+				data = load("$(filename).jld")
+				return data
+			catch
+				println("Something failed loading $filename")
+			end
+		end
+	end
+end
+
+function deserializeFromFile_raw(filename::String)
     out = open(filename, "r")
     data = deserialize(out)
     close(out)
