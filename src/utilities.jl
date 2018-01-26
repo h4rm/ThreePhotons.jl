@@ -278,7 +278,7 @@ function deserializeFromFile(filename::String)
 	# 	return deserializeFromFile_raw(filename)
 	# catch
 		try
-	    	data = load(filename)
+	    	data = load("$(filename).jld")
 			return data["data"]
 		catch err
 			if isa(err, FileIO.UnknownFormat{FileIO.File{FileIO.DataFormat{:UNKNOWN}}}) || isa(err, FileIO.File{FileIO.DataFormat{:UNKNOWN}})
@@ -287,11 +287,16 @@ function deserializeFromFile(filename::String)
 				try
 					data = load("$(filename).jld")
 					return data["data"]
-				catch
-					println("Something failed loading $filename")
+				catch err
+					println("Something failed loading $filename: $err")
 				end
 			else
-				error("Failed loading with error: $(err)")
+				try
+					data = load("$(filename).jld")
+					return data["data"]
+				catch err
+					println("Something failed loading $filename: $err")
+				end
 			end
 		end
 	# end

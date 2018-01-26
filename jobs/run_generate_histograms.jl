@@ -95,7 +95,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         overall_maximum = maximum(Float64[sum(abs,photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i = 1:500])
 
         resized_image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
-        calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_maximum, Integer(1e5), $(symmetrize))
+        calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_maximum, Integer(1e6), $(symmetrize))
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
@@ -245,12 +245,12 @@ function create_exp_filelist(name::String="coliphage")
 end
 
 function process_exp_data(name::String="coliphage", beamstop::String="coliphage_beamstop_K2_38_K3_30_N_32", Gauss_filter::Bool=false)
-    combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
+    # combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
     p,c2,c3,c1 = deserializeFromFile(environment_path("exp_data/$(name)/histo.dat"))
     _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/$(beamstop)/histo.dat"))
     c2_filtered,c3_filtered = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop, Gauss_filter)
     newname = "$(name)_processed$(Gauss_filter ? "_smoothed" : "_notsmoothed")"
-    mkdir(environment_path("exp_data/$(newname)"))
+    try mkdir(environment_path("exp_data/$(newname)")) end
     serializeToFile(environment_path("exp_data/$(newname)/histo.dat"), (p, c2_filtered, c3_filtered, c1))
 end
 
