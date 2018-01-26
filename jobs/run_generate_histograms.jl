@@ -70,7 +70,7 @@ end
 
 using HDF5
 """Distributes the calculation of correlations among many jobs"""
-function run_calculate_correlation_from_images(particle_name::String, images_path::String, images_per_job::Int64, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8, symmetrize::Bool=false)
+function run_calculate_correlation_from_images(particle_name::String, images_path::String, images_per_job::Int64, K2::Int64, K3::Int64, N::Int64; Ncores::Int64=8, symmetrize::Bool=false, sample_photons::Int64=Integer(1e6))
 
     file = h5open(images_path, "r")
     photonConverter = read(file["photonConverter"])
@@ -95,7 +95,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         overall_maximum = maximum(Float64[sum(abs,photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i = 1:500])
 
         resized_image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
-        calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_maximum, Integer(1e6), $(symmetrize))
+        calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_maximum, Integer($(sample_photons)), $(symmetrize))
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
