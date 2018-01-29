@@ -475,11 +475,15 @@ end
 """Calculates the total number of triplets in a histogram"""
 function countTriplets(c3::C3)
     s = size(c3)
+    replace_nan!(c3)
+    replace_inf!(c3)
     return sum(abs, c3[a,b,k3,k2,k1]*Float64(tripletFactor(k1,k2,k3)*k1*k2*k3) for a=1:s[1],b=1:s[2],k3=1:s[3],k2=1:s[4],k1=1:s[5])
 end
 
 """Calculates the total number of doublets in a histogram"""
 function countDoublets(c2::C2)
     s = size(c2)
+    replace_nan!(c2)
+    replace_inf!(c2)
     return sum(abs, c2[a,k2,k1]*doubletFactor(k1,k2)*k1*k2 for a=1:s[1],k2=1:s[2],k1=1:s[3])
 end

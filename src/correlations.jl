@@ -304,7 +304,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
         eigenval, eigenvectors = F[:values], F[:vectors]
 
         #Calculate the vectors
-        eigenvalmatrix = diagm(sqrt(max.(0.0, eigenval)))
+        eigenvalmatrix = diagm(sqrt.(max.(0.0, eigenval)))
         eigenvecs[l] = eigenvectors'
         eigenvals[l] = eigenvalmatrix
         Gmatrices[l] = G

@@ -144,12 +144,22 @@ function normal_distribution(x::Vector)
 end
 
 """In a numerical Vector, replaces NaN with zero"""
-function replace_NaN!(vec::Vector)
-    for i = 1:length(vec)
-        vec[i] = isnan(vec[i]) ? 0.0 : vec[i]
+function replace_nan!{T}(x::Array{T})
+    for i = eachindex(x)
+        if isnan(x[i])
+            x[i] = zero(T)
+        end
     end
 end
 
+"""In a numerical Vector, replaces NaN with zero"""
+function replace_inf!{T}(x::Array{T})
+    for i = eachindex(x)
+        if isinf(x[i])
+            x[i] = zero(T)
+        end
+    end
+end
 """Calculates a random rotation in `dim`
 Source: http://home.lu.lv/~sd20008/papers/essays/Random%20unitary%20[paper].pdf"""
 function random_rotation(dim::Int64)
