@@ -161,7 +161,7 @@ function calculate_correlations_in_image_using_single_photons(image_list::Array{
 
     da = pi/N
     (image_width,sy) = Base.size(image_list[1])
-    center = ceil(Float64[image_width/2.0,image_width/2.0])
+    center = ceil.(Float64[image_width/2.0,image_width/2.0])
     rotations = [[cos(phi) sin(phi); -sin(phi) cos(phi)] for phi = 0:da:2*pi]
     up = Float64[0.0, 1.0]
 

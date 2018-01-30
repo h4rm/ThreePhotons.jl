@@ -219,16 +219,20 @@ function combine_histograms(filelist::Array{String}, output_dir::String)
         histofile = filelist[i]
         println("Processing $histofile.")
         if isfile("$histofile.jld")
-            params_part, c2_part, c3_part, c1_part =  deserializeFromFile(histofile)
-            part_triplets = sum(c3_part)
-            if part_triplets < float(1.0e20)
-                params["num_pictures"] += params_part["num_pictures"]
-                c1_full += c1_part
-                c2_full += c2_part
-                c3_full += c3_part
-                println("\tAdded $(part_triplets) triplets and $(params_part["num_pictures"]) images.")
-            else
-                println("\t------ERROR: $histofile.")
+            try
+                params_part, c2_part, c3_part, c1_part =  deserializeFromFile(histofile)
+                part_triplets = sum(c3_part)
+                if part_triplets < float(1.0e20)
+                    params["num_pictures"] += params_part["num_pictures"]
+                    c1_full += c1_part
+                    c2_full += c2_part
+                    c3_full += c3_part
+                    println("\tAdded $(part_triplets) triplets and $(params_part["num_pictures"]) images.")
+                else
+                    println("\t------ERROR: $histofile.")
+                end
+            catch err
+                println("\t------ERROR: $histofile.\n$err")
             end
         end
     end

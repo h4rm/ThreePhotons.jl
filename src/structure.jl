@@ -17,28 +17,37 @@ atomfactorlist = Dict( "C" => atomfactor(0.7, 6.0),
 
 """Atom type with position and type"""
 type atomType
+    index::Int64
+    special_type::String
     pos::Array{Float64}
     t::String
     group::String
 end
 
 """Loads the atom coordinates from a pdb file and returns centered list with atomic coordinates"""
-function loadPDB(filename)
-    file = open(filename, "r")
+function loadPDB(filename::String; center::Bool=true)
     list = atomType[]
-    #print(readstring(file))
-    for line in readlines(file)
-        if length(line) > 4 && line[1:4] == "ATOM"
-            x = float(line[31:38])
-            y = float(line[39:46])
-            z = float(line[47:54])
-            t = line[78:78]
-            group = line[18:20]
-            push!(list,atomType(Float64[x,y,z],t, group))
+
+    open(filename, "r") do file
+        #print(readstring(file))
+        for line in readlines(file)
+            if length(line) > 4 && line[1:4] == "ATOM"
+                idx = parse(Int64,line[9:11])
+                special_type = line[13:16]
+                x = float(line[31:38])
+                y = float(line[39:46])
+                z = float(line[47:54])
+                t = line[78:78]
+                group = line[18:20]
+                push!(list,atomType(idx,special_type,Float64[x,y,z],t, group))
+            end
         end
     end
-    close(file)
-    return centerStructure(list)
+    if center
+        return centerStructure(list)
+    else
+        return list
+    end
 end
 
 """Centers list of atoms to the center of mass"""

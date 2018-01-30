@@ -284,31 +284,33 @@ end
 
 """Deserializes a julia data object from a file using JLD.jl and fixing backward compatibility"""
 function deserializeFromFile(filename::String)
+	data = load("$(filename).jld")
+	return data["data"]
 	# try
 	# 	return deserializeFromFile_raw(filename)
 	# catch
-		try
-	    	data = load("$(filename).jld")
-			return data["data"]
-		catch err
-			if isa(err, FileIO.UnknownFormat{FileIO.File{FileIO.DataFormat{:UNKNOWN}}}) || isa(err, FileIO.File{FileIO.DataFormat{:UNKNOWN}})
-				println("Trying to rewrite $filename into JLD format and reload")
-				run(`julia5 -e "using ThreePhotons5; using JLD; data = deserializeFromFile(\"$(filename)\"); save(\"$(filename).jld\", \"data\", data)"`)
-				try
-					data = load("$(filename).jld")
-					return data["data"]
-				catch err
-					println("Something failed loading $filename: $err")
-				end
-			else
-				try
-					data = load("$(filename).jld")
-					return data["data"]
-				catch err
-					println("Something failed loading $filename: $err")
-				end
-			end
-		end
+		# try
+	    # 	data = load("$(filename).jld")
+		# 	return data["data"]
+		# catch err
+		# 	if isa(err, FileIO.UnknownFormat{FileIO.File{FileIO.DataFormat{:UNKNOWN}}}) || isa(err, FileIO.File{FileIO.DataFormat{:UNKNOWN}})
+		# 		println("Trying to rewrite $filename into JLD format and reload")
+		# 		run(`julia5 -e "using ThreePhotons5; using JLD; data = deserializeFromFile(\"$(filename)\"); save(\"$(filename).jld\", \"data\", data)"`)
+		# 		try
+		# 			data = load("$(filename).jld")
+		# 			return data["data"]
+		# 		catch err
+		# 			println("Something failed loading $filename: $err")
+		# 		end
+		# 	else
+		# 		try
+		# 			data = load("$(filename).jld")
+		# 			return data["data"]
+		# 		catch err
+		# 			println("Something failed loading $filename: $err")
+		# 		end
+		# 	end
+		# end
 	# end
 end
 
