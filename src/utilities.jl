@@ -277,7 +277,7 @@ using FileIO
 """Serializes the data to a file"""
 function serializeToFile(filename::String, data)
 	if contains(filename, ".jld")
-		save("$(filename).jld", "data", data)
+		save("$(filename)", "data", data)
 	else
 		open(filename, "w+") do out
 			serialize(out, data)
@@ -288,7 +288,7 @@ end
 """Deserializes a julia data object from a file using JLD.jl and fixing backward compatibility"""
 function deserializeFromFile(filename::String)
 	if contains(filename, ".jld")
-		data = load("$(filename).jld")
+		data = load("$(filename)")
 		return data["data"]
 	else
 		open(filename, "r") do out
