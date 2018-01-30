@@ -319,7 +319,7 @@ function retrieveSolution(c2::C2, L::Int64, LMAX::Int64, K2_range::UnitRange{Int
 
     intensity = real_to_comp(intensity)
 
-    if negativityCheck(intensity) > 0.33
+    if negativityCheck(intensity, K2_range) > 0.33
         for k = 1:intensity.KMAX intensity.coeff[k] *= -1.0 end
     end
 
