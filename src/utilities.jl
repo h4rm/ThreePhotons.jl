@@ -283,17 +283,20 @@ function serializeToFile(filename::String, data)
 			serialize(out, data)
 		end
 	end
+	println("Wrote to $filename.")
 end
 
 """Deserializes a julia data object from a file using JLD.jl and fixing backward compatibility"""
 function deserializeFromFile(filename::String)
 	if contains(filename, ".jld")
 		data = load("$(filename)")
+		println("Read from $filename.")
 		return data["data"]
 	else
 		open(filename, "r") do out
 	    	data = deserialize(out)
 	    end
+		println("Read from $filename.")
 	    return data
 	end
 
