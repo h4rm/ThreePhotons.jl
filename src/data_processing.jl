@@ -444,7 +444,7 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     average_intensity_surf = reduce(+, map(getSurfaceVolume, intensities))
 
     #Filter negativity
-    average_intensity_surf.surf = map((x)-> max(real(x), 0.0), average_intensity_surf.surf)
+    average_intensity_surf.surf = map((x)-> max.(real(x), 0.0), average_intensity_surf.surf)
     average_intensity = getSphericalHarmonicsVolume(average_intensity_surf)
     saveCube(average_intensity, "intensity_averaged.mrc")
 
@@ -455,14 +455,14 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     # curve = deepcopy(c1_coliphage)
     fitting_range=4:10
     curve = log(deepcopy(c1))
-    curve[1:3] = zeros(2)
+    curve[1:3] = zeros(3)
     a = poly_fit(collect(fitting_range), curve[fitting_range], 2)
     func(x,a) = a[1] + x*a[2]+x^2*a[3]
     center_fit = [func(k,a) for k in 1:10]
 
     corrected_intensity = deepcopy(average_intensity)
     corrected_surf = getSurfaceVolume(corrected_intensity)
-    shift = log(sum(abs, corrected_surf.surf[minimum(range)]))-center_fit[minimum(range)]
+    shift = log.(sum(abs, corrected_surf.surf[minimum(range)]))-center_fit[minimum(range)]
     println("shfit = $shift")
 
     for k in center_range
