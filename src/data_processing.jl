@@ -453,21 +453,20 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
     c1_coliphage = [sum(abs, reference_surf.surf[k]) for k in 1:maximum(range)]
 
     # curve = deepcopy(c1_coliphage)
-    fitting_range=3:10
+    fitting_range=4:10
     curve = log(deepcopy(c1))
-    curve[1:2] = zeros(2)
+    curve[1:3] = zeros(2)
     a = poly_fit(collect(fitting_range), curve[fitting_range], 2)
     func(x,a) = a[1] + x*a[2]+x^2*a[3]
     center_fit = [func(k,a) for k in 1:10]
-    curve[1:10] = center_fit[1:10]
-
 
     corrected_intensity = deepcopy(average_intensity)
     corrected_surf = getSurfaceVolume(corrected_intensity)
-    shift = log(sum(abs, corrected_surf.surf[minimum(range)]))-curve[minimum(range)]
+    shift = log(sum(abs, corrected_surf.surf[minimum(range)]))-center_fit[minimum(range)]
     println("shfit = $shift")
+
     for k in center_range
-        corrected_surf.surf[k] = exp(curve[k]+shift)*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
+        corrected_surf.surf[k] = exp(center_fit[k]+shift)*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
         # corrected_surf.surf[k] = shift*c1[k]*ones(length(corrected_surf.surf[k])) / length(corrected_surf.surf[k])
     end
 

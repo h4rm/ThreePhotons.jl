@@ -21,6 +21,8 @@ type atomType
     special_type::String
     pos::Array{Float64}
     t::String
+    specific_type::String
+    bfactor::Float64
     group::String
 end
 
@@ -37,9 +39,11 @@ function loadPDB(filename::String; center::Bool=true)
                 x = float(line[31:38])
                 y = float(line[39:46])
                 z = float(line[47:54])
+                bfac = float(line[62:66])
                 t = line[78:78]
+                specific_type = line[13:16]
                 group = line[18:20]
-                push!(list,atomType(idx,special_type,Float64[x,y,z],t, group))
+                push!(list,atomType(idx,special_type,Float64[x,y,z],t,specific_type,bfac,group))
             end
         end
     end
