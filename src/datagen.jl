@@ -52,7 +52,7 @@ function alpha_star(alpha::Float64, k1::Int64, k2::Int64, dq::Float64, lambda::F
     return acos(sin(theta1)*sin(theta2)*cos(alpha) + cos(theta1)*cos(theta2))
 end
 
-
+"""Interface that allows to treat images as dissections through the 3D Fourier space"""
 type ImageVolume <: Volume
     img::Array{Float64,2}
     size::Tuple{Int64,Int64}
@@ -64,10 +64,11 @@ type ImageVolume <: Volume
 
 end
 
+"""Accesing ImageVolume per position"""
 function getVolumeInterpolated(img::ImageVolume, pos::Vector{Float64})
     center = ceil.(Float64[img.size[1]/2.0, img.size[2]/2.0])
-    pixel_pos = clamp.(round.(Int64, pos[1:2] + center), 1, minimum(img.size))
-    return img.img[pixel_pos[1], pixel_pos[2]]
+    shifted_pixel_pos = clamp.(round.(Int64, (pos[1:2]./rmax).*center + center), 1, minimum(img.size))
+    return img.img[shifted_pixel_pos[1], shifted_pixel_pos[2]]
 end
 
 function maximum(img::ImageVolume)

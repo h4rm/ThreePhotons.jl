@@ -188,7 +188,7 @@ function calculate_correlations_in_image_using_single_photons(image_list::Array{
             integral = sum(abs,image)
             ppi = integral/overall_maximum * photons_per_image
 
-            image_volume = ImageVolume(image, float(Base.size(image)[1]))
+            image_volume = ImageVolume(image, float(K2))
 
             photon_list,_ = pointsPerOrientation(image_volume, float(K2), float(K2), photons_per_image, rot=eye(3), lambda=0.0, beamstop_width=0.0, print_warning=false)
 

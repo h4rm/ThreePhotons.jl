@@ -208,16 +208,16 @@ function get_qrange(K::Int64, dq::Float64)
 end
 
 "Given a single fsc curve, calculates k_max for which 0.5=FSC(k_max)"
-function calculate_cutoff(sc_curve::Array{Float64})
+function calculate_cutoff(sc_curve::Array{Float64}, cutoff::Float64=0.5)
     for k = 1:length(sc_curve)-1
         x1 = k
         x2 = k+1
         y1 = sc_curve[x1]
         y2 = sc_curve[x2]
-        if y1 > 0.5 && y2 <= 0.5
+        if y1 > cutoff && y2 <= cutoff
             m = (y1-y2)/(x1-x2)
             b = y2-m*x2
-            kcrossing = (0.5-b)/m
+            kcrossing = (cutoff-b)/m
             return kcrossing
         end
     end

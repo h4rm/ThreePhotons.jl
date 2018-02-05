@@ -94,7 +94,10 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
         #Calculate maximum intensity integral for scaling
         overall_maximum = maximum(Float64[sum(abs,photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i = 1:500])
 
-        resized_image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+        # resized_image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+
+        image_list = [ convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+
         calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_maximum, Integer($(sample_photons)), $(symmetrize))
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
@@ -121,9 +124,9 @@ function run_calculate_beamstop_correlation(jobname::String, images_path::String
         sum += convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])
     end
     beamstop_map = (convert(Array{Float64},(abs(sum) .< eps())))
-    beamstop_map_resized = Images.imresize(convert(Images.Image,beamstop_map), (2*K2+1, 2*K2+1)).data
+    # beamstop_map_resized = Images.imresize(convert(Images.Image,beamstop_map), (2*K2+1, 2*K2+1)).data
 
-    calculate_correlations_in_image([1.0 - beamstop_map_resized], K2, K3, N)
+    calculate_correlations_in_image([1.0 - beamstop_map], K2, K3, N, "histo.dat", 1.0, Integer(2e5), false)
     """
     launch_job("exp_data/$(jobname)_K2_$(K2)_K3_$(K3)_N$(N)", Ncores, false, julia_script, 1)
 end
@@ -153,6 +156,22 @@ end
 #     """
 #     launch_job("exp_data/$(jobname)", Ncores, false, julia_script, 1)
 # end
+
+#Split datasets into approx. 7500 images each
+exp_filelist1 = String[
+"amo86615_186_PR772_single.h5",
+"amo86615_188_PR772_single.h5",
+"amo86615_190_PR772_single.h5",
+"amo86615_191_PR772_single.h5",
+"amo86615_192_PR772_single.h5"
+]
+
+exp_filelist2 = String[
+"amo86615_193_PR772_single.h5",
+"amo86615_194_PR772_single.h5",
+"amo86615_196_PR772_single.h5",
+"amo86615_197_PR772_single.h5"
+]
 
 exp_filelist = String[
 "amo86615_186_PR772_single.h5",
