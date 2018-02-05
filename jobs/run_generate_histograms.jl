@@ -98,7 +98,7 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
 
         image_list = [ convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
 
-        calculate_correlations_in_image_using_single_photons(resized_image_list, K2, K3, N, "histo.dat", overall_maximum, Integer($(sample_photons)), $(symmetrize))
+        calculate_correlations_in_image_using_single_photons(image_list, K2, K3, N, "histo.dat", overall_maximum, Integer($(sample_photons)), $(symmetrize))
         """
         launch_job("exp_data/parts/$(particle_name)_$(n)", Ncores, false, julia_script, 1)#, memory="$(Ncores*1.5)G")
     end
