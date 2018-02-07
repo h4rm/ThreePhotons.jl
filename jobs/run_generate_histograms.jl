@@ -130,7 +130,7 @@ function run_calculate_beamstop_correlation(jobname::String, images_path::String
     #With resize
     beamstop_map = Images.imresize(convert(Images.Image,beamstop_map), (2*K2+1, 2*K2+1)).data
 
-    calculate_correlations_in_image([1.0 - beamstop_map], K2, K3, N, "histo.dat", 1.0, Integer(2e5), false)
+    calculate_correlations_in_image_using_single_photons([1.0 - beamstop_map], K2, K3, N, "histo.dat", 4.0, Integer(2e5), false)
     """
     launch_job("exp_data/$(jobname)_K2_$(K2)_K3_$(K3)_N$(N)", Ncores, false, julia_script, 1)
 end
