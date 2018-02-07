@@ -91,12 +91,13 @@ function run_calculate_correlation_from_images(particle_name::String, images_pat
             read(file["photonConverter"])
         end
 
+        #With resize
+        image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+
+        # image_list = [ convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+
         #Calculate maximum intensity integral for scaling
-        overall_maximum = maximum(Float64[sum(abs,photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i = 1:500])
-
-        # resized_image_list = [ Images.imresize(convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]), (2*K2+1, 2*K2+1)) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
-
-        image_list = [ convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i]) for i=$((n-1)*images_per_job+1):$(n*images_per_job)]
+        overall_maximum = maximum(Float64[sum(abs, image_list[i]) for i = 1:length(image_list)])
 
         calculate_correlations_in_image_using_single_photons(image_list, K2, K3, N, "histo.dat", overall_maximum, Integer($(sample_photons)), $(symmetrize))
         """
@@ -123,8 +124,11 @@ function run_calculate_beamstop_correlation(jobname::String, images_path::String
     for i = 1:500
         sum += convert(Array{Float64},photonConverter["pnccdBack"]["photonCount"][:,:,i])
     end
-    beamstop_map = (convert(Array{Float64},(abs(sum) .< eps())))
-    # beamstop_map_resized = Images.imresize(convert(Images.Image,beamstop_map), (2*K2+1, 2*K2+1)).data
+
+    # beamstop_map = (convert(Array{Float64},(abs(sum) .< eps())))
+
+    #With resize
+    beamstop_map = Images.imresize(convert(Images.Image,beamstop_map), (2*K2+1, 2*K2+1)).data
 
     calculate_correlations_in_image([1.0 - beamstop_map], K2, K3, N, "histo.dat", 1.0, Integer(2e5), false)
     """

@@ -66,8 +66,9 @@ end
 
 """Accesing ImageVolume per position"""
 function getVolumeInterpolated(img::ImageVolume, pos::Vector{Float64})
-    center = ceil.(Float64[img.size[1]/2.0, img.size[2]/2.0])
-    shifted_pixel_pos = clamp.(round.(Int64, (pos[1:2]./img.rmax).*center + center), 1, minimum(img.size))
+    center = Float64[img.size[1]/2.0, img.size[2]/2.0] .+ 0.5
+    half_width = center .- 1.0
+    shifted_pixel_pos = clamp.(round.(Int64, (pos[1:2]./img.rmax).*half_width + center), 1, minimum(img.size))
     return img.img[shifted_pixel_pos[1], shifted_pixel_pos[2]]
 end
 
