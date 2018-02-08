@@ -271,14 +271,22 @@ function create_exp_filelist(name::String="coliphage")
     map((p)->"$root/$p/histo.dat", list)
 end
 
-function process_exp_data(name::String="coliphage", beamstop::String="coliphage_beamstop_K2_38_K3_30_N_32", Gauss_filter::Bool=false)
+function process_exp_data(name::String="coliphage", beamstop::String="coliphage_beamstop_K2_38_K3_30_N_32", Gauss_filter::Float64=0.0, symmetrize::Bool=false)
     combine_histograms(create_exp_filelist(name), environment_path("exp_data/$(name)"))
     p,c2,c3,c1 = deserializeFromFile(environment_path("exp_data/$(name)/histo.dat"))
     if beamstop != ""
         _,c2_beamstop,c3_beamstop,_ = deserializeFromFile(environment_path("exp_data/$(beamstop)/histo.dat"))
-        c2,c3 = postprocess_correlations(c2, c3, c2_beamstop, c3_beamstop, Gauss_filter)
+        c2,c3 = correct_beamstop(c2, c3, c2_beamstop, c3_beamstop)
     end
-    newname = "$(name)_$(beamstop == "" ? "nobsc" : "bsc")_processed$(Gauss_filter ? "_smoothed" : "_notsmoothed")"
+    if symmetrize
+        c2 = symmetrize_correlation(c2)
+        c3 = symmetrize_correlation(c3)
+    end
+    if Gauss_filter > 0.0
+        c2 = add_Gaussian_filter(c2, Gauss_filter)
+        c3 = add_Gaussian_filter(c3, Gauss_filter)
+    end
+    newname = "$(name)_$(beamstop == "" ? "nobsc" : "bsc")_processed$(Gauss_filter > 0.0 ? "_smoothed" : "_notsmoothed")$(symmetrize ? "_symmetrized" : "")"
     try mkdir(environment_path("exp_data/$(newname)")) end
     serializeToFile(environment_path("exp_data/$(newname)/histo.dat"), (p, c2, c3, c1))
 end
