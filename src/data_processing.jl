@@ -48,7 +48,7 @@ function fitStructures_full(volume::SphericalHarmonicsVolume, reference::Spheric
 end
 
 "Fits structure `volume` to structure `reference` by exploring all possible SO(3) rotations"
-function fitStructures_random(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K_range::UnitRange{Int64}, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
+function fitStructures_random(volume::Volume, reference::Volume, K_range::UnitRange{Int64}, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
     stepsize = pi
     # results = []
     results = @parallel vcat for i = 1:repititions
@@ -74,7 +74,7 @@ function fitStructures_random(volume::SphericalHarmonicsVolume, reference::Spher
     return (rotateStructure(volume, theta, phi, gamma, maximum(K_range), 2:2:L), bestsc, theta, phi, gamma)
 end
 
-function fitStructures_random(volume::SphericalHarmonicsVolume, reference::SphericalHarmonicsVolume, K::Int64, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
+function fitStructures_random(volume::Volume, reference::Volume, K::Int64, L::Int64, stepsizefactor::Float64, repititions::Int64=4)
     fitStructures_random(volume, reference, 1:K, L, stepsizefactor, repititions)
 end
 
@@ -495,10 +495,11 @@ function complete_core(name::String, c1::C1, center_range::UnitRange{Int64}, ran
 
     # Extend and add zeros at the end
     extended_corrected_intensity = deepcopy(corrected_intensity)
-    for i = 1:10
+    extend_range = maximum(range)+1:40
+    for i in extend_range
         push!(extended_corrected_intensity.coeff, zeros(Complex{Float64}, Base.size(extended_corrected_intensity.coeff[1])))
     end
-    extended_corrected_intensity.KMAX += 10
+    extended_corrected_intensity.KMAX += length(extend_range)
     return extended_corrected_intensity
 end
 

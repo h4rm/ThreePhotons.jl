@@ -101,6 +101,14 @@ function mirrorCube(volume::CubeVolume)
     return mz
 end
 
+function similarity(volume1::CubeVolume, volume2::CubeVolume, K::Int64)
+    return similarity(volume1, volume2)
+end
+
+function similarity(volume1::CubeVolume, volume2::CubeVolume, K_range::UnitRange{Int64})
+    return similarity(volume1, volume2)
+end
+
 "Calculates the similarity between two cubes"
 function similarity(volume1::CubeVolume, volume2::CubeVolume)
     vec1 = real(reshape(volume1.cube, volume1.cubesize^3))
@@ -183,6 +191,14 @@ function getVolumeInterpolated(volume::CubeVolume, vec::Vector{Float64})
     V111 = a* b* c
 
     @inbounds @fastmath return V000 * cube[x0,y0,z0] + V100 * cube[x1,y0,z0] + V010 * cube[x0,y1,z0] + V001 * cube[x0,y0,z1] + V101 * cube[x1,y0,z1] + V011 * cube[x0,y1,z1] + V110 * cube[x1,y1,z0] + V111 * cube[x1,y1,z1]
+end
+
+function rotateStructure(volume::CubeVolume, theta::Float64, phi::Float64, gamma::Float64, K::Int64, lrange::Range)
+    return rotateStructure(volume, theta, phi, gamma)
+end
+
+function rotateStructure(volume::CubeVolume, theta::Float64, phi::Float64, gamma::Float64, K::Int64, L::Int64)
+    return rotateStructure(volume, theta, phi, gamma)
 end
 
 """Rotates a cubic volume"""
