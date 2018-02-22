@@ -139,7 +139,7 @@ function pointsPerOrientation(volume::Volume, qcut::Float64, envelope_sigma::Flo
             end
         end
     end
-    println("Overflow percentage: $(overflow_count/number_incident_photons*100.0)%")
+    println("Overflow percentage: $(overflow_count/number_incident_photons*100.0)%, scattered photons: $(length(accepted))")
     return accepted,rot
 end
 
