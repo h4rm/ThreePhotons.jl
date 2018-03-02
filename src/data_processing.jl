@@ -515,6 +515,9 @@ function phase_completed_intensity(extended_corrected_intensity::SphericalHarmon
     for i = 1:length(densities) saveCube(densities[i], "density_$(i).mrc") end
 
     averaged_density = reduce(+, densities)
+
+    serializeToFile("density_averaged.dat", averaged_density)
+
     saveCube(averaged_density, "density_averaged.mrc")
     return averaged_density
 end
