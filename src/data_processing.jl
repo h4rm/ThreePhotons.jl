@@ -225,8 +225,8 @@ function calculate_cutoff(sc_curve::Array{Float64}, cutoff::Float64=0.5)
 end
 
 "Given a single fsc curve, calculates the resolution for which 0.5=FSC(k_max)"
-function calculate_maximum_resolution(fsc::Array{Float64}, dq::Float64)
-    return 2.0*pi / ( calculate_cutoff(fsc) * dq)
+function calculate_maximum_resolution(fsc::Array{Float64}, dq::Float64, cutoff::Float64=0.5)
+    return 2.0*pi / ( calculate_cutoff(fsc, cutoff) * dq)
 end
 
 """Alternative approach for resolution calculation"""
